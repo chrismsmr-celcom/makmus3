@@ -1,5 +1,5 @@
 /* ==========================================================================
-   PAGE ARTICLE — MAKMUS
+   PAGE ARTICLE — MAKMUS (VERSION CORRIGÉE - SLUG FIX + LIKES/FAVORIS)
    ========================================================================== */
 
 const SUPABASE_URL = 'https://logphtrdkpbfgtejtime.supabase.co';
@@ -7,12 +7,29 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// 🔧 CORRECTION : Récupération correcte du slug depuis l'URL
 const urlParams = new URLSearchParams(window.location.search);
-const articleId = urlParams.get('id');
-
 let articleId = urlParams.get('id');
 let articleSlug = urlParams.get('slug');
+
+// 🔧 CORRECTION : Si l'URL est de type /article/mon-slug (sans paramètre)
+if (!articleId && !articleSlug && window.location.pathname.startsWith('/article/')) {
+    articleSlug = window.location.pathname.replace('/article/', '');
+    articleSlug = articleSlug.split('?')[0];
+    articleSlug = articleSlug.split('#')[0];
+    console.log('✅ SLUG détecté depuis pathname:', articleSlug);
+}
+
+// 🔧 CORRECTION : Forcer la redirection vers l'URL avec paramètre slug pour éviter les problèmes
+if (articleSlug && !window.location.search.includes('slug=')) {
+    const newUrl = `${window.location.origin}/redaction.html?slug=${encodeURIComponent(articleSlug)}`;
+    console.log('🔄 Redirection vers:', newUrl);
+    window.location.replace(newUrl);
+    throw new Error('Redirection en cours');
+}
+
 let currentArticle = null;
+let currentUser = null;
 let progressInterval = null;
 let keepAliveInterval = null;
 let currentAudioChunks = [];
@@ -20,10 +37,7 @@ let currentChunkIndex = 0;
 let isAudioPlaying = false;
 let currentAudioUtterance = null;
 let totalAudioDuration = 0;
-// Si l'URL est de type /article/mon-slug (via Netlify redirect)
-if (!articleId && !articleSlug && window.location.pathname.startsWith('/article/')) {
-    articleSlug = window.location.pathname.replace('/article/', '');
-}
+
 /* --------------------------------------
    UTILITAIRES
    -------------------------------------- */
@@ -99,11 +113,11 @@ function calculateReadTime(content) {
 
 function saveReadingPosition() {
     var scrollPos = window.scrollY;
-    localStorage.setItem('reading_pos_' + articleId, scrollPos);
+    localStorage.setItem('reading_pos_' + (currentArticle?.id || articleId), scrollPos);
 }
 
 function restoreReadingPosition() {
-    var savedPos = localStorage.getItem('reading_pos_' + articleId);
+    var savedPos = localStorage.getItem('reading_pos_' + (currentArticle?.id || articleId));
     if (savedPos && currentArticle) {
         setTimeout(function() { window.scrollTo(0, parseInt(savedPos)); }, 500);
         showToast("Reprise de la lecture", 'info');
@@ -171,6 +185,7 @@ document.addEventListener('click', function(e) {
 window.checkUserStatus = async function() {
     try {
         var { data: { user } } = await supabaseClient.auth.getUser();
+        currentUser = user;
         var loggedOut = document.getElementById('logged-out-view');
         var loggedIn = document.getElementById('logged-in-view');
         var emailDisplay = document.getElementById('user-email-display');
@@ -182,6 +197,11 @@ window.checkUserStatus = async function() {
             if (emailDisplay) emailDisplay.textContent = user.email;
             if (avatar) avatar.textContent = user.email.charAt(0).toUpperCase();
             window.loadUserActivity().catch(function() {});
+            // Recharger les likes et favoris après connexion
+            if (currentArticle) {
+                fetchLikeStatus();
+                fetchBookmarkStatus();
+            }
         } else {
             if (loggedOut) loggedOut.style.display = 'block';
             if (loggedIn) loggedIn.style.display = 'none';
@@ -208,6 +228,12 @@ window.handleAuth = async function(type) {
         if (result.data.session) {
             await window.checkUserStatus();
             window.toggleSidePanel(false);
+            // Recharger l'article pour mettre à jour likes/favoris
+            if (currentArticle) {
+                fetchLikeStatus();
+                fetchBookmarkStatus();
+                fetchLikesCount();
+            }
         }
     } catch (error) {
         alert("Erreur : " + error.message);
@@ -218,7 +244,8 @@ window.handleLogout = async function() {
     if (!confirm("Voulez-vous vous deconnecter ?")) return;
     try {
         await supabaseClient.auth.signOut();
-        window.location.href = "index.html";
+        currentUser = null;
+        window.location.reload();
     } catch (error) {
         alert("Erreur : " + error.message);
     }
@@ -226,7 +253,11 @@ window.handleLogout = async function() {
 
 window.navigateToAccountOption = function(option) {
     window.toggleSidePanel(false);
-    window.location.href = 'mon-activite.html?section=' + option;
+    if (option === 'favoris') {
+        window.location.href = 'favoris.html';
+    } else if (option === 'commentaires') {
+        window.location.href = 'mes-commentaires.html';
+    }
 };
 
 window.loadUserActivity = async function() {
@@ -234,8 +265,8 @@ window.loadUserActivity = async function() {
         var { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) return;
         var { data: favs } = await supabaseClient
-            .from('favorites')
-            .select('*')
+            .from('user_favorites')
+            .select('article_id, articles(titre)')
             .eq('user_id', user.id)
             .order('created_at', { ascending: false })
             .limit(5);
@@ -245,7 +276,8 @@ window.loadUserActivity = async function() {
                 container.innerHTML = '<p class="no-favs">Aucun favori</p>';
             } else {
                 container.innerHTML = favs.map(function(f) {
-                    return '<div class="mini-fav-item"><a href="redaction.html?id=' + f.article_id + '">' + f.article_title + '</a></div>';
+                    var title = f.articles?.titre || 'Article';
+                    return '<div class="mini-fav-item"><a href="redaction.html?id=' + f.article_id + '">' + escapeHtml(title) + '</a></div>';
                 }).join('');
             }
         }
@@ -255,22 +287,192 @@ window.loadUserActivity = async function() {
 };
 
 /* --------------------------------------
-   LIKES & COMMENTAIRES
+   LIKES (avec BDD)
    -------------------------------------- */
-async function fetchLikes() {
-    var { count } = await supabaseClient
-        .from('article_likes')
-        .select('*', { count: 'exact', head: true })
-        .eq('article_id', articleId);
-    var likeSpan = document.getElementById('nb-like');
-    if (likeSpan) likeSpan.textContent = count || 0;
+async function fetchLikeStatus() {
+    if (!currentArticle || !currentUser) return;
+    
+    try {
+        const { data, error } = await supabaseClient
+            .from('user_likes')
+            .select('id')
+            .eq('user_id', currentUser.id)
+            .eq('article_id', currentArticle.id)
+            .maybeSingle();
+        
+        const likeBtn = document.getElementById('like-btn');
+        if (likeBtn) {
+            if (data && !error) {
+                likeBtn.classList.add('liked');
+            } else {
+                likeBtn.classList.remove('liked');
+            }
+        }
+    } catch (error) {
+        console.error('Erreur fetchLikeStatus:', error);
+    }
 }
 
+async function fetchLikesCount() {
+    if (!currentArticle) return;
+    
+    try {
+        const { count, error } = await supabaseClient
+            .from('user_likes')
+            .select('id', { count: 'exact', head: true })
+            .eq('article_id', currentArticle.id);
+        
+        const likeSpan = document.getElementById('nb-like');
+        if (likeSpan) {
+            likeSpan.textContent = count || 0;
+        }
+    } catch (error) {
+        console.error('Erreur fetchLikesCount:', error);
+    }
+}
+
+window.toggleLike = async function() {
+    if (!currentArticle) return;
+    
+    // Vérifier si l'utilisateur est connecté
+    if (!currentUser) {
+        showToast('Connectez-vous pour aimer cet article', 'info');
+        window.toggleSidePanel(true);
+        return;
+    }
+    
+    const likeBtn = document.getElementById('like-btn');
+    const isLiked = likeBtn.classList.contains('liked');
+    
+    try {
+        if (!isLiked) {
+            // Ajouter le like
+            const { error } = await supabaseClient
+                .from('user_likes')
+                .insert([{ user_id: currentUser.id, article_id: currentArticle.id }]);
+            
+            if (error) throw error;
+            
+            likeBtn.classList.add('liked');
+            showToast('Article aimé !', 'success');
+        } else {
+            // Retirer le like
+            const { error } = await supabaseClient
+                .from('user_likes')
+                .delete()
+                .eq('user_id', currentUser.id)
+                .eq('article_id', currentArticle.id);
+            
+            if (error) throw error;
+            
+            likeBtn.classList.remove('liked');
+            showToast('Like retiré', 'info');
+        }
+        
+        // Mettre à jour le compteur
+        fetchLikesCount();
+    } catch (error) {
+        console.error('Erreur toggleLike:', error);
+        showToast('Erreur lors du like', 'error');
+    }
+};
+
+/* --------------------------------------
+   FAVORIS (avec BDD)
+   -------------------------------------- */
+async function fetchBookmarkStatus() {
+    if (!currentArticle || !currentUser) return;
+    
+    try {
+        const { data, error } = await supabaseClient
+            .from('user_favorites')
+            .select('id')
+            .eq('user_id', currentUser.id)
+            .eq('article_id', currentArticle.id)
+            .maybeSingle();
+        
+        const bookmarkBtn = document.getElementById('bookmark-btn');
+        const span = bookmarkBtn?.querySelector('span:last-child');
+        
+        if (bookmarkBtn) {
+            if (data && !error) {
+                bookmarkBtn.classList.add('bookmarked');
+                if (span) span.textContent = 'Sauvegardé';
+            } else {
+                bookmarkBtn.classList.remove('bookmarked');
+                if (span) span.textContent = 'Sauvegarder';
+            }
+        }
+    } catch (error) {
+        console.error('Erreur fetchBookmarkStatus:', error);
+    }
+}
+
+window.toggleBookmark = async function() {
+    if (!currentArticle) return;
+    
+    // Vérifier si l'utilisateur est connecté
+    if (!currentUser) {
+        showToast('Connectez-vous pour sauvegarder des articles', 'info');
+        window.toggleSidePanel(true);
+        return;
+    }
+    
+    const bookmarkBtn = document.getElementById('bookmark-btn');
+    const span = bookmarkBtn?.querySelector('span:last-child');
+    const isBookmarked = bookmarkBtn?.classList.contains('bookmarked');
+    
+    try {
+        if (!isBookmarked) {
+            // Ajouter aux favoris
+            const { error } = await supabaseClient
+                .from('user_favorites')
+                .insert([{ 
+                    user_id: currentUser.id, 
+                    article_id: currentArticle.id,
+                    article_title: currentArticle.titre
+                }]);
+            
+            if (error) throw error;
+            
+            bookmarkBtn.classList.add('bookmarked');
+            if (span) span.textContent = 'Sauvegardé';
+            showToast('Article sauvegardé dans vos favoris', 'success');
+            
+            // Recharger la liste des favoris dans le panneau
+            window.loadUserActivity();
+        } else {
+            // Retirer des favoris
+            const { error } = await supabaseClient
+                .from('user_favorites')
+                .delete()
+                .eq('user_id', currentUser.id)
+                .eq('article_id', currentArticle.id);
+            
+            if (error) throw error;
+            
+            bookmarkBtn.classList.remove('bookmarked');
+            if (span) span.textContent = 'Sauvegarder';
+            showToast('Article retiré des favoris', 'info');
+            
+            // Recharger la liste des favoris dans le panneau
+            window.loadUserActivity();
+        }
+    } catch (error) {
+        console.error('Erreur toggleBookmark:', error);
+        showToast('Erreur lors de la sauvegarde', 'error');
+    }
+};
+
+/* --------------------------------------
+   COMMENTAIRES
+   -------------------------------------- */
 async function fetchComments() {
+    if (!currentArticle) return;
     var { data } = await supabaseClient
         .from('article_comments')
         .select('*')
-        .eq('article_id', articleId)
+        .eq('article_id', currentArticle.id)
         .order('created_at', { ascending: false });
     if (data) {
         var list = document.getElementById('comments-list');
@@ -284,38 +486,36 @@ async function fetchComments() {
     }
 }
 
-window.toggleLike = async function() {
-    var btn = document.getElementById('like-btn');
-    if (!btn || btn.classList.contains('liked')) return;
-    var { error } = await supabaseClient.from('article_likes').insert([{ article_id: articleId }]);
-    if (!error) {
-        btn.classList.add('liked');
-        fetchLikes();
-        showToast("Ajoute a vos favoris");
-    }
-};
-
 window.postComment = async function() {
     var nomInput = document.getElementById('comm-name');
     var msgInput = document.getElementById('comm-text');
     var nom = nomInput?.value.trim();
     var msg = msgInput?.value.trim();
+    
     if (!nom || !msg) {
         showToast("Veuillez remplir tous les champs", 'error');
         return;
     }
-    var { error } = await supabaseClient.from('article_comments').insert([{ article_id: articleId, nom: nom, message: msg }]);
+    
+    if (!currentArticle) return;
+    
+    var { error } = await supabaseClient.from('article_comments').insert([{ 
+        article_id: currentArticle.id, 
+        nom: nom, 
+        message: msg 
+    }]);
+    
     if (!error) {
         if (msgInput) msgInput.value = "";
         fetchComments();
-        showToast("Commentaire publie !");
+        showToast("Commentaire publié !");
     } else {
         showToast("Erreur lors de la publication", 'error');
     }
 };
 
 /* --------------------------------------
-   PARTAGE CORRIGÉ
+   PARTAGE
    -------------------------------------- */
 window.openShare = function() { window.toggleModal('shareModal', true); };
 window.closeShare = function() { window.toggleModal('shareModal', false); };
@@ -324,7 +524,7 @@ window.closeComments = function() { window.toggleModal('commentModal', false); }
 
 window.copyLink = function() {
     navigator.clipboard.writeText(window.location.href);
-    showToast("Lien de l'article copie");
+    showToast("Lien de l'article copié");
     window.closeShare();
 };
 
@@ -371,10 +571,9 @@ window.shareToTelegram = function() {
    METADATA OPEN GRAPH & TWITTER CARDS
    -------------------------------------- */
 function updateOpenGraphTags(article) {
-    // Récupérer l'URL de l'image
-    let imageUrl = article.image_url;
+    if (!article) return;
     
-    // Gérer les galeries JSON
+    let imageUrl = article.image_url;
     if (!imageUrl && article.medias) {
         try {
             const medias = typeof article.medias === 'string' ? JSON.parse(article.medias) : article.medias;
@@ -383,7 +582,6 @@ function updateOpenGraphTags(article) {
         } catch(e) {}
     }
     
-    // Image par défaut
     if (!imageUrl) {
         imageUrl = 'https://logphtrdkpbfgtejtime.supabase.co/storage/v1/object/public/Photo,%20Image/Untitled%20folder/MAK_MUS__1_-removebg-preview.png';
     }
@@ -393,32 +591,6 @@ function updateOpenGraphTags(article) {
         ? `${window.location.origin}/article/${article.slug}`
         : window.location.href;
     
-    // Mettre à jour ou créer les meta tags
-    const setMeta = (selector, attr, content, isProp = true) => {
-        let meta = document.querySelector(selector);
-        if (!meta) {
-            meta = document.createElement('meta');
-            if (isProp) meta.setAttribute('property', attr);
-            else meta.setAttribute('name', attr);
-            document.head.appendChild(meta);
-        }
-        meta.setAttribute('content', content);
-    };
-    
-    setMeta('meta[property="og:title"]', 'og:title', article.titre + ' | MAKMUS', true);
-    setMeta('meta[property="og:description"]', 'og:description', cleanDesc, true);
-    setMeta('meta[property="og:image"]', 'og:image', imageUrl, true);
-    setMeta('meta[property="og:url"]', 'og:url', pageUrl, true);
-    setMeta('meta[property="og:type"]', 'og:type', 'article', true);
-    setMeta('meta[name="twitter:card"]', 'twitter:card', 'summary_large_image', false);
-    setMeta('meta[name="twitter:title"]', 'twitter:title', article.titre + ' | MAKMUS', false);
-    setMeta('meta[name="twitter:description"]', 'twitter:description', cleanDesc, false);
-    setMeta('meta[name="twitter:image"]', 'twitter:image', imageUrl, false);
-    
-    console.log('✅ Meta tags mis à jour pour:', article.titre);
-}
-    
-    // Helper pour créer/mettre à jour les meta tags
     function setMetaTag(selector, attribute, content, isProperty = true) {
         let meta = document.querySelector(selector);
         if (!meta) {
@@ -433,62 +605,22 @@ function updateOpenGraphTags(article) {
         meta.setAttribute('content', content);
     }
     
-    // Nettoyer la description
-    const cleanDesc = (article.description || '')
-        .replace(/<[^>]*>/g, '')
-        .replace(/\s+/g, ' ')
-        .trim()
-        .substring(0, 300);
-    
-    // Déterminer l'image (priorité à l'image de l'article)
-    let imageUrl = article.image_url;
-    
-    // Si pas d'image, chercher dans les médias
-    if (!imageUrl && article.medias && article.medias.length > 0) {
-        const firstImage = article.medias.find(m => m.type === 'image');
-        if (firstImage) imageUrl = firstImage.url;
-    }
-    
-    // Fallback image par défaut (logo MAKMUS)
-    if (!imageUrl) {
-        imageUrl = 'https://logphtrdkpbfgtejtime.supabase.co/storage/v1/object/public/Photo,%20Image/Untitled%20folder/MAK_MUS__1_-removebg-preview.png';
-    }
-    
-    // 🔵 Open Graph (Facebook, LinkedIn, etc.)
     setMetaTag('meta[property="og:title"]', 'og:title', article.titre + ' | MAKMUS', true);
     setMetaTag('meta[property="og:description"]', 'og:description', cleanDesc, true);
     setMetaTag('meta[property="og:image"]', 'og:image', imageUrl, true);
     setMetaTag('meta[property="og:image:width"]', 'og:image:width', '1200', true);
     setMetaTag('meta[property="og:image:height"]', 'og:image:height', '630', true);
-    setMetaTag('meta[property="og:url"]', 'og:url', window.location.href, true);
+    setMetaTag('meta[property="og:url"]', 'og:url', pageUrl, true);
     setMetaTag('meta[property="og:type"]', 'og:type', 'article', true);
     setMetaTag('meta[property="og:site_name"]', 'og:site_name', 'MAKMUS', true);
     
-    // 🐦 Twitter Card
     setMetaTag('meta[name="twitter:card"]', 'twitter:card', 'summary_large_image', false);
     setMetaTag('meta[name="twitter:site"]', 'twitter:site', '@MakMus', false);
     setMetaTag('meta[name="twitter:title"]', 'twitter:title', article.titre + ' | MAKMUS', false);
     setMetaTag('meta[name="twitter:description"]', 'twitter:description', cleanDesc, false);
     setMetaTag('meta[name="twitter:image"]', 'twitter:image', imageUrl, false);
-    
-    // Debug
-    console.log('✅ Meta tags mis à jour pour:', article.titre);
-    console.log('📷 Image utilisée:', imageUrl);
-}
-// Dans vos boutons de partage
-function getShareUrl(article) {
-    if (article.slug) {
-        return `${window.location.origin}/article/${article.slug}`;
-    }
-    return `${window.location.origin}/redaction.html?id=${article.id}`;
 }
 
-// Exemple pour Twitter
-window.shareToX = function(article) {
-    const url = encodeURIComponent(getShareUrl(article));
-    const title = encodeURIComponent(article.titre);
-    window.open(`https://twitter.com/intent/tweet?text=${title}&url=${url}`, '_blank');
-};
 /* --------------------------------------
    TTS & LECTEUR AUDIO
    -------------------------------------- */
@@ -745,14 +877,9 @@ function addAuthorCredit(authorName, authorRole) {
     return '<div class="author-credit">' + escapeHtml(authorName) + ' — ' + escapeHtml(authorRole) + ' pour MakMus</div>';
 }
 
-/* --------------------------------------
-   CHARGEMENT DE L'ARTICLE
-   -------------------------------------- */
 function renderArticle(art) {
-    // Utiliser content ou description
     var contentToSplit = art.content || art.description || '';
     var paragraphs = contentToSplit.split('</p>');
-    var finalContent = "";
     var totalPara = paragraphs.length;
     var readTime = calculateReadTime(art.content || art.description || '');
     var cleanContent = (art.content || art.description || '')
@@ -761,55 +888,68 @@ function renderArticle(art) {
         .replace(/<\/span>/gi, '')
         .replace(/style="font-family: georgia, palatino, serif;?"/gi, '');
     var contentToSplit = cleanContent;
-    // Récupérer les médias supplémentaires
     var extraMedias = art.medias || [];
     var mediaIndex = 0;
+    
+    // Conteneur pour le contenu texte avec la BONNE CLASSE
+    var textContent = '';
     
     for (var idx = 0; idx < paragraphs.length; idx++) {
         var p = paragraphs[idx];
         if (p.trim() === "") continue;
-        finalContent += p + '</p>';
+        textContent += p + '</p>';
         
-        // Insérer un média tous les 3 paragraphes
+        // Insertion des médias (images/vidéos)
         if (idx > 0 && idx % 3 === 0 && mediaIndex < extraMedias.length) {
             var media = extraMedias[mediaIndex];
             if (media.type === 'image') {
-                finalContent += `
-                    <figure class="article-media-wrapper">
-                        <img src="${media.url}" loading="lazy" alt="${escapeHtml(media.caption || '')}">
-                        <figcaption class="media-caption">${escapeHtml(media.caption || '')}</figcaption>
-                    </figure>
+                textContent += `
+                    <div class="media-fullwidth-wrapper">
+                        <figure class="article-media-wrapper">
+                            <img src="${media.url}" loading="lazy" alt="${escapeHtml(media.caption || '')}">
+                            <figcaption class="media-caption">${escapeHtml(media.caption || '')}</figcaption>
+                        </figure>
+                    </div>
                 `;
             } else if (media.type === 'video') {
-                finalContent += `
-                    <figure class="article-media-wrapper">
-                        <video controls preload="metadata">
-                            <source src="${media.url}" type="video/mp4">
-                        </video>
-                        <figcaption class="media-caption">${escapeHtml(media.caption || 'Vidéo MakMus')}</figcaption>
-                    </figure>
+                textContent += `
+                    <div class="media-fullwidth-wrapper">
+                        <figure class="article-media-wrapper">
+                            <video controls preload="metadata" playsinline>
+                                <source src="${media.url}" type="video/mp4">
+                            </video>
+                            <figcaption class="media-caption">${escapeHtml(media.caption || 'Vidéo MakMus')}</figcaption>
+                        </figure>
+                    </div>
                 `;
             }
             mediaIndex++;
         }
         
-        // Pub après le 2ème paragraphe
+        // Insertion de la pub
         if (idx === 1 && totalPara > 3) {
-            finalContent += `
-                <div class="in-article-ad">
-                    <span class="ad-label">PUBLICITÉ</span>
-                    <div class="ad-box">
-                        <h4>MakMus Direct</h4>
-                        <p>Rejoignez notre canal WhatsApp pour les alertes en direct.</p>
-                        <button class="btn-whatsapp" onclick="window.open('https://whatsapp.com/channel/...', '_blank')">REJOINDRE</button>
+            textContent += `</div>`; // Ferme le div texte
+            
+            var pubHtml = `
+                <div class="ad-fullwidth-wrapper">
+                    <div class="in-article-ad">
+                        <span class="ad-label">PUBLICITÉ</span>
+                        <div class="ad-box">
+                            <h4>MakMus Direct</h4>
+                            <p>Rejoignez notre canal WhatsApp pour les alertes en direct.</p>
+                            <button class="btn-whatsapp" onclick="window.open('https://whatsapp.com/channel/...', '_blank')">REJOINDRE</button>
+                        </div>
                     </div>
                 </div>
             `;
+            textContent += pubHtml;
+            // Rouvre avec la BONNE CLASSE
+            textContent += `<div class="article-content" id="article-text-content">`;
         }
         
-        // Bloc "À LIRE AUSSI" au milieu
+        // Insertion des recommandations
         if (idx === Math.floor(totalPara / 2) && totalPara > 5) {
-            finalContent += `
+            textContent += `
                 <div class="inline-recommendations">
                     <h4 class="grid-title">À LIRE AUSSI</h4>
                     <div class="mini-grid" id="inline-grid-container">
@@ -828,28 +968,32 @@ function renderArticle(art) {
         }
     }
     
-    // S'il reste des médias non insérés
+    // Ajout des médias restants
     if (mediaIndex < extraMedias.length) {
         for (var i = mediaIndex; i < extraMedias.length; i++) {
             var media = extraMedias[i];
             if (media.type === 'image') {
-                finalContent += `
-                    <figure class="article-media-wrapper">
-                        <img src="${media.url}" loading="lazy" alt="${escapeHtml(media.caption || '')}">
-                        <figcaption class="media-caption">${escapeHtml(media.caption || '')}</figcaption>
-                    </figure>
+                textContent += `
+                    <div class="media-fullwidth-wrapper">
+                        <figure class="article-media-wrapper">
+                            <img src="${media.url}" loading="lazy" alt="${escapeHtml(media.caption || '')}">
+                            <figcaption class="media-caption">${escapeHtml(media.caption || '')}</figcaption>
+                        </figure>
+                    </div>
                 `;
             }
         }
     }
     
-    // Déterminer la bio de l'auteur
+    // Fermeture du conteneur texte
+    textContent += `</div>`;
+    
+    // Bio auteur (inchangée)
     var authorBio = art.author_bio || '';
     var authorRole = art.author_role || 'Journaliste';
     var authorTwitter = art.author_twitter || '';
     var authorWebsite = art.author_website || '';
     
-    // Construction du HTML des réseaux sociaux
     var socialLinksHtml = '';
     if (authorTwitter || authorWebsite) {
         socialLinksHtml = '<div class="author-bio-social">';
@@ -857,7 +1001,7 @@ function renderArticle(art) {
             socialLinksHtml += `
                 <a href="https://x.com/${authorTwitter}" target="_blank" rel="noopener" class="social-x">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231z"/>
                     </svg>
                     <span>X</span>
                 </a>
@@ -866,10 +1010,10 @@ function renderArticle(art) {
         if (authorWebsite) {
             socialLinksHtml += `
                 <a href="${authorWebsite}" target="_blank" rel="noopener" class="social-website">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="2" y1="12" x2="22" y2="12"></line>
-                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="2" y1="12" x2="22" y2="12"/>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
                     </svg>
                     <span>Site web</span>
                 </a>
@@ -895,25 +1039,41 @@ function renderArticle(art) {
         `;
     }
     
-    // Déterminer le média principal (vidéo ou image) avec les mêmes icônes que l'index
-    var mainMediaHtml = '';
-    if (art.video_url && art.video_url !== '') {
-        mainMediaHtml = `
+    // Média principal (vidéo ou image)
+var mainMediaHtml = '';
+if (art.video_url && art.video_url !== '') {
+    mainMediaHtml = `
+        <div class="media-fullwidth-wrapper">
             <figure class="main-figure main-video-figure">
                 <div class="hero-video-wrapper" style="position: relative;">
                     <div class="video-controls-top">
-                        <button class="control-btn like-btn" onclick="handleArticleVideoLike(event, this, '${art.id}')">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l8.84-8.84 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                        <button class="video-control-btn play-pause-btn" onclick="heroFlexible.toggleVideo()">
+                            <svg viewBox="0 0 24 24" fill="white" width="20" height="20">
+                                <polygon points="5 3 19 12 5 21 5 3" id="video-play-icon"/>
+                                <rect x="6" y="4" width="4" height="16" id="video-pause-icon" style="display:none" rx="1"/>
+                                <rect x="14" y="4" width="4" height="16" id="video-pause-icon-2" style="display:none" rx="1"/>
                             </svg>
                         </button>
-                        <button class="control-btn mute-btn" onclick="toggleArticleVideoMute(event, this)">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                <path d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6"/>
+                        
+                        <button class="video-control-btn volume-btn" onclick="heroFlexible.toggleVolume()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="18" height="18">
+                                <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+                                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.08"/>
                             </svg>
                         </button>
-                        <button class="control-btn fullscreen-btn" onclick="toggleArticleVideoFullscreen(event, this)">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        
+                        <button class="video-control-btn share-btn" onclick="heroFlexible.shareVideo('${art.id}', '${escapeHtml(art.titre)}')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="18" height="18">
+                                <circle cx="18" cy="5" r="3"/>
+                                <circle cx="6" cy="12" r="3"/>
+                                <circle cx="18" cy="19" r="3"/>
+                                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                            </svg>
+                        </button>
+                        
+                        <button class="video-control-btn fullscreen-btn" onclick="heroFlexible.toggleFullscreen()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="18" height="18">
                                 <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
                             </svg>
                         </button>
@@ -921,7 +1081,7 @@ function renderArticle(art) {
                     
                     <div class="play-overlay" onclick="playArticleVideo(this)">
                         <div class="play-button">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="1">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2">
                                 <polygon points="5 3 19 12 5 21 5 3" fill="white"/>
                             </svg>
                         </div>
@@ -944,22 +1104,25 @@ function renderArticle(art) {
                     ${art.video_caption ? `<figcaption class="img-caption-style">${escapeHtml(art.video_caption)}</figcaption>` : ''}
                 </div>
             </figure>
-        `;
-    } else if (art.image_url) {
+        </div>
+    `;
+}else if (art.image_url) {
         mainMediaHtml = `
-            <figure class="main-figure">
-                <img src="${art.image_url}" class="main-img" onerror="this.src='https://via.placeholder.com/800x500'">
-                ${art.image_caption ? `<figcaption class="img-caption-style">${escapeHtml(art.image_caption)}</figcaption>` : ''}
-            </figure>
+            <div class="media-fullwidth-wrapper">
+                <figure class="main-figure">
+                    <img src="${art.image_url}" class="main-img" onerror="this.src='https://via.placeholder.com/800x500'">
+                    ${art.image_caption ? `<figcaption class="img-caption-style">${escapeHtml(art.image_caption)}</figcaption>` : ''}
+                </figure>
+            </div>
         `;
     }
     
-    // Construction complète du HTML
+    // Structure complète avec la BONNE CLASSE
     var fullHtml = `
         <header class="article-header">
             <div class="article-category-label">${escapeHtml(art.category || 'Actualité')}</div>
             <h1 class="article-main-title">${escapeHtml(art.titre)}</h1>
-            <div class="read-time-estimate"> ${readTime} min de lecture</div>
+            <div class="read-time-estimate">${readTime} min de lecture</div>
             
             <div class="article-byline">
                 <img src="${art.author_image || 'https://via.placeholder.com/40'}" class="author-avatar" onerror="this.src='https://via.placeholder.com/40'">
@@ -1026,8 +1189,9 @@ function renderArticle(art) {
         
         ${mainMediaHtml}
         
+        <!-- ICI LA CORRECTION : la classe et l'id correspondent au CSS -->
         <div class="article-content" id="article-text-content">
-            ${finalContent}
+            ${textContent}
         </div>
         
         ${authorBioHtml}
@@ -1035,10 +1199,8 @@ function renderArticle(art) {
     
     document.getElementById('full-article').innerHTML = fullHtml;
     
-    // INITIALISER LE LECTEUR VIDÉO APRÈS L'AJOUT DU HTML
     initArticleVideoPlayer();
     
-    // Réattacher les événements
     var speechBtn = document.getElementById('speech-btn');
     if (speechBtn) {
         speechBtn.removeAttribute('onclick');
@@ -1048,15 +1210,21 @@ function renderArticle(art) {
         });
     }
     
-    fetchLikes();
+    // Charger les données après le rendu
+    fetchLikesCount();
     fetchComments();
     fetchRelatedArticles(art.tags, art.category);
+    
+    // Charger les états utilisateur si connecté
+    if (currentUser) {
+        fetchLikeStatus();
+        fetchBookmarkStatus();
+    }
     
     initScrollProgress();
     updateOpenGraphTags(art);
 }
 
-// Fonctions pour les contrôles vidéo de l'article
 function playArticleVideo(element) {
     const wrapper = element.closest('.hero-video-wrapper');
     const video = wrapper.querySelector('video');
@@ -1080,7 +1248,6 @@ function toggleArticleVideoMute(event, button) {
     
     video.muted = !video.muted;
     
-    // Changer l'icône
     const svg = button.querySelector('svg');
     if (video.muted) {
         svg.innerHTML = '<path d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6"/>';
@@ -1117,15 +1284,12 @@ function handleArticleVideoLike(event, button, articleId) {
     }
 }
 
-// Fonction pour initialiser le lecteur vidéo de l'article
 function initArticleVideoPlayer() {
     const wrapper = document.querySelector('.hero-video-wrapper');
     const video = document.querySelector('#article-main-video');
     const playOverlay = document.querySelector('.play-overlay');
     
     if (!wrapper || !video) return;
-    
-    console.log('Video player initialized with autoplay muted');
     
     video.addEventListener('play', function() {
         if (playOverlay) {
@@ -1157,13 +1321,10 @@ function initArticleVideoPlayer() {
 /* --------------------------------------
    BIO AUTEUR - MODAL
    -------------------------------------- */
-
 window.showAuthorBio = function(name, role, bio, twitter, website, avatar) {
-    // Supprimer l'ancien modal s'il existe
     var existingModal = document.getElementById('author-bio-modal');
     if (existingModal) existingModal.remove();
     
-    // Construction des liens sociaux pour le modal
     var modalSocialLinks = '';
     if (twitter || website) {
         modalSocialLinks = '<div class="author-bio-modal-social">';
@@ -1171,7 +1332,7 @@ window.showAuthorBio = function(name, role, bio, twitter, website, avatar) {
             modalSocialLinks += `
                 <a href="https://x.com/${twitter}" target="_blank" rel="noopener" class="social-x">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231z"/>
                     </svg>
                     <span>X</span>
                 </a>
@@ -1180,10 +1341,10 @@ window.showAuthorBio = function(name, role, bio, twitter, website, avatar) {
         if (website) {
             modalSocialLinks += `
                 <a href="${website}" target="_blank" rel="noopener" class="social-website">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="2" y1="12" x2="22" y2="12"></line>
-                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="2" y1="12" x2="22" y2="12"/>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
                     </svg>
                     <span>Site web</span>
                 </a>
@@ -1221,7 +1382,6 @@ window.closeAuthorBio = function() {
     document.body.style.overflow = '';
 };
 
-// Fermer le modal avec la touche Echap
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         var modal = document.getElementById('author-bio-modal');
@@ -1231,33 +1391,22 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-// Fonction bookmark
-window.toggleBookmark = async function() {
-    if (!currentArticle) return;
-    
-    var btn = document.getElementById('bookmark-btn');
-    var isBookmarked = btn.classList.contains('bookmarked');
-    
-    if (!isBookmarked) {
-        await window.toggleFavorite(currentArticle.id, currentArticle.titre);
-        btn.classList.add('bookmarked');
-        btn.querySelector('span').textContent = 'Sauvegardé';
-        showToast('Article sauvegardé', 'success');
-    }
-};
-
 async function loadArticle() {
+    console.log('=== loadArticle CALLED ===');
+    console.log('articleSlug:', articleSlug);
+    console.log('articleId:', articleId);
+    
     let query;
     
     if (articleSlug) {
-        // Charger par slug (prioritaire)
+        console.log('RECHERCHE PAR SLUG:', articleSlug);
         query = supabaseClient
             .from('articles')
             .select('*')
             .eq('slug', articleSlug)
             .single();
     } else if (articleId) {
-        // Fallback: charger par ID (ancien format)
+        console.log('RECHERCHE PAR ID:', articleId);
         query = supabaseClient
             .from('articles')
             .select('*')
@@ -1269,27 +1418,24 @@ async function loadArticle() {
     }
     
     const { data: art, error } = await query;
+    
     if (error || !art) {
-        document.getElementById('full-article').innerHTML = "<p class='error-msg'>Erreur de chargement de l'article.</p>";
+        console.error('ERREUR:', error);
+        document.getElementById('full-article').innerHTML = "<p class='error-msg'>Article introuvable.</p>";
         return;
     }
+    
+    console.log('ARTICLE TROUVÉ:', art.titre);
     
     currentArticle = art;
     document.title = art.titre + ' | MAKMUS';
     
-    // Mettre à jour l'URL avec le slug sans recharger la page
-    if (!articleSlug && art.slug) {
-        const newUrl = `${window.location.origin}/article/${art.slug}`;
-        window.history.pushState({}, '', newUrl);
-    }
-    
-    // Mettre à jour les meta tags
     updateOpenGraphTags(art);
-    
     renderArticle(art);
     restoreReadingPosition();
     window.addEventListener('beforeunload', saveReadingPosition);
 }
+
 async function fillInlineGrid(category, currentId) {
     var { data: related } = await supabaseClient
         .from('articles')
@@ -1319,11 +1465,12 @@ async function fetchRelatedArticles(tags, category) {
     var grid = document.getElementById('recommendations-grid');
     var box = document.getElementById('recommendations-box');
     if (!grid) return;
+    if (!currentArticle) return;
     var { data: related } = await supabaseClient
         .from('articles')
         .select('id, titre, image_url, category')
         .eq('category', category)
-        .neq('id', articleId)
+        .neq('id', currentArticle.id)
         .limit(6);
     if (!related || related.length === 0) {
         if (box) box.style.display = 'none';
@@ -1375,12 +1522,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    if (articleId) {
+    if (articleId || articleSlug) {
         loadArticle();
     } else {
         var fullArt = document.getElementById('full-article');
         if (fullArt) {
-            fullArt.innerHTML = "<p style='text-align:center; padding:100px; font-family:serif;'>ID de l'article manquant dans l'URL.</p>";
+            fullArt.innerHTML = "<p style='text-align:center; padding:100px; font-family:serif;'>Article non trouvé.</p>";
         }
     }
 });

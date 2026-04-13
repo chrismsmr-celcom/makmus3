@@ -7,35 +7,23 @@
     <meta name="description" content="L'excellence du journalisme en Republique Democratique du Congo.">
     <meta name="theme-color" content="#a30000">
     
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:site" content="@MakMus">
-    <meta name="twitter:creator" content="@MakMus">
-    <meta name="twitter:title" content="MAKMUS — Mémoire & Vérité">
-    <meta name="twitter:description" content="L'excellence du journalisme en République Démocratique du Congo">
-    <meta name="twitter:image" content="https://logphtrdkpbfgtejtime.supabase.co/storage/v1/object/public/Photo,%20Image/Untitled%20folder/MAK_MUS__1_-removebg-preview.png">
-
-    <!-- Open Graph (Facebook, LinkedIn, etc.) -->
+    <!-- Open Graph / Twitter -->
     <meta property="og:type" content="article">
-    <meta property="og:title" content="MAKMUS — Mémoire & Vérité">
-    <meta property="og:description" content="L'excellence du journalisme en République Démocratique du Congo">
-    <meta property="og:image" content="https://logphtrdkpbfgtejtime.supabase.co/storage/v1/object/public/Photo,%20Image/Untitled%20folder/MAK_MUS__1_-removebg-preview.png">
+    <meta property="og:site_name" content="MAKMUS">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:url" content="https://makmus.com">
-    <meta property="og:site_name" content="MAKMUS">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@MakMus">
     
     <link rel="icon" type="image/png" href="https://i.postimg.cc/x88LbhZp/2_20251224_213424_0001.png">
     <link rel="apple-touch-icon" href="https://i.postimg.cc/FzQ6Jf8K/2-20251224-213424-0001-removebg-preview.png">
     <link rel="manifest" href="/manifest.json">
     
     <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="redaction.css">
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-
 <body>
 
 <!-- MENU PLEIN ÉCRAN -->
@@ -114,7 +102,7 @@
     </button>
     <div class="logo-container">
         <a href="index.html">
-            <img src="https://i.postimg.cc/7ZWdGrQc/Screenshot_2025_12_24_21_32_24_removebg_preview.png" alt="MAKMUS">
+            <img src="https://i.postimg.cc/7ZWdGrQc/Screenshot_2025_12_24_21_32_24_removebg-preview.png" alt="MAKMUS">
         </a>
     </div>
 </header>
@@ -127,13 +115,12 @@
     </div>
 </div>
 
-<!-- CONTENU PRINCIPAL -->
-<main class="newspaper-body" id="full-article">
-    <div id="status-line" class="status-line no-print"></div>
+<!-- CONTENU PRINCIPAL - ARTICLE -->
+<main class="article-container" id="full-article">
     <!-- L'article sera injecté dynamiquement ici par JavaScript -->
 </main>
 
-<!-- RECOMMANDATIONS -->
+<!-- RECOMMANDATIONS DE FIN -->
 <section class="related-section" id="recommendations-box" style="display: none;">
     <h4 class="related-title">D'autres contenus pour vous</h4>
     <div class="recommendation-grid" id="recommendations-grid"></div>
@@ -273,7 +260,7 @@
         <div class="audio-player-header">
             <span class="audio-player-icon">🔊</span>
             <span class="audio-player-title">Lecture audio</span>
-            <span class="audio-player-credit">Synthese vocale — MakMus</span>
+            <span class="audio-player-credit">Synthèse vocale — MakMus</span>
         </div>
         <div class="audio-controls">
             <button id="audio-play-pause" class="audio-btn" title="Lire/Pause">
@@ -293,7 +280,7 @@
                     <span id="audio-duration">0:00</span>
                 </div>
             </div>
-            <button id="audio-stop" class="audio-btn" title="Arreter">
+            <button id="audio-stop" class="audio-btn" title="Arrêter">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                     <rect x="4" y="4" width="16" height="16" rx="2"/>
                 </svg>
@@ -309,34 +296,65 @@
             </div>
         </div>
         <div class="audio-footer">
-            <span class="audio-credit-text">Synthese vocale par MakMus — Une experience d'ecoute accessible.</span>
+            <span class="audio-credit-text">Synthèse vocale par MakMus — Une expérience d'écoute accessible.</span>
         </div>
     </div>
 </div>
 
 <script src="redaction.js"></script>
 <script>
-    // Service Worker pour PWA
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-            navigator.serviceWorker.register('/sw.js').catch(function(err) {
-                console.log('Erreur PWA', err);
-            });
-        });
-    }
-    
-    // Fallback pour les fonctions non définies
-    window.toggleFavorite = window.toggleFavorite || function(articleId, articleTitle) {
-        console.log('Toggle favorite not implemented yet', articleId, articleTitle);
-        return Promise.resolve();
-    };
-    
-    // Fonction de recherche (fallback)
-    window.fetchMakmusNews = window.fetchMakmusNews || function(query) {
-        if (query && query.trim()) {
-            window.location.href = 'index.html?search=' + encodeURIComponent(query);
+    // Fix des meta tags pour les réseaux sociaux
+    (function fixMetaTags() {
+        const urlParams = new URLSearchParams(window.location.search);
+        let articleId = urlParams.get('id');
+        let slug = urlParams.get('slug');
+        
+        if (!articleId && !slug && window.location.pathname.startsWith('/article/')) {
+            slug = window.location.pathname.replace('/article/', '');
         }
-    };
+        
+        if (!articleId && !slug) return;
+        
+        let attempts = 0;
+        const maxAttempts = 30;
+        
+        const checkInterval = setInterval(() => {
+            attempts++;
+            const articleTitle = document.querySelector('.article-main-title, .article-title');
+            
+            if (articleTitle || attempts >= maxAttempts) {
+                clearInterval(checkInterval);
+                if (!articleTitle) return;
+                
+                let imageUrl = document.querySelector('.featured-image img')?.src;
+                if (!imageUrl) imageUrl = 'https://logphtrdkpbfgtejtime.supabase.co/storage/v1/object/public/Photo,%20Image/Untitled%20folder/MAK_MUS__1_-removebg-preview.png';
+                
+                const description = document.querySelector('.article-content p, .hero-description')?.innerText?.substring(0, 300) || '';
+                const title = document.title;
+                
+                const updateMeta = (selector, attr, content, isProp = true) => {
+                    let meta = document.querySelector(selector);
+                    if (!meta) {
+                        meta = document.createElement('meta');
+                        if (isProp) meta.setAttribute('property', attr);
+                        else meta.setAttribute('name', attr);
+                        document.head.appendChild(meta);
+                    }
+                    meta.setAttribute('content', content);
+                };
+                
+                updateMeta('meta[property="og:title"]', 'og:title', title, true);
+                updateMeta('meta[property="og:description"]', 'og:description', description, true);
+                updateMeta('meta[property="og:image"]', 'og:image', imageUrl, true);
+                updateMeta('meta[property="og:url"]', 'og:url', window.location.href, true);
+                updateMeta('meta[name="twitter:image"]', 'twitter:image', imageUrl, false);
+                updateMeta('meta[name="twitter:title"]', 'twitter:title', title, false);
+                updateMeta('meta[name="twitter:description"]', 'twitter:description', description, false);
+                
+                console.log('✅ Meta tags mis à jour');
+            }
+        }, 300);
+    })();
 </script>
 </body>
 </html>

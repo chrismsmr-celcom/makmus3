@@ -2,12 +2,22 @@
 [build]
   publish = "."
 
-# Redirections pour les slugs
+# Redirection des slugs vers redaction.html
 [[redirects]]
   from = "/article/*"
-  to = "/redaction.html?slug=:splat"
+  to = "/redaction.html"
   status = 200
+  force = true
+  
+# Fallback pour les anciens IDs
+[[redirects]]
+  from = "/redaction.html?id=*"
+  to = "/article/:splat"
+  status = 301
 
-# Edge Functions
-[functions]
-  node_bundler = "esbuild"
+# S'assurer que les fichiers statiques sont servis correctement
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  condition = "User-Agent"
