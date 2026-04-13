@@ -1,0 +1,13 @@
+# netlify.toml
+[build]
+  publish = "."
+
+# Redirections pour les slugs
+[[redirects]]
+  from = "/article/*"
+  to = "/redaction.html?slug=:splat"
+  status = 200
+
+# Edge Functions
+[functions]
+  node_bundler = "esbuild"

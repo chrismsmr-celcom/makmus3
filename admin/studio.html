@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Studio — MAKMUS</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/admin.css">
+    
+    <style>
+        .studio-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        .page-title {
+            font-family: 'Lora', serif;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 30px;
+        }
+        
+        .upload-area {
+            background: #fafafa;
+            border: 2px dashed #ddd;
+            border-radius: 12px;
+            padding: 50px;
+            text-align: center;
+            margin-bottom: 40px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .upload-area:hover,
+        .upload-area.drag-over {
+            border-color: #a30000;
+            background: #fef5f5;
+        }
+        
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        
+        .upload-btn {
+            background: #a30000;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        
+        .upload-btn:hover {
+            background: #7a0000;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .media-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .search-input {
+            padding: 10px 16px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            width: 250px;
+            font-size: 14px;
+        }
+        
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .filter-btn {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        
+        .filter-btn.active {
+            background: #a30000;
+            color: white;
+            border-color: #a30000;
+        }
+        
+        .media-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .media-card {
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e6e6e6;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .media-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .media-card.selected {
+            border: 2px solid #a30000;
+        }
+        
+        .media-preview {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            object-fit: cover;
+            background: #f0f0f0;
+        }
+        
+        .media-info {
+            padding: 12px;
+        }
+        
+        .media-filename {
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 4px;
+        }
+        
+        .media-meta {
+            font-size: 10px;
+            color: #999;
+        }
+        
+        .media-select-overlay {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .media-card.selected .media-select-overlay {
+            background: #a30000;
+            border-color: #a30000;
+            color: white;
+        }
+        
+        .selection-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #e6e6e6;
+            padding: 16px 24px;
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        .selection-bar.show {
+            display: flex;
+        }
+        
+        .selection-actions {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .btn-insert {
+            background: #a30000;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        
+        .btn-cancel {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: #999;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 40px;
+        }
+        
+        .pagination button {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        
+        .pagination button.active {
+            background: #a30000;
+            color: white;
+            border-color: #a30000;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="admin-header">
+    <div class="admin-header-inner">
+        <div class="logo">
+            <img src="https://logphtrdkpbfgtejtime.supabase.co/storage/v1/object/public/Photo,%20Image/Untitled%20folder/MAK_MUS__1_-removebg-preview.png" alt="MAKMUS">
+            <span>Studio media</span>
+        </div>
+        <nav class="admin-nav">
+            <a href="index.html">Dashboard</a>
+            <a href="editor.html">Editeur</a>
+            <a href="studio.html" class="active">Studio</a>
+            <a href="#" id="logout-btn">Deconnexion</a>
+        </nav>
+    </div>
+</div>
+
+<div class="studio-container">
+    <h1 class="page-title">Galerie media</h1>
+    
+    <div class="upload-area" id="upload-area">
+        <div class="upload-icon">[Upload]</div>
+        <p>Glissez-deposez vos images ici ou cliquez pour selectionner</p>
+        <button class="upload-btn" id="upload-btn">Selectionner des fichiers</button>
+        <input type="file" id="file-input" class="file-input" accept="image/*,video/*" multiple>
+    </div>
+    
+    <div class="media-toolbar">
+        <input type="text" id="search-input" class="search-input" placeholder="Rechercher...">
+        <div class="filter-buttons">
+            <button class="filter-btn active" data-filter="all">Tous</button>
+            <button class="filter-btn" data-filter="image">Images</button>
+            <button class="filter-btn" data-filter="video">Videos</button>
+        </div>
+    </div>
+    
+    <div id="media-grid" class="media-grid">
+        <div class="loading">Chargement...</div>
+    </div>
+    
+    <div id="pagination" class="pagination"></div>
+</div>
+
+<div id="selection-bar" class="selection-bar">
+    <div id="selection-info" class="selection-info">0 media selectionne</div>
+    <div class="selection-actions">
+        <button class="btn-cancel" id="cancel-selection">Annuler</button>
+        <button class="btn-insert" id="insert-media">Insérer dans l'article</button>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/studio.js"></script>
+</body>
+</html>

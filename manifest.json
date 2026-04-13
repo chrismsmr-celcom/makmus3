@@ -1,0 +1,16 @@
+{
+  "name": "MAKMUS - Mémoire & Vérité",
+  "short_name": "MAKMUS",
+  "description": "L'excellence du journalisme en République Démocratique du Congo",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#a30000",
+  "icons": [
+    {
+      "src": "https://i.postimg.cc/x88LbhZp/2-20251224-213424-0001.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
