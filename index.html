@@ -142,7 +142,7 @@
 <main class="newspaper-body">
     <div class="status-line" id="status-line">EDITION DU JOUR</div>
     
-    <!-- Hero + Sidebar en ligne (2 colonnes) -->
+    <!-- Hero + Sidebar en ligne (2 colonnes) pour DESKTOP -->
     <div class="hero-sidebar-wrapper">
         <!-- Zone Hero (injectée dynamiquement) -->
         <div id="hero-zone">
@@ -151,8 +151,8 @@
             </div>
         </div>
         
-        <!-- Sidebar (colonne de droite) -->
-        <aside class="sidebar-column">
+        <!-- Sidebar DESKTOP (visible uniquement sur desktop) -->
+        <aside class="sidebar-column sidebar-desktop">
             <div class="sidebar-heading">AUTRE INFO</div>
             <div id="sidebar-list" class="ordered-news-list"></div>
             
@@ -247,6 +247,35 @@
             <div id="news-grid" class="news-grid"></div>
         </div>
     </div>
+
+    <!-- Sidebar MOBILE (visible uniquement sur mobile, après news-grid) -->
+    <aside class="sidebar-column sidebar-mobile">
+        <div class="sidebar-heading">AUTRE INFO</div>
+        <div id="sidebar-list-mobile" class="ordered-news-list"></div>
+        
+        <div class="slider-nav">
+            <button class="nav-btn prev" onclick="window.moveSlide(-1)" aria-label="Précédent">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </button>
+            <button class="nav-btn next" onclick="window.moveSlide(1)" aria-label="Suivant">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+            </button>
+        </div>
+
+        <div class="sidebar-section">
+            <h3 class="section-title">OPINION</h3>
+            <div id="opinion-list-mobile" class="opinion-list"></div>
+            <div class="opinion-footer">
+                <a href="mailto:contact@makmus.com?subject=Proposition%20de%20Chronique" class="discreet-link">
+                    Devenir chroniqueur <span class="arrow">→</span>
+                </a>
+            </div>
+        </div>
+    </aside>
 </main>
 
 <!-- VIDEOS DU JOUR -->
@@ -403,8 +432,11 @@
                     <div class="nav-group-label">VOTRE ACTIVITE</div>
                     <a href="javascript:void(0)" class="nav-item" onclick="window.navigateToAccountOption('favoris')">Articles favoris</a>
                     <a href="javascript:void(0)" class="nav-item" onclick="window.navigateToAccountOption('commentaires')">Vos commentaires</a>
-                    <div class="nav-group-label">VOS FAVORIS RECENTS</div>
+                    <!-- Dans ton side-panel-body -->
+                    <div class="favorites-recent-wrapper">
+                    <div class="nav-group-label">VOS FAVORIS RÉCENTS</div>
                     <div id="user-favorites-list"></div>
+                    </div>                    
                     <button class="btn-logout-link" onclick="window.handleLogout()">Se deconnecter</button>
                 </nav>
             </div>

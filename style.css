@@ -70,113 +70,90 @@ h4 { font-size: 1.2rem; }
     h3 { font-size: 1.3rem; }
 }
 
-/* --------------------------------------
-   3. LAYOUT PRINCIPAL
-   -------------------------------------- */
-.container,
+/* ========================================
+   LAYOUT PRINCIPAL
+   ======================================== */
+
+/* Conteneur principal */
 .newspaper-body {
     max-width: var(--max-width);
     margin: 0 auto;
     padding: 0 20px;
 }
 
-/* Hero + Sidebar en ligne */
-.hero-sidebar-wrapper {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 50px;
-    margin: 30px 0 50px 0;
-    align-items: start;
-}
-
-/* Hero zone prend toute la largeur de sa colonne */
+/* Hero zone */
 #hero-zone {
-    margin-bottom: 0;
-    padding-bottom: 0;
-    border-bottom: none;
+    margin-bottom: 30px;
 }
 
-/* Sidebar - alignée avec le hero */
-.sidebar-column {
-    padding-left: 30px;
-    border-left: 1px solid var(--border);
-}
-
-/* Ajustement de la bordure du hero */
-#hero-zone {
-    border-bottom: none;
-}
-
-/* Ligne de séparation après hero+sidebar */
-.hero-sidebar-wrapper + .magazine-section,
-.hero-sidebar-wrapper + section:not(#hero-zone) {
-    border-top: 1px solid var(--border);
-    padding-top: 50px;
-    margin-top: 0;
-}
-
-/* Responsive : sur mobile, hero et sidebar passent en colonne */
-@media (max-width: 768px) {
+/* ========================================
+   SIDEBAR - DESKTOP (2 colonnes avec hero)
+   ======================================== */
+@media (min-width: 769px) {
     .hero-sidebar-wrapper {
-        grid-template-columns: 1fr;
-        gap: 30px;
-        margin: 20px 0 30px 0;
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 50px;
+        margin: 30px 0 50px 0;
+        align-items: start;
     }
     
-    .sidebar-column {
-        border-left: none;
-        padding-left: 0;
-        border-top: 1px solid var(--border);
-        padding-top: 30px;
-        margin-top: 0;
+    .sidebar-desktop {
+        display: block;
+        padding-left: 30px;
+        border-left: 1px solid var(--border);
+    }
+    
+    .sidebar-mobile {
+        display: none;
     }
 }
-/* Hero + Sidebar en ligne */
-.hero-sidebar-wrapper {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 50px;
-    margin-bottom: 50px;
-    position: relative;
-}
 
-/* Hero zone sans bordure inférieure */
-#hero-zone {
-    margin-bottom: 0;
-    padding-bottom: 0;
-    border-bottom: none;
-}
-
-/* Sidebar avec bordure gauche */
-.sidebar-column {
-    padding-left: 30px;
-    border-left: 1px solid var(--border);
-}
-
-/* Layout simple pour les articles (sans sidebar) */
-.newspaper-layout-single {
-    display: block;
-    margin: 40px 0;
-}
-
-/* Responsive mobile */
+/* ========================================
+   SIDEBAR - MOBILE
+   ======================================== */
 @media (max-width: 768px) {
-    .hero-sidebar-wrapper {
-        grid-template-columns: 1fr;
-        gap: 30px;
+    .newspaper-body {
+        padding: 0 20px;
+    }
+    
+    #hero-zone {
         margin-bottom: 30px;
     }
     
-    .sidebar-column {
-        border-left: none;
-        padding-left: 0;
-        border-top: 1px solid var(--border);
-        padding-top: 30px;
+    .hero-sidebar-wrapper {
+        display: block;
     }
     
-    .newspaper-layout-single {
-        margin: 20px 0;
+    .sidebar-desktop {
+        display: none;
     }
+    
+    .sidebar-mobile {
+        display: block;
+        border-left: none;
+        padding: 25px 0;
+        margin: 20px 0 30px 0;
+        border-top: 2px solid var(--border);
+        border-bottom: 1px solid var(--border);
+    }
+}
+
+/* ========================================
+   SECTIONS GÉNÉRALES
+   ======================================== */
+#economy-section,
+#international-section,
+#environnement-section,
+#sport-section,
+.newspaper-layout-single,
+#video-section,
+#lifestyle-section,
+.audio-section,
+.more-info-section {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
 }
 /* --------------------------------------
    4. TOP BAR
@@ -2869,209 +2846,585 @@ body.dark-mode .sport-sub-card {
     .menu-grid { grid-template-columns: 1fr 1fr; gap: 25px; }
 }
 
-/* ==========================================================================
-   21. SIDE PANEL
-   ========================================================================== */
+/* ========================================
+   SIDE PANEL UNIFIÉ (COMMENTAIRES, PARTAGE, COMPTE)
+   ======================================== */
+
+/* Structure de base du side panel */
 .side-panel {
     position: fixed;
     top: 0;
     right: -100%;
     width: 100%;
-    max-width: 400px;
+    max-width: 480px;
     height: 100vh;
-    background: white;
-    z-index: 9999;
-    transition: right 0.3s ease;
-    box-shadow: -5px 0 20px rgba(0, 0, 0, 0.1);
+    background: #fff;
+    z-index: 10000;
+    transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: none;
+    overflow-y: auto;
 }
 
 .side-panel.active {
     right: 0;
 }
 
+/* Overlay derrière le panneau */
 .side-panel-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.4);
-    z-index: 9998;
-    display: none;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
-.side-panel.active + .side-panel-overlay {
-    display: block;
+.side-panel.active + .side-panel-overlay,
+.side-panel-overlay.active {
+    opacity: 1;
+    visibility: visible;
 }
 
+/* Contenu interne */
 .side-panel-content {
-    height: 100%;
     display: flex;
     flex-direction: column;
+    height: 100%;
 }
 
+/* En-tête du panneau */
 .side-panel-header {
-    padding: 20px;
-    border-bottom: 1px solid var(--border);
+    padding: 24px 24px 16px;
+    border-bottom: 1px solid var(--border, #e6e6e6);
     display: flex;
     justify-content: space-between;
     align-items: center;
+    background: inherit;
+    flex-shrink: 0;
 }
 
 .logo-small {
-    font-family: var(--sans);
-    font-size: 1.2rem;
+    font-family: var(--sans, 'Libre Franklin', Arial, sans-serif);
     font-weight: 800;
+    font-size: 1.1rem;
     letter-spacing: 2px;
+    color: var(--black, #121212);
+    text-transform: uppercase;
 }
 
 .close-panel {
-    font-size: 24px;
-    cursor: pointer;
     background: none;
     border: none;
+    font-size: 28px;
+    cursor: pointer;
+    color: var(--gray, #555);
+    transition: color 0.2s ease;
+    line-height: 1;
+    padding: 0 8px;
 }
 
+.close-panel:hover {
+    color: var(--red, #a30000);
+}
+
+/* Corps du panneau (scrollable) */
 .side-panel-body {
-    padding: 30px 20px;
-    overflow-y: auto;
     flex: 1;
+    padding: 24px;
+    overflow-y: auto;
+    scroll-behavior: smooth;
 }
 
+/* Custom scrollbar pour le body */
+.side-panel-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.side-panel-body::-webkit-scrollbar-track {
+    background: var(--gray-bg, #f5f5f5);
+    border-radius: 3px;
+}
+
+.side-panel-body::-webkit-scrollbar-thumb {
+    background: var(--gray-light, #888);
+    border-radius: 3px;
+}
+
+.side-panel-body::-webkit-scrollbar-thumb:hover {
+    background: var(--red, #a30000);
+}
+/* ========================================
+   SIDE PANEL COMPTE (AUTHENTIFICATION)
+   ======================================== */
+
+/* Titres */
 .premium-title {
+    font-family: var(--serif, 'Lora', Georgia, serif);
     font-size: 1.8rem;
+    font-weight: 700;
     margin-bottom: 8px;
+    color: var(--black, #121212);
 }
 
 .premium-subtitle {
+    font-family: var(--sans, 'Libre Franklin', Arial, sans-serif);
     font-size: 0.85rem;
-    color: var(--gray);
-    margin-bottom: 30px;
+    color: var(--gray, #555);
+    margin-bottom: 32px;
 }
 
+/* Formulaire d'authentification */
 .auth-form {
-    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
 .premium-input {
     width: 100%;
-    padding: 12px 0;
+    padding: 14px 0;
     border: none;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 20px;
-    font-size: 0.9rem;
+    border-bottom: 2px solid var(--border, #e6e6e6);
+    font-size: 0.95rem;
+    font-family: var(--sans, 'Libre Franklin', Arial, sans-serif);
     outline: none;
+    transition: border-color 0.2s ease;
+    background: transparent;
 }
 
+.premium-input:focus {
+    border-bottom-color: var(--red, #a30000);
+}
+
+/* Boutons */
 .btn-black-full {
     width: 100%;
-    background: var(--black);
+    background: var(--black, #121212);
     color: white;
     border: none;
     padding: 14px;
+    font-family: var(--sans, 'Libre Franklin', Arial, sans-serif);
     font-weight: 700;
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
     cursor: pointer;
-    margin-top: 10px;
+    transition: background 0.2s ease;
+    border-radius: 8px;
+    margin-top: 8px;
+}
+
+.btn-black-full:hover {
+    background: var(--red, #a30000);
 }
 
 .btn-outline-full {
     width: 100%;
     background: transparent;
-    border: 1px solid var(--black);
+    border: 2px solid var(--border-strong, #ccc);
     padding: 14px;
+    font-family: var(--sans, 'Libre Franklin', Arial, sans-serif);
     font-weight: 700;
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
     cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 8px;
+}
+
+.btn-outline-full:hover {
+    border-color: var(--red, #a30000);
+    color: var(--red, #a30000);
 }
 
 .auth-divider {
     text-align: center;
-    margin: 20px 0;
-    color: var(--gray-light);
+    margin: 16px 0 8px;
+    color: var(--gray-light, #888);
     font-size: 0.7rem;
+    font-family: var(--sans, 'Libre Franklin', Arial, sans-serif);
     position: relative;
 }
 
 .auth-divider span {
-    background: white;
-    padding: 0 10px;
+    background: #fff;
+    padding: 0 12px;
+    position: relative;
+    z-index: 1;
 }
 
+.auth-divider::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--border, #e6e6e6);
+}
+
+/* Profil utilisateur connecté */
 .user-profile-header {
     display: flex;
     align-items: center;
-    gap: 15px;
-    margin-bottom: 30px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid var(--border);
+    gap: 16px;
+    padding-bottom: 24px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--border, #e6e6e6); /* solid classique */
 }
 
 .user-avatar {
-    width: 50px;
-    height: 50px;
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
-    background: var(--red);
+    background: var(--red, #a30000);
     color: white;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
+    font-family: var(--sans, 'Libre Franklin', Arial, sans-serif);
     font-weight: 700;
+    font-size: 1.5rem;
+    text-transform: uppercase;
 }
 
 .user-meta {
-    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
 .user-email {
-    display: block;
-    font-weight: 600;
-    margin-bottom: 4px;
+    font-family: var(--sans, 'Libre Franklin', Arial, sans-serif);
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--black, #121212);
 }
 
 .user-status {
+    font-family: var(--sans, 'Libre Franklin', Arial, sans-serif);
     font-size: 0.7rem;
-    color: var(--gray-light);
+    color: var(--red, #a30000);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
+/* Navigation latérale du compte */
 .side-nav {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 8px;
 }
 
 .nav-group-label {
-    font-family: var(--sans);
+    font-family: var(--sans, 'Libre Franklin', Arial, sans-serif);
     font-size: 0.65rem;
     font-weight: 800;
-    text-transform: uppercase;
     letter-spacing: 1px;
-    color: var(--gray-light);
-    margin-top: 10px;
-    margin-bottom: 5px;
+    text-transform: uppercase;
+    color: var(--gray-light, #888);
+    margin: 20px 0 8px 0;
+}
+
+.nav-group-label:first-of-type {
+    margin-top: 0;
 }
 
 .nav-item {
-    font-family: var(--sans);
+    font-family: var(--sans, 'Libre Franklin', Arial, sans-serif);
     font-size: 0.9rem;
-    color: var(--gray-dark);
-    cursor: pointer;
-    padding: 8px 0;
+    font-weight: 500;
+    color: var(--gray-dark, #333);
+    text-decoration: none;
+    padding: 10px 0;
+    transition: color 0.2s ease;
+    display: block;
+    border-bottom: none; /* Pas de bordure */
 }
 
 .nav-item:hover {
-    color: var(--red);
+    color: var(--red, #a30000);
 }
 
 .btn-logout-link {
     background: none;
     border: none;
-    font-family: var(--sans);
-    font-size: 0.8rem;
-    color: var(--red);
+    font-family: var(--sans, 'Libre Franklin', Arial, sans-serif);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--gray, #555);
     cursor: pointer;
     text-align: left;
-    padding: 8px 0;
+    padding: 14px 0;
     margin-top: 20px;
+    transition: color 0.2s ease;
+    border-top: 1px solid var(--border, #e6e6e6); /* solid classique */
+}
+
+.btn-logout-link:hover {
+    color: var(--red, #a30000);
+}
+
+/* ========================================
+   VOS FAVORIS RÉCENTS - BORDURE DOTTED
+   ======================================== */
+
+/* Conteneur de la section des favoris */
+.favorites-section {
+    margin-top: 24px;
+    padding-top: 8px;
+}
+
+/* Titre de la section */
+.favorites-section .nav-group-label {
+    margin-top: 0;
+    margin-bottom: 12px;
+    color: var(--red, #a30000);
+}
+
+/* Liste des favoris */
+#user-favorites-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+}
+
+/* Élément favori */
+.mini-fav-item {
+    font-family: var(--serif, 'Lora', Georgia, serif);
+    font-size: 0.85rem;
+    line-height: 1.4;
+    padding: 12px 10px;
+    border-top: 1px solid var(--border);    /* solid pour séparer du contenu au-dessus */
+    border-bottom: 1px dotted var(--gray-light, #888); /* dotted pour l'effet visuel */
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+/* Premier élément : pas de border-top si c'est le premier après le titre */
+.mini-fav-item:first-child {
+    border-top: none;
+}
+
+/* Dernier élément */
+.mini-fav-item:last-child {
+    border-bottom: none;
+}
+
+.mini-fav-item:hover {
+    transform: translateX(4px);
+    background: var(--gray-bg, #f5f5f5);
+}
+
+.mini-fav-item a {
+    text-decoration: none;
+    color: var(--black, #121212);
+    display: block;
+    transition: color 0.2s ease;
+}
+
+.mini-fav-item a:hover {
+    color: var(--red, #a30000);
+}
+
+/* Message vide */
+.no-favs {
+    font-family: var(--sans, 'Libre Franklin', Arial, sans-serif);
+    font-size: 0.8rem;
+    color: var(--gray-light, #888);
+    padding: 20px 16px;
+    text-align: center;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin: 8px 0;
+    background: var(--gray-bg, #f5f5f5);
+}
+/* ========================================
+   MODE SOMBRE POUR TOUS LES PANELS
+   ======================================== */
+body.dark-mode .side-panel {
+    background: #1a1a1a;
+}
+
+body.dark-mode .side-panel-header {
+    border-color: #333;
+}
+
+body.dark-mode .logo-small {
+    color: #e0e0e0;
+}
+
+body.dark-mode .comment-item {
+    border-color: #333;
+}
+
+body.dark-mode .comment-author {
+    color: #e0e0e0;
+}
+
+body.dark-mode .comment-message {
+    color: #ccc;
+}
+
+body.dark-mode .comment-like-btn,
+body.dark-mode .comment-reply-btn {
+    color: #aaa;
+}
+
+body.dark-mode .comment-like-btn:hover,
+body.dark-mode .comment-reply-btn:hover {
+    background: #2a2a2a;
+}
+
+body.dark-mode .reply-input,
+body.dark-mode .comment-textarea {
+    background: #2a2a2a;
+    border-color: #444;
+    color: #e0e0e0;
+}
+
+body.dark-mode .comment-replies {
+    border-left-color: #444;
+}
+
+body.dark-mode .share-option {
+    background: #2a2a2a;
+    color: #e0e0e0;
+}
+
+body.dark-mode .share-option:hover {
+    background: #333;
+}
+
+body.dark-mode .premium-title {
+    color: #e0e0e0;
+}
+
+body.dark-mode .premium-subtitle {
+    color: #aaa;
+}
+
+body.dark-mode .premium-input {
+    border-bottom-color: #444;
+    color: #e0e0e0;
+}
+
+body.dark-mode .premium-input:focus {
+    border-bottom-color: var(--red, #a30000);
+}
+
+body.dark-mode .auth-divider span {
+    background: #1a1a1a;
+}
+
+body.dark-mode .auth-divider::before {
+    background: #444;
+}
+
+body.dark-mode .user-email {
+    color: #e0e0e0;
+}
+
+body.dark-mode .nav-item {
+    color: #ccc;
+}
+
+body.dark-mode .nav-item:hover {
+    color: var(--red, #a30000);
+}
+
+body.dark-mode .btn-logout-link {
+    border-top-color: #444;
+    color: #aaa;
+}
+
+body.dark-mode .favorite-item {
+    border-bottom-color: #444;
+    color: #ccc;
+}
+
+body.dark-mode .favorite-item:hover {
+    color: var(--red, #a30000);
+}
+
+/* ========================================
+   RESPONSIVE POUR TOUS LES PANELS
+   ======================================== */
+@media (max-width: 480px) {
+    .side-panel {
+        max-width: 100%;
+    }
+    
+    .side-panel-header {
+        padding: 18px 20px;
+    }
+    
+    .side-panel-body {
+        padding: 20px;
+    }
+    
+    .logo-small {
+        font-size: 1rem;
+    }
+    
+    .close-panel {
+        font-size: 26px;
+    }
+    
+    .comment-item {
+        padding: 16px 0;
+    }
+    
+    .comment-author {
+        font-size: 0.85rem;
+    }
+    
+    .comment-message {
+        font-size: 0.85rem;
+    }
+    
+    .comment-replies {
+        margin-left: 20px;
+        padding-left: 12px;
+    }
+    
+    .share-option {
+        padding: 12px 16px;
+        gap: 12px;
+    }
+    
+    .share-option svg {
+        width: 24px;
+        height: 24px;
+    }
+    
+    .premium-title {
+        font-size: 1.5rem;
+    }
+}
+
+/* Support pour hauteur d'écran réduite */
+@media (max-height: 600px) {
+    .side-panel-body {
+        padding: 16px;
+    }
+    
+    .comment-item {
+        padding: 12px 0;
+    }
+    
+    .comments-list {
+        max-height: 250px;
+        overflow-y: auto;
+    }
 }
 
 /* ==========================================================================

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mes commentaires - MAKMUS</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <link rel="stylesheet" href="redaction.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Lora', Georgia, serif;
+            background: #fff;
+            color: #121212;
+        }
+        
+        .comments-container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #a30000;
+        }
+        
+        .header h1 {
+            font-family: 'Libre Franklin', Arial, sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 0;
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #a30000;
+            text-decoration: none;
+            font-family: 'Libre Franklin', Arial, sans-serif;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: transform 0.2s ease;
+        }
+        
+        .back-link:hover {
+            transform: translateX(-3px);
+            text-decoration: underline;
+        }
+        
+        .back-link svg {
+            width: 18px;
+            height: 18px;
+        }
+        
+        .comment-card {
+            padding: 20px;
+            border-bottom: 1px solid #e6e6e6;
+            margin-bottom: 20px;
+            transition: background 0.2s ease;
+        }
+        
+        .comment-card:hover {
+            background: #f9f9f9;
+        }
+        
+        .comment-article-link {
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .comment-article-link a {
+            color: #a30000;
+            text-decoration: none;
+            font-family: 'Libre Franklin', Arial, sans-serif;
+            font-size: 0.85rem;
+        }
+        
+        .comment-article-link a:hover {
+            text-decoration: underline;
+        }
+        
+        .comment-message {
+            font-family: 'Lora', Georgia, serif;
+            margin: 12px 0;
+            padding: 12px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            line-height: 1.5;
+            font-size: 0.9rem;
+        }
+        
+        .comment-date {
+            font-size: 0.75rem;
+            color: #888;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .comment-date svg {
+            width: 14px;
+            height: 14px;
+            fill: none;
+            stroke: #888;
+        }
+        
+        .empty-comments {
+            text-align: center;
+            padding: 60px 20px;
+            color: #888;
+            font-family: 'Libre Franklin', Arial, sans-serif;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #888;
+            font-family: 'Libre Franklin', Arial, sans-serif;
+        }
+        
+        .error-message {
+            text-align: center;
+            padding: 60px 20px;
+            color: #a30000;
+            font-family: 'Libre Franklin', Arial, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div class="comments-container">
+        <div class="header">
+            <a href="javascript:history.back()" class="back-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                Retour
+            </a>
+            <h1>Mes commentaires</h1>
+        </div>
+        <div id="comments-list" class="loading">Chargement de vos commentaires...</div>
+    </div>
+
+     <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const SUPABASE_URL = 'https://logphtrdkpbfgtejtime.supabase.co';
+            const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxvZ3BodHJka3BiZmd0ZWp0aW1lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNzY4MDYsImV4cCI6MjA4NTc1MjgwNn0.Uoxiax-whIdbB5oI3bof-hN0m5O9PDi96zmaUZ6BBio';
+            
+            const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            
+            function escapeHtml(text) {
+                if (!text) return '';
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+            
+            async function loadComments() {
+                const container = document.getElementById('comments-list');
+                if (!container) return;
+                
+                try {
+                    const { data: { user } } = await _supabase.auth.getUser();
+                    
+                    if (!user) {
+                        container.innerHTML = '<div class="empty-comments"> Connectez-vous pour voir vos commentaires</div>';
+                        return;
+                    }
+                    
+                    console.log(' Utilisateur connecté:', user.email);
+                    
+                    // Récupérer les commentaires par email
+                     const { data: comments, error } = await _supabase
+                       .from('article_comments')
+                       .select('id, message, created_at, articles(id, titre)')
+                       .eq('nom', user.email)  // ← Utiliser l'email complet
+                       .order('created_at', { ascending: false });                    
+                    if (error) {
+                        console.error('Erreur Supabase:', error);
+                        container.innerHTML = `<div class="empty-comments">Erreur: ${error.message}</div>`;
+                        return;
+                    }
+                    
+                    console.log('Commentaires trouvés:', comments?.length || 0);
+                    
+                    if (!comments || comments.length === 0) {
+                        container.innerHTML = `
+                            <div class="empty-comments">
+                                💬 Vous n'avez pas encore publié de commentaires.<br><br>
+                                <a href="index.html" style="color: #a30000;">Découvrir des articles</a>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    container.innerHTML = comments.map(comment => {
+                        const article = comment.articles;
+                        const articleTitle = article && article.titre ? article.titre : 'Article';
+                        const articleId = article && article.id ? article.id : '#';
+                        
+                        return `
+                            <div class="comment-card">
+                                <div class="comment-article-link">
+                                    <a href="redaction.html?id=${articleId}">${escapeHtml(articleTitle)}</a>
+                                </div>
+                                <div class="comment-message">${escapeHtml(comment.message)}</div>
+                                <div class="comment-date">Publié le ${new Date(comment.created_at).toLocaleDateString('fr-FR')}</div>
+                            </div>
+                        `;
+                    }).join('');
+                    
+                } catch (error) {
+                    console.error('Erreur:', error);
+                    container.innerHTML = `<div class="empty-comments">Une erreur est survenue: ${error.message}</div>`;
+                }
+            }
+            
+            loadComments();
+        });
+    </script>
+</body>
+</html>

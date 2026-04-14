@@ -119,7 +119,6 @@
 <main class="article-container" id="full-article">
     <!-- L'article sera injecté dynamiquement ici par JavaScript -->
 </main>
-
 <!-- RECOMMANDATIONS DE FIN -->
 <section class="related-section" id="recommendations-box" style="display: none;">
     <h4 class="related-title">D'autres contenus pour vous</h4>
@@ -182,36 +181,96 @@
     </div>
 </footer>
 
-<!-- MODALS -->
-<div id="shareModal" class="modal-overlay" onclick="window.closeShare()">
-    <div class="share-dialog" onclick="event.stopPropagation()">
-        <div class="share-header">
-            <h3>Partager cet article</h3>
-            <button class="close-btn" onclick="window.closeShare()">&times;</button>
+<!-- SIDE PANEL PARTAGE -->
+<div id="sharePanel" class="side-panel">
+    <div class="side-panel-overlay" onclick="window.closeShare()"></div>
+    <div class="side-panel-content">
+        <div class="side-panel-header">
+            <div class="logo-small">PARTAGER</div>
+            <button class="close-panel" onclick="window.closeShare()">&times;</button>
         </div>
-        <div class="share-list">
-            <button onclick="window.copyLink()" class="share-option copy-link">Copier le lien</button>
-            <button onclick="window.shareToX()" class="share-option x">X (Twitter)</button>
-            <button onclick="window.shareToFacebook()" class="share-option facebook">Facebook</button>
-            <button onclick="window.shareToWhatsApp()" class="share-option whatsapp">WhatsApp</button>
-            <button onclick="window.shareToLinkedIn()" class="share-option linkedin">LinkedIn</button>
-            <button onclick="window.shareToTelegram()" class="share-option telegram">Telegram</button>
+        <div class="side-panel-body share-body">
+            <div class="share-grid">
+                <button class="share-option" onclick="window.shareToFacebook()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#1877F2">
+                        <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c5.05-.5 9-4.76 9-9.95z"/>
+                    </svg>
+                    <span>Facebook</span>
+                </button>
+                <button class="share-option" onclick="window.shareToX()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#000000">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                    <span>X (Twitter)</span>
+                </button>
+                <button class="share-option" onclick="window.shareToWhatsApp()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://w3.org">
+    <path fill="#25D366" d="M12.031 2c-5.523 0-10 4.477-10 10 0 1.763.457 3.418 1.258 4.863L2 22l5.311-1.393A9.957 9.957 0 0 0 12.031 22c5.523 0 10-4.477 10-10s-4.477-10-10-10z""")/>>
+    <path fill="#FFF" d="M17.472 14.382c-.301-.15-1.782-.879-2.057-.979-.275-.1-.475-.15-.675.15-.199.299-.773.978-.948 1.178-.175.199-.35.224-.651.074a9.232 9.232 0 0 1-2.417-1.49 10.17 10.17 0 0 1-1.674-2.085c-.175-.3-.019-.462.13-.611.135-.134.3-.349.45-.523.15-.174.199-.299.299-.498.1-.201.05-.375-.025-.524-.075-.15-.675-1.623-.925-2.222-.243-.585-.489-.506-.675-.516-.174-.008-.374-.01-.574-.01-.199 0-.524.075-.798.374-.275.3-1.047 1.022-1.047 2.493 0 1.47 1.072 2.89 1.222 3.09.15.199 2.11 3.221 5.112 4.516.714.308 1.272.492 1.707.631.717.228 1.37.196 1.886.119.575-.085 1.782-.728 2.032-1.429.25-.7.25-1.3.175-1.429-.075-.13-.275-.205-.575-.355z""")/>>
+</svg>
+
+                    <span>WhatsApp</span>
+                </button>
+                <button class="share-option" onclick="window.shareToTelegram()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#26A5E4">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.13-.09-.19-.1-.06-.23-.04-.33-.02-.15.03-2.48 1.57-3.26 2.06-.22.14-.42.21-.66.21-.22 0-.64-.12-.94-.24-.74-.28-1.33-.45-1.28-.95.03-.26.39-.52 1.07-.79 2.41-1.05 5.12-2.05 6.65-2.64 2.47-.94 2.98-1.1 3.32-1.11.07 0 .24.02.34.13.08.09.1.21.1.31 0 .09-.01.2-.03.31z"/>
+                    </svg>
+                    <span>Telegram</span>
+                </button>
+                <button class="share-option" onclick="window.shareToLinkedIn()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#0077B5">
+                        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451c.979 0 1.771-.773 1.771-1.729V1.729C24 .774 23.203 0 22.225 0z"/>
+                    </svg>
+                    <span>LinkedIn</span>
+                </button>
+                <button class="share-option" onclick="window.shareToBluesky()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#1185FE">
+                        <path d="M12 10.8c-1.087-2.114-4.046-6.053-6.798-7.995C2.566.944 1.561 1.266.902 1.565.139 1.908 0 3.08 0 3.768c0 .69.378 5.65.624 6.479.815 2.736 3.713 3.66 6.383 3.364.136-.02.275-.039.415-.056-.138.022-.28.04-.415.056-3.912.58-7.387 2.005-2.83 7.078 5.013 5.19 6.87-1.113 7.823-4.308.953 3.195 2.81 9.498 7.823 4.308 4.557-5.073 1.082-6.498-2.83-7.078a8.16 8.16 0 0 1-.415-.056c.14.017.279.036.415.056 2.67.296 5.568-.628 6.383-3.364.246-.829.624-5.79.624-6.479 0-.688-.139-1.86-.902-2.203-.659-.299-1.664-.621-4.3 1.24C16.046 4.747 13.087 8.686 12 10.8z"/>
+                    </svg>
+                    <span>Bluesky</span>
+                </button>
+                <button class="share-option" onclick="window.shareToInstagram()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#E4405F">
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zM12 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                    </svg>
+                    <span>Instagram</span>
+                </button>
+                <button class="share-option" onclick="window.shareToThreads()">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 960">
+  <path d="M804.6 960H155.4C69.58 960 0 890.42 0 804.6V155.4C0 69.58 69.58 0 155.4 0h649.2C890.42 0 960 69.58 960 155.4v649.2c0 85.82-69.58 155.4-155.4 155.4z"/>
+  <path fill="#FFF" d="M404.63 392.13c-11.92-7.93-51.53-35.49-51.53-35.49 33.4-47.88 77.46-66.52 138.36-66.52 43.07 0 79.64 14.52 105.75 42 26.12 27.49 41.02 66.8 44.41 117.07 14.48 6.07 27.85 13.22 39.99 21.4 48.96 33 75.92 82.34 75.92 138.91 0 120.23-98.34 224.67-276.35 224.67-152.84 0-311.63-89.11-311.63-354.45 0-263.83 153.81-353.92 311.2-353.92 72.68 0 243.16 10.76 307.27 222.94l-60.12 15.63C678.33 213.2 574.4 189.14 479.11 189.14c-157.52 0-246.62 96.13-246.62 300.65 0 183.38 99.59 280.8 248.71 280.8 122.68 0 214.15-63.9 214.15-157.44 0-63.66-53.37-94.14-56.1-94.14-10.42 54.62-38.36 146.5-161.01 146.5-71.46 0-133.07-49.47-133.07-114.29 0-92.56 87.61-126.06 156.8-126.06 25.91 0 57.18 1.75 73.46 5.07 0-28.21-23.81-76.49-83.96-76.49-55.15-.01-69.14 17.92-86.84 38.39zm105.8 96.25c-90.13 0-101.79 38.51-101.79 62.7 0 38.86 46.07 51.74 70.65 51.74 45.06 0 91.35-12.52 98.63-107.31-22.85-5.14-39.88-7.13-67.49-7.13z"/>
+</svg>
+                    <span>Threads</span>
+                </button>
+                <button class="share-option" onclick="window.copyLink()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#555">
+                        <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1 0 1.71-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
+                    </svg>
+                    <span>Copier le lien</span>
+                </button>
+            </div>
         </div>
-        <div class="share-footer">
-            <span class="share-url-preview" id="share-url-preview"></span>
+    </div>
+</div>
+<!-- SIDE PANEL COMMENTAIRES -->
+<div id="commentPanel" class="side-panel">
+    <div class="side-panel-content">
+        <div class="side-panel-header">
+            <div class="logo-small">COMMENTAIRES</div>
+            <button class="close-panel" onclick="window.closeCommentsPanel()">&times;</button>
+        </div>
+        <div class="side-panel-body">
+            <div id="comments-list" class="comments-list"></div>
+            <div class="comment-form">
+    <textarea id="comm-text" placeholder="Votre commentaire..." class="premium-input comment-textarea" rows="3"></textarea>
+    <button class="btn-black-full" onclick="window.postComment()">PUBLIER</button>
+</div>
         </div>
     </div>
 </div>
 
-<div id="commentModal" class="modal-overlay" onclick="window.closeComments()">
-    <div class="modal-box" onclick="event.stopPropagation()">
-        <div class="modal-header">COMMENTAIRES</div>
-        <div id="comments-list" style="max-height: 300px; overflow-y: auto; margin-bottom: 20px;"></div>
-        <input type="text" id="comm-name" placeholder="Votre nom" class="premium-input">
-        <textarea id="comm-text" placeholder="Votre commentaire..." class="premium-input" rows="3"></textarea>
-        <button class="btn-black-full" onclick="window.postComment()">PUBLIER</button>
-    </div>
-</div>
+<!-- Overlay séparé (en dehors du side-panel) -->
+<div id="commentPanelOverlay" class="side-panel-overlay" onclick="window.closeCommentsPanel()"></div>
 
 <!-- SIDE PANEL (COMPTE) -->
 <div id="sideAccount" class="side-panel">
@@ -245,8 +304,11 @@
                     <div class="nav-group-label">VOTRE ACTIVITE</div>
                     <a href="javascript:void(0)" class="nav-item" onclick="window.navigateToAccountOption('favoris')">Articles favoris</a>
                     <a href="javascript:void(0)" class="nav-item" onclick="window.navigateToAccountOption('commentaires')">Vos commentaires</a>
-                    <div class="nav-group-label">VOS FAVORIS RECENTS</div>
+                    <!-- Dans ton side-panel-body -->
+                    <div class="favorites-recent-wrapper">
+                    <div class="nav-group-label">VOS FAVORIS RÉCENTS</div>
                     <div id="user-favorites-list"></div>
+                    </div>                    
                     <button class="btn-logout-link" onclick="window.handleLogout()">Se deconnecter</button>
                 </nav>
             </div>

@@ -1,5 +1,5 @@
 /* ==========================================================================
-   PAGE ARTICLE — MAKMUS (VERSION CORRIGÉE - SLUG FIX + LIKES/FAVORIS)
+   PAGE ARTICLE — MAKMUS (VERSION CORRIGÉE - SLUG FIX + LIKES/FAVORIS + SIDE PANELS)
    ========================================================================== */
 
 const SUPABASE_URL = 'https://logphtrdkpbfgtejtime.supabase.co';
@@ -7,12 +7,12 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// 🔧 CORRECTION : Récupération correcte du slug depuis l'URL
+// Récupération du slug depuis l'URL
 const urlParams = new URLSearchParams(window.location.search);
 let articleId = urlParams.get('id');
 let articleSlug = urlParams.get('slug');
 
-// 🔧 CORRECTION : Si l'URL est de type /article/mon-slug (sans paramètre)
+// Si l'URL est de type /article/mon-slug (sans paramètre)
 if (!articleId && !articleSlug && window.location.pathname.startsWith('/article/')) {
     articleSlug = window.location.pathname.replace('/article/', '');
     articleSlug = articleSlug.split('?')[0];
@@ -20,7 +20,7 @@ if (!articleId && !articleSlug && window.location.pathname.startsWith('/article/
     console.log('✅ SLUG détecté depuis pathname:', articleSlug);
 }
 
-// 🔧 CORRECTION : Forcer la redirection vers l'URL avec paramètre slug pour éviter les problèmes
+// Redirection vers l'URL avec paramètre slug
 if (articleSlug && !window.location.search.includes('slug=')) {
     const newUrl = `${window.location.origin}/redaction.html?slug=${encodeURIComponent(articleSlug)}`;
     console.log('🔄 Redirection vers:', newUrl);
@@ -161,6 +161,13 @@ window.toggleSidePanel = function(isOpen) {
     document.body.style.overflow = isOpen ? 'hidden' : 'auto';
 };
 
+window.toggleSharePanel = function(isOpen) {
+    var panel = document.getElementById('sharePanel');
+    if (!panel) return;
+    panel.classList.toggle('active', isOpen);
+    document.body.style.overflow = isOpen ? 'hidden' : 'auto';
+};
+
 window.toggleModal = function(id, show) {
     var modal = document.getElementById(id);
     if (modal) {
@@ -172,10 +179,8 @@ window.toggleModal = function(id, show) {
 document.addEventListener('click', function(e) {
     if (e.target.classList.contains('side-panel-overlay')) {
         window.toggleSidePanel(false);
-    }
-    if (e.target.classList.contains('modal-overlay')) {
-        e.target.style.display = 'none';
-        document.body.style.overflow = 'auto';
+        window.toggleSharePanel(false);
+        window.closeCommentsPanel();
     }
 });
 
@@ -197,7 +202,6 @@ window.checkUserStatus = async function() {
             if (emailDisplay) emailDisplay.textContent = user.email;
             if (avatar) avatar.textContent = user.email.charAt(0).toUpperCase();
             window.loadUserActivity().catch(function() {});
-            // Recharger les likes et favoris après connexion
             if (currentArticle) {
                 fetchLikeStatus();
                 fetchBookmarkStatus();
@@ -228,7 +232,6 @@ window.handleAuth = async function(type) {
         if (result.data.session) {
             await window.checkUserStatus();
             window.toggleSidePanel(false);
-            // Recharger l'article pour mettre à jour likes/favoris
             if (currentArticle) {
                 fetchLikeStatus();
                 fetchBookmarkStatus();
@@ -264,16 +267,18 @@ window.loadUserActivity = async function() {
     try {
         var { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) return;
+        
         var { data: favs } = await supabaseClient
             .from('user_favorites')
             .select('article_id, articles(titre)')
             .eq('user_id', user.id)
             .order('created_at', { ascending: false })
             .limit(5);
+        
         var container = document.getElementById('user-favorites-list');
         if (container) {
             if (!favs || favs.length === 0) {
-                container.innerHTML = '<p class="no-favs">Aucun favori</p>';
+                container.innerHTML = '<div class="no-favs">Aucun favori pour le moment</div>';
             } else {
                 container.innerHTML = favs.map(function(f) {
                     var title = f.articles?.titre || 'Article';
@@ -283,9 +288,12 @@ window.loadUserActivity = async function() {
         }
     } catch (error) {
         console.warn("Erreur chargement favoris:", error);
+        var container = document.getElementById('user-favorites-list');
+        if (container) {
+            container.innerHTML = '<div class="no-favs">Erreur de chargement</div>';
+        }
     }
 };
-
 /* --------------------------------------
    LIKES (avec BDD)
    -------------------------------------- */
@@ -304,8 +312,11 @@ async function fetchLikeStatus() {
         if (likeBtn) {
             if (data && !error) {
                 likeBtn.classList.add('liked');
+                likeBtn.disabled = true;
+                likeBtn.title = "Vous avez déjà aimé cet article";
             } else {
                 likeBtn.classList.remove('liked');
+                likeBtn.disabled = false;
             }
         }
     } catch (error) {
@@ -334,7 +345,6 @@ async function fetchLikesCount() {
 window.toggleLike = async function() {
     if (!currentArticle) return;
     
-    // Vérifier si l'utilisateur est connecté
     if (!currentUser) {
         showToast('Connectez-vous pour aimer cet article', 'info');
         window.toggleSidePanel(true);
@@ -342,34 +352,29 @@ window.toggleLike = async function() {
     }
     
     const likeBtn = document.getElementById('like-btn');
-    const isLiked = likeBtn.classList.contains('liked');
+    if (likeBtn.disabled) {
+        showToast('Vous avez déjà aimé cet article', 'info');
+        return;
+    }
     
     try {
-        if (!isLiked) {
-            // Ajouter le like
-            const { error } = await supabaseClient
-                .from('user_likes')
-                .insert([{ user_id: currentUser.id, article_id: currentArticle.id }]);
-            
-            if (error) throw error;
-            
-            likeBtn.classList.add('liked');
-            showToast('Article aimé !', 'success');
-        } else {
-            // Retirer le like
-            const { error } = await supabaseClient
-                .from('user_likes')
-                .delete()
-                .eq('user_id', currentUser.id)
-                .eq('article_id', currentArticle.id);
-            
-            if (error) throw error;
-            
-            likeBtn.classList.remove('liked');
-            showToast('Like retiré', 'info');
+        const { error } = await supabaseClient
+            .from('user_likes')
+            .insert([{ 
+                user_id: currentUser.id, 
+                article_id: currentArticle.id 
+            }]);
+        
+        if (error) {
+            console.error('Erreur insertion:', error);
+            showToast('Erreur lors du like', 'error');
+            return;
         }
         
-        // Mettre à jour le compteur
+        likeBtn.classList.add('liked');
+        likeBtn.disabled = true;
+        likeBtn.title = "Vous avez déjà aimé cet article";
+        showToast('Article aimé !', 'success');
         fetchLikesCount();
     } catch (error) {
         console.error('Erreur toggleLike:', error);
@@ -397,9 +402,12 @@ async function fetchBookmarkStatus() {
         if (bookmarkBtn) {
             if (data && !error) {
                 bookmarkBtn.classList.add('bookmarked');
-                if (span) span.textContent = 'Sauvegardé';
+                bookmarkBtn.disabled = true;
+                if (span) span.textContent = 'Sauvegardé ✓';
+                bookmarkBtn.title = "Article déjà sauvegardé";
             } else {
                 bookmarkBtn.classList.remove('bookmarked');
+                bookmarkBtn.disabled = false;
                 if (span) span.textContent = 'Sauvegarder';
             }
         }
@@ -411,7 +419,6 @@ async function fetchBookmarkStatus() {
 window.toggleBookmark = async function() {
     if (!currentArticle) return;
     
-    // Vérifier si l'utilisateur est connecté
     if (!currentUser) {
         showToast('Connectez-vous pour sauvegarder des articles', 'info');
         window.toggleSidePanel(true);
@@ -419,45 +426,30 @@ window.toggleBookmark = async function() {
     }
     
     const bookmarkBtn = document.getElementById('bookmark-btn');
+    if (bookmarkBtn.disabled) {
+        showToast('Article déjà sauvegardé', 'info');
+        return;
+    }
+    
     const span = bookmarkBtn?.querySelector('span:last-child');
-    const isBookmarked = bookmarkBtn?.classList.contains('bookmarked');
     
     try {
-        if (!isBookmarked) {
-            // Ajouter aux favoris
-            const { error } = await supabaseClient
-                .from('user_favorites')
-                .insert([{ 
-                    user_id: currentUser.id, 
-                    article_id: currentArticle.id,
-                    article_title: currentArticle.titre
-                }]);
-            
-            if (error) throw error;
-            
-            bookmarkBtn.classList.add('bookmarked');
-            if (span) span.textContent = 'Sauvegardé';
-            showToast('Article sauvegardé dans vos favoris', 'success');
-            
-            // Recharger la liste des favoris dans le panneau
-            window.loadUserActivity();
-        } else {
-            // Retirer des favoris
-            const { error } = await supabaseClient
-                .from('user_favorites')
-                .delete()
-                .eq('user_id', currentUser.id)
-                .eq('article_id', currentArticle.id);
-            
-            if (error) throw error;
-            
-            bookmarkBtn.classList.remove('bookmarked');
-            if (span) span.textContent = 'Sauvegarder';
-            showToast('Article retiré des favoris', 'info');
-            
-            // Recharger la liste des favoris dans le panneau
-            window.loadUserActivity();
-        }
+        const { error } = await supabaseClient
+            .from('user_favorites')
+            .insert([{ 
+                user_id: currentUser.id, 
+                article_id: currentArticle.id,
+                article_title: currentArticle.titre
+            }]);
+        
+        if (error) throw error;
+        
+        bookmarkBtn.classList.add('bookmarked');
+        bookmarkBtn.disabled = true;
+        if (span) span.textContent = 'Sauvegardé ✓';
+        bookmarkBtn.title = "Article déjà sauvegardé";
+        showToast('Article sauvegardé dans vos favoris', 'success');
+        window.loadUserActivity();
     } catch (error) {
         console.error('Erreur toggleBookmark:', error);
         showToast('Erreur lors de la sauvegarde', 'error');
@@ -465,62 +457,394 @@ window.toggleBookmark = async function() {
 };
 
 /* --------------------------------------
-   COMMENTAIRES
+   COMMENTAIRES - SIDE PANEL (VERSION UNIQUE AVEC LIKES)
    -------------------------------------- */
-async function fetchComments() {
-    if (!currentArticle) return;
-    var { data } = await supabaseClient
-        .from('article_comments')
-        .select('*')
-        .eq('article_id', currentArticle.id)
-        .order('created_at', { ascending: false });
-    if (data) {
-        var list = document.getElementById('comments-list');
-        if (list) {
-            list.innerHTML = data.map(function(c) {
-                return '<div style="border-bottom:1px solid #eee; padding:15px 0;"><b>' + escapeHtml(c.nom) + '</b><br>' + escapeHtml(c.message) + '</div>';
-            }).join('');
-        }
-        var commSpan = document.getElementById('nb-comm');
-        if (commSpan) commSpan.textContent = data.length;
+window.openComments = function() {
+    var panel = document.getElementById('commentPanel');
+    var overlay = document.querySelector('#commentPanel .side-panel-overlay');
+    if (panel) {
+        panel.classList.add('active');
+        if (overlay) overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+    fetchComments();
+};
+
+window.closeCommentsPanel = function() {
+    var panel = document.getElementById('commentPanel');
+    var overlay = document.querySelector('#commentPanel .side-panel-overlay');
+    if (panel) {
+        panel.classList.remove('active');
+        if (overlay) overlay.classList.remove('active');
+        document.body.style.overflow = 'auto';
+    }
+};
+
+window.closeComments = window.closeCommentsPanel;
+
+// Vérifier si l'utilisateur a liké un commentaire
+async function fetchCommentLikeStatus(commentId) {
+    if (!currentUser) return false;
+    
+    try {
+        const { data, error } = await supabaseClient
+            .from('comment_likes')
+            .select('id')
+            .eq('user_id', currentUser.id)
+            .eq('comment_id', commentId)
+            .maybeSingle();
+        
+        return !error && data;
+    } catch (error) {
+        console.error('Erreur fetchCommentLikeStatus:', error);
+        return false;
     }
 }
 
-window.postComment = async function() {
-    var nomInput = document.getElementById('comm-name');
-    var msgInput = document.getElementById('comm-text');
-    var nom = nomInput?.value.trim();
-    var msg = msgInput?.value.trim();
+// Fonction pour afficher les réponses
+function renderReplies(replies) {
+    if (!replies || replies.length === 0) return '';
     
-    if (!nom || !msg) {
-        showToast("Veuillez remplir tous les champs", 'error');
+    return replies.map(function(reply) {
+        var date = new Date(reply.created_at).toLocaleDateString('fr-FR', {
+            day: 'numeric', month: 'short', year: 'numeric'
+        });
+        
+        // Afficher l'email ou extraire le nom avant @
+        var displayName = reply.nom;
+        if (displayName && displayName.includes('@')) {
+            displayName = displayName.split('@')[0];
+        }
+        
+        return `
+            <div class="reply-item">
+                <div class="comment-author-info">
+                    <span class="comment-author">${escapeHtml(displayName)}</span>
+                    <span class="comment-date">${date}</span>
+                </div>
+                <div class="comment-message">${escapeHtml(reply.message)}</div>
+                <div class="comment-actions">
+                    <button class="comment-like-btn" onclick="window.toggleCommentLike(${reply.id}, this)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l8.84-8.84 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                        </svg>
+                        <span class="comment-like-count">${reply.likes_count || 0}</span>
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+// Version améliorée de fetchComments avec likes et réponses
+async function fetchComments() {
+    if (!currentArticle) return;
+    
+    try {
+        var { data: comments, error } = await supabaseClient
+            .from('article_comments')
+            .select('*')
+            .eq('article_id', currentArticle.id)
+            .is('parent_id', null)
+            .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        var { data: replies } = await supabaseClient
+            .from('article_comments')
+            .select('*')
+            .eq('article_id', currentArticle.id)
+            .not('parent_id', 'is', null)
+            .order('created_at', { ascending: true });
+        
+        var repliesByParent = {};
+        if (replies) {
+            replies.forEach(function(reply) {
+                if (!repliesByParent[reply.parent_id]) {
+                    repliesByParent[reply.parent_id] = [];
+                }
+                repliesByParent[reply.parent_id].push(reply);
+            });
+        }
+        
+        var list = document.getElementById('comments-list');
+        if (list) {
+            if (!comments || comments.length === 0) {
+                list.innerHTML = '<div class="comment-empty">Aucun commentaire pour le moment. Soyez le premier à commenter !</div>';
+            } else {
+                var commentsHtml = '';
+                for (var i = 0; i < comments.length; i++) {
+                    var c = comments[i];
+                    var isLiked = await fetchCommentLikeStatus(c.id);
+                    var date = new Date(c.created_at).toLocaleDateString('fr-FR', {
+                        day: 'numeric', month: 'short', year: 'numeric'
+                    });
+                    
+                    // Afficher l'email ou extraire le nom avant @
+                    var displayName = c.nom;
+                    if (displayName && displayName.includes('@')) {
+                        displayName = displayName.split('@')[0]; // Afficher seulement "chrismsmr"
+                    }
+                    
+                    commentsHtml += `
+                        <div class="comment-item" data-comment-id="${c.id}">
+                            <div class="comment-header">
+                                <div class="comment-author-info">
+                                    <span class="comment-author">${escapeHtml(displayName)}</span>
+                                    <span class="comment-date">${date}</span>
+                                </div>
+                            </div>
+                            <div class="comment-message">${escapeHtml(c.message)}</div>
+                            <div class="comment-actions">
+                                <button class="comment-like-btn ${isLiked ? 'liked' : ''}" onclick="window.toggleCommentLike(${c.id}, this)">
+                                    <svg viewBox="0 0 24 24" fill="${isLiked ? '#a30000' : 'none'}" stroke="currentColor" stroke-width="1.5">
+                                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l8.84-8.84 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                                    </svg>
+                                    <span class="comment-like-count">${c.likes_count || 0}</span>
+                                </button>
+                                <button class="comment-reply-btn" onclick="window.showReplyForm(${c.id})">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                    </svg>
+                                    <span>Répondre</span>
+                                </button>
+                            </div>
+                            <div id="reply-form-${c.id}" class="reply-form" style="display: none;">
+                                <textarea id="reply-text-${c.id}" placeholder="Votre réponse..." class="reply-input" rows="1"></textarea>
+                                <button class="reply-submit" onclick="window.postReply(${c.id})">Envoyer</button>
+                            </div>
+                            <div id="replies-${c.id}" class="comment-replies">
+                                ${renderReplies(repliesByParent[c.id] || [])}
+                            </div>
+                        </div>
+                    `;
+                }
+                list.innerHTML = commentsHtml;
+            }
+        }
+        
+        var commSpan = document.getElementById('nb-comm');
+        if (commSpan) commSpan.textContent = comments?.length || 0;
+    } catch (error) {
+        console.error('Erreur fetchComments:', error);
+                var list = document.getElementById('comments-list');
+        if (list) {
+            list.innerHTML = '<div class="comment-empty">Erreur de chargement des commentaires</div>';
+        }
+    }
+}
+
+// Basculer le like d'un commentaire
+window.toggleCommentLike = async function(commentId, buttonElement) {
+    if (!currentUser) {
+        showToast('Connectez-vous pour aimer un commentaire', 'info');
+        window.toggleSidePanel(true);
+        return;
+    }
+    
+    const isLiked = buttonElement.classList.contains('liked');
+    const likeCountSpan = buttonElement.querySelector('.comment-like-count');
+    let currentCount = parseInt(likeCountSpan.textContent) || 0;
+    
+    try {
+        if (!isLiked) {
+            const { error } = await supabaseClient
+                .from('comment_likes')
+                .insert([{ user_id: currentUser.id, comment_id: commentId }]);
+            
+            if (error) throw error;
+            
+            await supabaseClient
+                .from('article_comments')
+                .update({ likes_count: currentCount + 1 })
+                .eq('id', commentId);
+            
+            buttonElement.classList.add('liked');
+            likeCountSpan.textContent = currentCount + 1;
+            showToast('Commentaire aimé !', 'success');
+        } else {
+            const { error } = await supabaseClient
+                .from('comment_likes')
+                .delete()
+                .eq('user_id', currentUser.id)
+                .eq('comment_id', commentId);
+            
+            if (error) throw error;
+            
+            await supabaseClient
+                .from('article_comments')
+                .update({ likes_count: Math.max(0, currentCount - 1) })
+                .eq('id', commentId);
+            
+            buttonElement.classList.remove('liked');
+            likeCountSpan.textContent = Math.max(0, currentCount - 1);
+            showToast('Like retiré', 'info');
+        }
+    } catch (error) {
+        console.error('Erreur toggleCommentLike:', error);
+        showToast('Erreur lors du like', 'error');
+    }
+};
+
+// Afficher le formulaire de réponse
+window.showReplyForm = function(commentId) {
+    var form = document.getElementById(`reply-form-${commentId}`);
+    if (form) {
+        form.style.display = form.style.display === 'none' ? 'flex' : 'none';
+        if (form.style.display === 'flex') {
+            var textarea = document.getElementById(`reply-text-${commentId}`);
+            if (textarea) textarea.focus();
+        }
+    }
+};
+
+// Poster une réponse
+window.postReply = async function(parentId) {
+    var textInput = document.getElementById(`reply-text-${parentId}`);
+    var msg = textInput?.value.trim();
+    
+    if (!msg) {
+        showToast("Veuillez écrire une réponse", 'error');
         return;
     }
     
     if (!currentArticle) return;
     
-    var { error } = await supabaseClient.from('article_comments').insert([{ 
-        article_id: currentArticle.id, 
-        nom: nom, 
-        message: msg 
-    }]);
+    // Récupérer l'utilisateur connecté
+    const { data: { user } } = await supabaseClient.auth.getUser();
     
-    if (!error) {
-        if (msgInput) msgInput.value = "";
-        fetchComments();
-        showToast("Commentaire publié !");
-    } else {
+    if (!user) {
+        showToast("Connectez-vous pour répondre", 'info');
+        window.toggleSidePanel(true);
+        return;
+    }
+    
+    try {
+        // NE PAS inclure user_id dans l'insertion
+        var { error } = await supabaseClient.from('article_comments').insert([{ 
+            article_id: currentArticle.id,
+            parent_id: parentId,
+            nom: user.email,  // Utiliser l'email complet
+            message: msg,
+            likes_count: 0
+        }]);
+        
+        if (!error) {
+            if (textInput) textInput.value = "";
+            fetchComments();
+            showToast("Réponse publiée !", 'success');
+        } else {
+            showToast("Erreur lors de la publication", 'error');
+        }
+    } catch (error) {
+        console.error('Erreur postReply:', error);
+        showToast("Erreur lors de la publication", 'error');
+    }
+};
+// Poster un commentaire principal
+window.postComment = async function() {
+    var msgInput = document.getElementById('comm-text');
+    var msg = msgInput?.value.trim();
+    
+    if (!msg) {
+        showToast("Veuillez écrire un commentaire", 'error');
+        return;
+    }
+    
+    if (!currentArticle) return;
+    
+    // Récupérer l'utilisateur connecté
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    
+    if (!user) {
+        showToast("Connectez-vous pour commenter", 'info');
+        window.toggleSidePanel(true);
+        return;
+    }
+    
+    try {
+        // Construction de l'objet à insérer (sans user_id si la colonne n'existe pas)
+        var commentData = { 
+            article_id: currentArticle.id,
+            parent_id: null,
+            nom: user.email,
+            message: msg,
+            likes_count: 0
+        };
+        
+        console.log('📝 Insertion commentaire:', commentData);
+        
+        var { error } = await supabaseClient.from('article_comments').insert([commentData]);
+        
+        if (!error) {
+            if (msgInput) msgInput.value = "";
+            fetchComments();
+            showToast("Commentaire publié !", 'success');
+        } else {
+            console.error('Erreur:', error);
+            showToast("Erreur: " + (error.message || "Publication impossible"), 'error');
+        }
+    } catch (error) {
+        console.error('Erreur postComment:', error);
         showToast("Erreur lors de la publication", 'error');
     }
 };
 
+// Poster une réponse
+window.postReply = async function(parentId) {
+    var textInput = document.getElementById(`reply-text-${parentId}`);
+    var msg = textInput?.value.trim();
+    
+    if (!msg) {
+        showToast("Veuillez écrire une réponse", 'error');
+        return;
+    }
+    
+    if (!currentArticle) return;
+    
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    
+    if (!user) {
+        showToast("Connectez-vous pour répondre", 'info');
+        window.toggleSidePanel(true);
+        return;
+    }
+    
+    try {
+        var replyData = { 
+            article_id: currentArticle.id,
+            parent_id: parentId,
+            nom: user.email,
+            message: msg,
+            likes_count: 0
+        };
+        
+        console.log('📝 Insertion réponse:', replyData);
+        
+        var { error } = await supabaseClient.from('article_comments').insert([replyData]);
+        
+        if (!error) {
+            if (textInput) textInput.value = "";
+            fetchComments();
+            showToast("Réponse publiée !", 'success');
+        } else {
+            console.error('Erreur:', error);
+            showToast("Erreur: " + (error.message || "Publication impossible"), 'error');
+        }
+    } catch (error) {
+        console.error('Erreur postReply:', error);
+        showToast("Erreur lors de la publication", 'error');
+    }
+};
 /* --------------------------------------
-   PARTAGE
+   PARTAGE - SIDE PANEL
    -------------------------------------- */
-window.openShare = function() { window.toggleModal('shareModal', true); };
-window.closeShare = function() { window.toggleModal('shareModal', false); };
-window.openComments = function() { window.toggleModal('commentModal', true); };
-window.closeComments = function() { window.toggleModal('commentModal', false); };
+window.openShare = function() {
+    window.toggleSharePanel(true);
+};
+
+window.closeShare = function() {
+    window.toggleSharePanel(false);
+};
 
 window.copyLink = function() {
     navigator.clipboard.writeText(window.location.href);
@@ -565,6 +889,32 @@ window.shareToTelegram = function() {
     var shareUrl = 'https://t.me/share/url?url=' + url + '&text=' + title;
     window.open(shareUrl, '_blank', 'width=600,height=450');
     window.closeShare();
+};
+
+window.shareToInstagram = function() {
+    var url = encodeURIComponent(window.location.href);
+    var title = encodeURIComponent(document.title);
+    var shareUrl = `https://www.instagram.com/?url=${url}&caption=${title}`;
+    window.open(shareUrl, '_blank', 'width=600,height=450');
+    window.closeShare();
+    showToast("Partagez le lien sur Instagram", 'info');
+};
+
+window.shareToBluesky = function() {
+    var url = encodeURIComponent(window.location.href);
+    var title = encodeURIComponent(document.title);
+    var shareUrl = `https://bsky.app/intent/compose?text=${title}%20${url}`;
+    window.open(shareUrl, '_blank', 'width=600,height=450');
+    window.closeShare();
+};
+
+window.shareToThreads = function() {
+    var url = encodeURIComponent(window.location.href);
+    var title = encodeURIComponent(document.title);
+    var shareUrl = `https://www.threads.net/intent/post?text=${title}%20${url}`;
+    window.open(shareUrl, '_blank', 'width=600,height=450');
+    window.closeShare();
+    showToast("Partagez le lien sur Threads", 'info');
 };
 
 /* --------------------------------------
@@ -709,10 +1059,7 @@ async function startArticlePlayback() {
     var bodyElement = document.getElementById('article-text-content');
     if (!bodyElement) return;
     
-    var paragraphs = bodyElement.querySelectorAll('p');
-    var body = "";
-    paragraphs.forEach(function(p) { body += p.innerText + " "; });
-    body = bodyElement.innerText || "";
+    var body = bodyElement.innerText || "";
     var cleanText = cleanTextForSpeech(title + ". " + body);
     if (!cleanText || cleanText.length < 20) {
         showToast("Texte trop court pour la lecture audio", 'error');
@@ -863,132 +1210,263 @@ async function loadTrendingTags() {
 }
 
 /* --------------------------------------
-   CREDITS
+   UTILITAIRES AMÉLIORÉS (DÉPLACÉS AVANT RENDERARTICLE)
    -------------------------------------- */
-function formatImageCredit(credit, source) {
-    source = source || 'MakMus';
-    if (!credit) return null;
-    return '<div class="image-credit">Credit: ' + escapeHtml(credit) + ' — ' + escapeHtml(source) + '</div>';
-}
 
-function addAuthorCredit(authorName, authorRole) {
-    authorRole = authorRole || 'Journaliste';
-    if (!authorName || authorName === 'La Redaction') return '';
-    return '<div class="author-credit">' + escapeHtml(authorName) + ' — ' + escapeHtml(authorRole) + ' pour MakMus</div>';
-}
-
-function renderArticle(art) {
-    var contentToSplit = art.content || art.description || '';
-    var paragraphs = contentToSplit.split('</p>');
-    var totalPara = paragraphs.length;
-    var readTime = calculateReadTime(art.content || art.description || '');
-    var cleanContent = (art.content || art.description || '')
+// Nettoyage du contenu HTML
+function sanitizeContent(content) {
+    if (!content) return '';
+    return content
         .replace(/<span style="font-family: georgia, palatino, serif;">/gi, '')
         .replace(/<li style="font-family: georgia, palatino, serif;">/gi, '<li>')
         .replace(/<\/span>/gi, '')
         .replace(/style="font-family: georgia, palatino, serif;?"/gi, '');
-    var contentToSplit = cleanContent;
-    var extraMedias = art.medias || [];
-    var mediaIndex = 0;
+}
+
+// Validation d'URL pour sécurité XSS (version permissive)
+function isValidImageUrl(url) {
+    if (!url) return false;
+    // Accepte toutes les URLs HTTPS/HTTP
+    return url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:');
+}
+
+// Parse HTML proprement
+function parseHtmlToParagraphs(html) {
+    if (!html) return [];
+    var cleanHtml = sanitizeContent(html);
+    var temp = document.createElement('div');
+    temp.innerHTML = cleanHtml;
+    var paragraphs = [];
     
-    // Conteneur pour le contenu texte avec la BONNE CLASSE
-    var textContent = '';
-    
-    for (var idx = 0; idx < paragraphs.length; idx++) {
-        var p = paragraphs[idx];
-        if (p.trim() === "") continue;
-        textContent += p + '</p>';
-        
-        // Insertion des médias (images/vidéos)
-        if (idx > 0 && idx % 3 === 0 && mediaIndex < extraMedias.length) {
-            var media = extraMedias[mediaIndex];
-            if (media.type === 'image') {
-                textContent += `
-                    <div class="media-fullwidth-wrapper">
-                        <figure class="article-media-wrapper">
-                            <img src="${media.url}" loading="lazy" alt="${escapeHtml(media.caption || '')}">
-                            <figcaption class="media-caption">${escapeHtml(media.caption || '')}</figcaption>
-                        </figure>
-                    </div>
-                `;
-            } else if (media.type === 'video') {
-                textContent += `
-                    <div class="media-fullwidth-wrapper">
-                        <figure class="article-media-wrapper">
-                            <video controls preload="metadata" playsinline>
-                                <source src="${media.url}" type="video/mp4">
-                            </video>
-                            <figcaption class="media-caption">${escapeHtml(media.caption || 'Vidéo MakMus')}</figcaption>
-                        </figure>
-                    </div>
-                `;
-            }
-            mediaIndex++;
-        }
-        
-        // Insertion de la pub
-        if (idx === 1 && totalPara > 3) {
-            textContent += `</div>`; // Ferme le div texte
-            
-            var pubHtml = `
-                <div class="ad-fullwidth-wrapper">
-                    <div class="in-article-ad">
-                        <span class="ad-label">PUBLICITÉ</span>
-                        <div class="ad-box">
-                            <h4>MakMus Direct</h4>
-                            <p>Rejoignez notre canal WhatsApp pour les alertes en direct.</p>
-                            <button class="btn-whatsapp" onclick="window.open('https://whatsapp.com/channel/...', '_blank')">REJOINDRE</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            textContent += pubHtml;
-            // Rouvre avec la BONNE CLASSE
-            textContent += `<div class="article-content" id="article-text-content">`;
-        }
-        
-        // Insertion des recommandations
-        if (idx === Math.floor(totalPara / 2) && totalPara > 5) {
-            textContent += `
-                <div class="inline-recommendations">
-                    <h4 class="grid-title">À LIRE AUSSI</h4>
-                    <div class="mini-grid" id="inline-grid-container">
-                        <div class="mini-card" id="card-1">
-                            <img id="inline-img-1" class="mini-card-img" style="display:none;">
-                            <p id="inline-title-1">Chargement...</p>
-                        </div>
-                        <div class="mini-card" id="card-2">
-                            <img id="inline-img-2" class="mini-card-img" style="display:none;">
-                            <p id="inline-title-2">Chargement...</p>
-                        </div>
-                    </div>
-                </div>
-            `;
-            setTimeout(function() { fillInlineGrid(art.category, art.id); }, 200);
-        }
+    var nodes = temp.querySelectorAll('p');
+    for (var i = 0; i < nodes.length; i++) {
+        paragraphs.push(nodes[i].outerHTML);
     }
     
-    // Ajout des médias restants
-    if (mediaIndex < extraMedias.length) {
-        for (var i = mediaIndex; i < extraMedias.length; i++) {
-            var media = extraMedias[i];
-            if (media.type === 'image') {
-                textContent += `
-                    <div class="media-fullwidth-wrapper">
-                        <figure class="article-media-wrapper">
-                            <img src="${media.url}" loading="lazy" alt="${escapeHtml(media.caption || '')}">
-                            <figcaption class="media-caption">${escapeHtml(media.caption || '')}</figcaption>
-                        </figure>
-                    </div>
-                `;
-            }
-        }
+    if (paragraphs.length === 0 && cleanHtml.trim()) {
+        paragraphs.push('<p>' + cleanHtml + '</p>');
     }
     
-    // Fermeture du conteneur texte
-    textContent += `</div>`;
+    return paragraphs;
+}
+
+// Initialisation des images lazy avec fade-in
+function initLazyImages() {
+    var images = document.querySelectorAll('.article-media-wrapper img[loading="lazy"]');
+    images.forEach(function(img) {
+        img.addEventListener('load', function() {
+            img.classList.add('loaded');
+        });
+        if (img.complete) {
+            img.classList.add('loaded');
+        }
+    });
+}
+
+/* --------------------------------------
+   RENDER ARTICLE
+   -------------------------------------- */
+
+// Rendu d'un média (image ou vidéo)
+function renderMedia(media) {
+    var imageUrl = isValidImageUrl(media.url) ? media.url : 'https://via.placeholder.com/800x500?text=Image+non+disponible';
     
-    // Bio auteur (inchangée)
+    if (media.type === 'image') {
+        return `
+            <div class="media-fullwidth-wrapper">
+                <figure class="article-media-wrapper">
+                    <img src="${imageUrl}" loading="lazy" alt="${escapeHtml(media.caption || '')}">
+                    <figcaption class="media-caption">${escapeHtml(media.caption || '')}</figcaption>
+                </figure>
+            </div>
+        `;
+    } else if (media.type === 'video') {
+        return `
+            <div class="media-fullwidth-wrapper">
+                <figure class="article-media-wrapper">
+                    <video controls preload="metadata" playsinline>
+                        <source src="${media.url}" type="video/mp4">
+                    </video>
+                    <figcaption class="media-caption">${escapeHtml(media.caption || 'Vidéo MakMus')}</figcaption>
+                </figure>
+            </div>
+        `;
+    }
+    return '';
+}
+
+// Rendu de la publicité
+function renderAd() {
+    return `
+        <div class="ad-fullwidth-wrapper">
+            <div class="in-article-ad">
+                <span class="ad-label">PUBLICITÉ</span>
+                <div class="ad-box">
+                    <h4>MakMus Direct</h4>
+                    <p>Rejoignez notre canal WhatsApp pour les alertes en direct.</p>
+                    <button class="btn-whatsapp" onclick="window.open('https://whatsapp.com/channel/...', '_blank')">REJOINDRE</button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Rendu des recommandations
+function renderRecommendations() {
+    return `
+        <div class="inline-recommendations">
+            <h4 class="grid-title">À LIRE AUSSI</h4>
+            <div class="mini-grid" id="inline-grid-container">
+                <div class="mini-card" id="card-1">
+                    <img id="inline-img-1" class="mini-card-img" style="display:none;">
+                    <p id="inline-title-1">Chargement...</p>
+                </div>
+                <div class="mini-card" id="card-2">
+                    <img id="inline-img-2" class="mini-card-img" style="display:none;">
+                    <p id="inline-title-2">Chargement...</p>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Rendu du header de l'article
+function renderArticleHeader(art, readTime) {
+    return `
+        <header class="article-header">
+            <div class="article-category-label">${escapeHtml(art.category || 'Actualité')}</div>
+            <h1 class="article-main-title">${escapeHtml(art.titre)}</h1>
+            <div class="read-time-estimate">${readTime} min de lecture</div>
+            <div class="article-byline">
+                <img src="${art.author_image || 'https://via.placeholder.com/40'}" class="author-avatar" onerror="this.src='https://via.placeholder.com/40'">
+                <div class="author-info">
+                    <div class="author-name-wrapper">
+                        <span class="author-name-label">Par</span>
+                        <a href="#" class="author-name-link" onclick="window.showAuthorBio('${art.author_name}', '${art.author_role || ''}', '${art.author_bio || ''}', '${art.author_twitter || ''}', '${art.author_website || ''}', '${art.author_image || ''}'); return false;">
+                            ${escapeHtml(art.author_name || 'La Rédaction')}
+                        </a>
+                    </div>
+                    <div class="publish-date">Publié le ${new Date(art.created_at).toLocaleDateString('fr-FR', {day:'numeric', month:'long', year:'numeric'})}</div>
+                </div>
+            </div>
+            <div class="article-actions-wrapper">
+                <div class="actions-group">
+                    <div class="actions-primary">
+                        <button class="action-btn" id="like-btn" onclick="window.toggleLike()">
+                            <div class="icon-circle">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l8.78-8.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                                </svg>
+                            </div>
+                            <span id="nb-like" class="count-label">0</span>
+                        </button>
+                        <button class="action-btn" onclick="window.openComments()">
+                            <div class="icon-circle">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                                </svg>
+                            </div>
+                            <span id="nb-comm" class="count-label">0</span>
+                        </button>                      
+                        <button class="action-btn" id="bookmark-btn" onclick="window.toggleBookmark()">
+                            <div class="icon-circle">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                                </svg>
+                            </div>
+                            <span>Sauvegarder</span>
+                        </button>
+                    </div>
+                    <div class="actions-secondary">
+                        <button class="action-btn" onclick="window.openShare()">
+                            <div class="icon-circle">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/>
+                                </svg>
+                            </div>
+                            <span>Partager</span>
+                        </button>
+                        <button class="action-btn speech-btn" id="speech-btn">
+                            <div class="icon-circle">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                                </svg>
+                            </div>
+                            <span id="speech-text">ÉCOUTER</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+    `;
+}
+
+// Rendu du média principal
+function renderMainMedia(art) {
+    if (art.video_url && art.video_url !== '') {
+        return `
+            <div class="media-fullwidth-wrapper">
+                <figure class="main-figure main-video-figure">
+                    <div class="hero-video-wrapper" style="position: relative; width: 100%;">
+                        <div class="video-controls-top">
+                            <button class="video-control-btn play-pause-btn" onclick="heroFlexible?.toggleVideo()">
+                                <svg viewBox="0 0 24 24" fill="white" width="20" height="20">
+                                    <polygon points="5 3 19 12 5 21 5 3" id="video-play-icon"/>
+                                    <rect x="6" y="4" width="4" height="16" id="video-pause-icon" style="display:none" rx="1"/>
+                                    <rect x="14" y="4" width="4" height="16" id="video-pause-icon-2" style="display:none" rx="1"/>
+                                </svg>
+                            </button>
+                            <button class="video-control-btn volume-btn" onclick="heroFlexible?.toggleVolume()">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="18" height="18">
+                                    <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+                                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.08"/>
+                                </svg>
+                            </button>
+                            <button class="video-control-btn share-btn" onclick="heroFlexible?.shareVideo('${art.id}', '${escapeHtml(art.titre)}')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="18" height="18">
+                                    <circle cx="18" cy="5" r="3"/>
+                                    <circle cx="6" cy="12" r="3"/>
+                                    <circle cx="18" cy="19" r="3"/>
+                                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                                </svg>
+                            </button>
+                            <button class="video-control-btn fullscreen-btn" onclick="heroFlexible?.toggleFullscreen()">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="18" height="18">
+                                    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="play-overlay" onclick="playArticleVideo(this)">
+                            <div class="play-button">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2">
+                                    <polygon points="5 3 19 12 5 21 5 3" fill="white"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <video id="article-main-video" src="${art.video_url}" poster="${art.image_url || ''}" style="width: 100%; height: auto; display: block; margin: 0 auto;" preload="metadata" autoplay muted loop playsinline>
+                            <source src="${art.video_url}" type="video/mp4">
+                        </video>
+                        ${art.video_caption ? `<figcaption class="img-caption-style">${escapeHtml(art.video_caption)}</figcaption>` : ''}
+                    </div>
+                </figure>
+            </div>
+        `;
+    } else if (art.image_url) {
+        return `
+            <div class="media-fullwidth-wrapper">
+                <figure class="main-figure">
+                    <img src="${art.image_url}" class="main-img" alt="${escapeHtml(art.titre)}" onerror="this.src='https://via.placeholder.com/800x500'">
+                    ${art.image_caption ? `<figcaption class="img-caption-style">${escapeHtml(art.image_caption)}</figcaption>` : ''}
+                </figure>
+            </div>
+        `;
+    }
+    return '';
+}
+
+// Rendu de la bio auteur
+function renderAuthorBio(art) {
     var authorBio = art.author_bio || '';
     var authorRole = art.author_role || 'Journaliste';
     var authorTwitter = art.author_twitter || '';
@@ -1022,9 +1500,8 @@ function renderArticle(art) {
         socialLinksHtml += '</div>';
     }
     
-    var authorBioHtml = '';
     if (authorBio || authorRole) {
-        authorBioHtml = `
+        return `
             <div class="author-bio">
                 <div class="author-bio-container">
                     <img src="${art.author_image || 'https://via.placeholder.com/60'}" class="author-bio-avatar" onerror="this.src='https://via.placeholder.com/60'">
@@ -1038,168 +1515,63 @@ function renderArticle(art) {
             </div>
         `;
     }
+    return '';
+}
+
+// RENDER ARTICLE PRINCIPAL
+function renderArticle(art) {
+    var cleanContent = sanitizeContent(art.content || art.description || '');
+    var paragraphs = parseHtmlToParagraphs(cleanContent);
+    var totalPara = paragraphs.length;
+    var readTime = calculateReadTime(art.content || art.description || '');
+    var extraMedias = art.medias || [];
+    var mediaIndex = 0;
+    var textContent = '';
     
-    // Média principal (vidéo ou image)
-var mainMediaHtml = '';
-if (art.video_url && art.video_url !== '') {
-    mainMediaHtml = `
-        <div class="media-fullwidth-wrapper">
-            <figure class="main-figure main-video-figure">
-                <div class="hero-video-wrapper" style="position: relative;">
-                    <div class="video-controls-top">
-                        <button class="video-control-btn play-pause-btn" onclick="heroFlexible.toggleVideo()">
-                            <svg viewBox="0 0 24 24" fill="white" width="20" height="20">
-                                <polygon points="5 3 19 12 5 21 5 3" id="video-play-icon"/>
-                                <rect x="6" y="4" width="4" height="16" id="video-pause-icon" style="display:none" rx="1"/>
-                                <rect x="14" y="4" width="4" height="16" id="video-pause-icon-2" style="display:none" rx="1"/>
-                            </svg>
-                        </button>
-                        
-                        <button class="video-control-btn volume-btn" onclick="heroFlexible.toggleVolume()">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="18" height="18">
-                                <path d="M11 5L6 9H2v6h4l5 4V5z"/>
-                                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.08"/>
-                            </svg>
-                        </button>
-                        
-                        <button class="video-control-btn share-btn" onclick="heroFlexible.shareVideo('${art.id}', '${escapeHtml(art.titre)}')">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="18" height="18">
-                                <circle cx="18" cy="5" r="3"/>
-                                <circle cx="6" cy="12" r="3"/>
-                                <circle cx="18" cy="19" r="3"/>
-                                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
-                                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-                            </svg>
-                        </button>
-                        
-                        <button class="video-control-btn fullscreen-btn" onclick="heroFlexible.toggleFullscreen()">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="18" height="18">
-                                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
-                            </svg>
-                        </button>
-                    </div>
-                    
-                    <div class="play-overlay" onclick="playArticleVideo(this)">
-                        <div class="play-button">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2">
-                                <polygon points="5 3 19 12 5 21 5 3" fill="white"/>
-                            </svg>
-                        </div>
-                    </div>
-                    
-                    <video 
-                        id="article-main-video" 
-                        src="${art.video_url}" 
-                        poster="${art.image_url || ''}" 
-                        style="width: 100%; height: auto; display: block;"
-                        preload="metadata"
-                        autoplay
-                        muted
-                        loop
-                        playsinline>
-                        <source src="${art.video_url}" type="video/mp4">
-                        Votre navigateur ne supporte pas la vidéo.
-                    </video>
-                    
-                    ${art.video_caption ? `<figcaption class="img-caption-style">${escapeHtml(art.video_caption)}</figcaption>` : ''}
-                </div>
-            </figure>
-        </div>
-    `;
-}else if (art.image_url) {
-        mainMediaHtml = `
-            <div class="media-fullwidth-wrapper">
-                <figure class="main-figure">
-                    <img src="${art.image_url}" class="main-img" onerror="this.src='https://via.placeholder.com/800x500'">
-                    ${art.image_caption ? `<figcaption class="img-caption-style">${escapeHtml(art.image_caption)}</figcaption>` : ''}
-                </figure>
-            </div>
-        `;
+    for (var idx = 0; idx < paragraphs.length; idx++) {
+        var p = paragraphs[idx];
+        if (p.trim() === "") continue;
+        textContent += p;
+        
+        // Insertion des médias tous les 3 paragraphes
+        if (idx > 0 && idx % 3 === 0 && mediaIndex < extraMedias.length) {
+            textContent += renderMedia(extraMedias[mediaIndex]);
+            mediaIndex++;
+        }
+        
+        // Insertion de la publicité
+        if (idx === 1 && totalPara > 3) {
+            textContent += renderAd();
+        }
+        
+        // Insertion des recommandations
+        if (idx === Math.floor(totalPara / 2) && totalPara > 5) {
+            textContent += renderRecommendations();
+            setTimeout(function() { fillInlineGrid(art.category, art.id); }, 200);
+        }
     }
     
-    // Structure complète avec la BONNE CLASSE
+    // Ajout des médias restants
+    while (mediaIndex < extraMedias.length) {
+        textContent += renderMedia(extraMedias[mediaIndex]);
+        mediaIndex++;
+    }
+    
+    // Assemblage final
     var fullHtml = `
-        <header class="article-header">
-            <div class="article-category-label">${escapeHtml(art.category || 'Actualité')}</div>
-            <h1 class="article-main-title">${escapeHtml(art.titre)}</h1>
-            <div class="read-time-estimate">${readTime} min de lecture</div>
-            
-            <div class="article-byline">
-                <img src="${art.author_image || 'https://via.placeholder.com/40'}" class="author-avatar" onerror="this.src='https://via.placeholder.com/40'">
-                <div class="author-info">
-                    <div class="author-name-wrapper">
-                        <span class="author-name-label">Par</span>
-                        <a href="#" class="author-name-link" onclick="window.showAuthorBio('${art.author_name}', '${art.author_role || ''}', '${art.author_bio || ''}', '${art.author_twitter || ''}', '${art.author_website || ''}', '${art.author_image || ''}'); return false;">
-                            ${escapeHtml(art.author_name || 'La Rédaction')}
-                        </a>
-                    </div>
-                    <div class="publish-date">Publié le ${new Date(art.created_at).toLocaleDateString('fr-FR', {day:'numeric', month:'long', year:'numeric'})}</div>
-                </div>
-            </div>
-            
-            <div class="article-actions-wrapper">
-                <div class="actions-group">
-                    <div class="actions-primary">
-                        <button class="action-btn" id="like-btn" onclick="window.toggleLike()">
-                            <div class="icon-circle">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l8.78-8.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                                </svg>
-                            </div>
-                            <span id="nb-like" class="count-label">0</span>
-                        </button>
-                        <button class="action-btn" onclick="window.openComments()">
-                            <div class="icon-circle">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
-                                </svg>
-                            </div>
-                            <span id="nb-comm" class="count-label">0</span>
-                        </button>
-                        <button class="action-btn" id="bookmark-btn" onclick="window.toggleBookmark()">
-                            <div class="icon-circle">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                                </svg>
-                            </div>
-                            <span>Sauvegarder</span>
-                        </button>
-                    </div>
-                    <div class="actions-secondary">
-                        <button class="action-btn" onclick="window.openShare()">
-                            <div class="icon-circle">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/>
-                                </svg>
-                            </div>
-                            <span>Partager</span>
-                        </button>
-                        <button class="action-btn speech-btn" id="speech-btn">
-                            <div class="icon-circle">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                    <path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
-                                </svg>
-                            </div>
-                            <span id="speech-text">ÉCOUTER</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </header>
-        
-        ${mainMediaHtml}
-        
-        <!-- ICI LA CORRECTION : la classe et l'id correspondent au CSS -->
+        ${renderArticleHeader(art, readTime)}
+        ${renderMainMedia(art)}
         <div class="article-content" id="article-text-content">
             ${textContent}
         </div>
-        
-        ${authorBioHtml}
+        ${renderAuthorBio(art)}
     `;
     
     document.getElementById('full-article').innerHTML = fullHtml;
     
+    // Initialisations
     initArticleVideoPlayer();
+    initLazyImages();
     
     var speechBtn = document.getElementById('speech-btn');
     if (speechBtn) {
@@ -1210,12 +1582,10 @@ if (art.video_url && art.video_url !== '') {
         });
     }
     
-    // Charger les données après le rendu
     fetchLikesCount();
     fetchComments();
-    fetchRelatedArticles(art.tags, art.category);
+    if (typeof fetchRelatedArticles === 'function') fetchRelatedArticles(art.tags, art.category);
     
-    // Charger les états utilisateur si connecté
     if (currentUser) {
         fetchLikeStatus();
         fetchBookmarkStatus();
@@ -1241,49 +1611,6 @@ function playArticleVideo(element) {
     }
 }
 
-function toggleArticleVideoMute(event, button) {
-    event.stopPropagation();
-    const wrapper = button.closest('.hero-video-wrapper');
-    const video = wrapper.querySelector('video');
-    
-    video.muted = !video.muted;
-    
-    const svg = button.querySelector('svg');
-    if (video.muted) {
-        svg.innerHTML = '<path d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6"/>';
-    } else {
-        svg.innerHTML = '<path d="M11 5L6 9H2v6h4l5 4V5zM22 9l-3 3 3 3M18 9l-3 3 3 3"/>';
-    }
-}
-
-function toggleArticleVideoFullscreen(event, button) {
-    event.stopPropagation();
-    const wrapper = button.closest('.hero-video-wrapper');
-    const video = wrapper.querySelector('video');
-    
-    if (!document.fullscreenElement) {
-        video.requestFullscreen().catch(err => {
-            console.log(`Erreur plein écran: ${err.message}`);
-        });
-    } else {
-        document.exitFullscreen();
-    }
-}
-
-function handleArticleVideoLike(event, button, articleId) {
-    event.stopPropagation();
-    const svg = button.querySelector('svg');
-    const isLiked = svg.getAttribute('fill') === '#a30000';
-    
-    if (!isLiked) {
-        svg.setAttribute('fill', '#a30000');
-        showToast('Vidéo ajoutée aux favoris', 'success');
-    } else {
-        svg.setAttribute('fill', 'none');
-        showToast('Like retiré', 'info');
-    }
-}
-
 function initArticleVideoPlayer() {
     const wrapper = document.querySelector('.hero-video-wrapper');
     const video = document.querySelector('#article-main-video');
@@ -1302,18 +1629,6 @@ function initArticleVideoPlayer() {
         if (playOverlay && video.paused) {
             playOverlay.style.opacity = '1';
             playOverlay.style.pointerEvents = 'auto';
-        }
-    });
-    
-    wrapper.addEventListener('mouseenter', function() {
-        if (!video.paused && playOverlay) {
-            playOverlay.style.opacity = '0';
-        }
-    });
-    
-    wrapper.addEventListener('mouseleave', function() {
-        if (!video.paused && playOverlay) {
-            playOverlay.style.opacity = '0';
         }
     });
 }
@@ -1382,15 +1697,9 @@ window.closeAuthorBio = function() {
     document.body.style.overflow = '';
 };
 
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        var modal = document.getElementById('author-bio-modal');
-        if (modal) {
-            window.closeAuthorBio();
-        }
-    }
-});
-
+/* --------------------------------------
+   LOAD ARTICLE
+   -------------------------------------- */
 async function loadArticle() {
     console.log('=== loadArticle CALLED ===');
     console.log('articleSlug:', articleSlug);
@@ -1521,6 +1830,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            window.closeCommentsPanel();
+            window.toggleSharePanel(false);
+        }
+    });
     
     if (articleId || articleSlug) {
         loadArticle();

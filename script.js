@@ -72,22 +72,28 @@ window.toggleSidePanel = function(isOpen) {
 };
 
 /* --------------------------------------
-   5. AUTHENTIFICATION
+   AUTHENTIFICATION
    -------------------------------------- */
 window.checkUserStatus = async function() {
     try {
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        const loggedOut = document.getElementById('logged-out-view');
-        const loggedIn = document.getElementById('logged-in-view');
-        const emailDisplay = document.getElementById('user-email-display');
-        const avatar = document.querySelector('.user-avatar');
+        var { data: { user } } = await supabaseClient.auth.getUser();
+        currentUser = user;
+        var loggedOut = document.getElementById('logged-out-view');
+        var loggedIn = document.getElementById('logged-in-view');
+        var emailDisplay = document.getElementById('user-email-display');
+        var avatar = document.querySelector('.user-avatar');
         
         if (user) {
             if (loggedOut) loggedOut.style.display = 'none';
             if (loggedIn) loggedIn.style.display = 'block';
             if (emailDisplay) emailDisplay.textContent = user.email;
             if (avatar) avatar.textContent = user.email.charAt(0).toUpperCase();
-            window.loadUserActivity();
+            window.loadUserActivity().catch(function() {});
+            
+            if (typeof currentArticle !== 'undefined' && currentArticle) {
+                if (typeof fetchLikeStatus === 'function') fetchLikeStatus();
+                if (typeof fetchBookmarkStatus === 'function') fetchBookmarkStatus();
+            }
         } else {
             if (loggedOut) loggedOut.style.display = 'block';
             if (loggedIn) loggedIn.style.display = 'none';
@@ -98,22 +104,27 @@ window.checkUserStatus = async function() {
 };
 
 window.handleAuth = async function(type) {
-    const email = document.getElementById('auth-email')?.value;
-    const password = document.getElementById('auth-password')?.value;
+    var email = document.getElementById('auth-email')?.value;
+    var password = document.getElementById('auth-password')?.value;
     if (!email || !password) return alert("Veuillez remplir tous les champs.");
     
     try {
-        let result;
+        var result;
         if (type === 'signup') {
-            result = await supabaseClient.auth.signUp({ email, password });
+            result = await supabaseClient.auth.signUp({ email: email, password: password });
             if (!result.error) alert("Inscription reussie ! Verifiez vos emails.");
         } else {
-            result = await supabaseClient.auth.signInWithPassword({ email, password });
+            result = await supabaseClient.auth.signInWithPassword({ email: email, password: password });
         }
         if (result.error) throw result.error;
         if (result.data.session) {
             await window.checkUserStatus();
             window.toggleSidePanel(false);
+            if (currentArticle) {
+                fetchLikeStatus();
+                fetchBookmarkStatus();
+                fetchLikesCount();
+            }
         }
     } catch (error) {
         alert("Erreur : " + error.message);
@@ -122,30 +133,175 @@ window.handleAuth = async function(type) {
 
 window.handleLogout = async function() {
     if (!confirm("Voulez-vous vous deconnecter ?")) return;
-    await supabaseClient.auth.signOut();
-    window.location.href = "index.html";
+    try {
+        await supabaseClient.auth.signOut();
+        currentUser = null;
+        window.location.reload();
+    } catch (error) {
+        alert("Erreur : " + error.message);
+    }
+};
+
+window.navigateToAccountOption = function(option) {
+    window.toggleSidePanel(false);
+    if (option === 'favoris') {
+        window.location.href = 'favoris.html';
+    } else if (option === 'commentaires') {
+        window.location.href = 'mes-commentaires.html';
+    }
 };
 
 window.loadUserActivity = async function() {
     try {
-        const { data: { user } } = await supabaseClient.auth.getUser();
+        var { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) return;
-        const { data: favs } = await supabaseClient
-            .from('favorites')
-            .select('*')
+        
+        var { data: favs } = await supabaseClient
+            .from('user_favorites')
+            .select('article_id, articles(titre)')
             .eq('user_id', user.id)
             .order('created_at', { ascending: false })
             .limit(5);
-        const container = document.getElementById('user-favorites-list');
+        
+        var container = document.getElementById('user-favorites-list');
         if (container) {
             if (!favs || favs.length === 0) {
-                container.innerHTML = '<p class="no-favs">Aucun favori</p>';
+                container.innerHTML = '<div class="no-favs">Aucun favori pour le moment</div>';
             } else {
-                container.innerHTML = favs.map(f => `<div class="mini-fav-item"><a href="redaction.html?id=${f.article_id}">${escapeHtml(f.article_title)}</a></div>`).join('');
+                container.innerHTML = favs.map(function(f) {
+                    var title = f.articles?.titre || 'Article';
+                    return '<div class="mini-fav-item"><a href="redaction.html?id=' + f.article_id + '">' + escapeHtml(title) + '</a></div>';
+                }).join('');
             }
         }
     } catch (error) {
         console.warn("Erreur chargement favoris:", error);
+        var container = document.getElementById('user-favorites-list');
+        if (container) {
+            container.innerHTML = '<div class="no-favs">Erreur de chargement</div>';
+        }
+    }
+};
+
+/* --------------------------------------
+   LIKES (avec BDD)
+   -------------------------------------- */
+async function fetchLikeStatus() {
+    if (!currentArticle || !currentUser) return;
+    
+    const likeBtn = document.getElementById('like-btn');
+    if (!likeBtn) return;
+    
+    try {
+        const { data, error } = await supabaseClient
+            .from('user_likes')
+            .select('id')
+            .eq('user_id', currentUser.id)
+            .eq('article_id', currentArticle.id)
+            .maybeSingle();
+        
+        if (data && !error) {
+            likeBtn.classList.add('liked');
+            likeBtn.disabled = true;
+            likeBtn.title = "Vous avez déjà aimé cet article";
+        } else {
+            likeBtn.classList.remove('liked');
+            likeBtn.disabled = false;
+        }
+    } catch (error) {
+        console.error('Erreur fetchLikeStatus:', error);
+    }
+}
+
+async function fetchLikesCount() {
+    if (!currentArticle) return;
+    
+    const likeSpan = document.getElementById('nb-like');
+    if (!likeSpan) return;
+    
+    try {
+        const { count, error } = await supabaseClient
+            .from('user_likes')
+            .select('id', { count: 'exact', head: true })
+            .eq('article_id', currentArticle.id);
+        
+        likeSpan.textContent = count || 0;
+    } catch (error) {
+        console.error('Erreur fetchLikesCount:', error);
+    }
+}
+
+/* --------------------------------------
+   FAVORIS (avec BDD)
+   -------------------------------------- */
+async function fetchBookmarkStatus() {
+    if (!currentArticle || !currentUser) return;
+    
+    const bookmarkBtn = document.getElementById('bookmark-btn');
+    if (!bookmarkBtn) return;
+    
+    const span = bookmarkBtn?.querySelector('span:last-child');
+    
+    try {
+        const { data, error } = await supabaseClient
+            .from('user_favorites')
+            .select('id')
+            .eq('user_id', currentUser.id)
+            .eq('article_id', currentArticle.id)
+            .maybeSingle();
+        
+        if (data && !error) {
+            bookmarkBtn.classList.add('bookmarked');
+            bookmarkBtn.disabled = true;
+            if (span) span.textContent = 'Sauvegardé ✓';
+            bookmarkBtn.title = "Article déjà sauvegardé";
+        } else {
+            bookmarkBtn.classList.remove('bookmarked');
+            bookmarkBtn.disabled = false;
+            if (span) span.textContent = 'Sauvegarder';
+        }
+    } catch (error) {
+        console.error('Erreur fetchBookmarkStatus:', error);
+    }
+}
+
+window.toggleBookmark = async function() {
+    if (!currentArticle) return;
+    
+    if (!currentUser) {
+        showToast('Connectez-vous pour sauvegarder des articles', 'info');
+        window.toggleSidePanel(true);
+        return;
+    }
+    
+    const bookmarkBtn = document.getElementById('bookmark-btn');
+    if (bookmarkBtn.disabled) {
+        showToast('Article déjà sauvegardé', 'info');
+        return;
+    }
+    
+    const span = bookmarkBtn?.querySelector('span:last-child');
+    
+    try {
+        const { error } = await supabaseClient
+            .from('user_favorites')
+            .insert([{ 
+                user_id: currentUser.id, 
+                article_id: currentArticle.id,
+                article_title: currentArticle.titre
+            }]);
+        
+        if (error) throw error;
+        
+        bookmarkBtn.classList.add('bookmarked');
+        bookmarkBtn.disabled = true;
+        if (span) span.textContent = 'Sauvegardé ✓';
+        bookmarkBtn.title = "Article déjà sauvegardé";
+        showToast('Article sauvegardé dans vos favoris', 'success');
+        window.loadUserActivity();
+    } catch (error) {
+        console.error('Erreur toggleBookmark:', error);
+        showToast('Erreur lors de la sauvegarde', 'error');
     }
 };
 
@@ -266,7 +422,6 @@ async function fetchMakmusNews(querySearch) {
         gridArticles.forEach(a => usedIds.add(a.id));
         const moreNews = articles.filter(a => !usedIds.has(a.id)).slice(0, 20);
         
-        // ✅ RÉCUPÉRATION DES AUDIOS
         const { data: audios, error: audioError } = await supabaseClient
             .from('audios')
             .select('*')
@@ -276,7 +431,6 @@ async function fetchMakmusNews(querySearch) {
         
         if (audioError) console.warn("Erreur chargement audios:", audioError);
         
-        // Rendu
         renderUI(heroArticle, gridArticles);
         renderAutreInfo(autreInfos);
         renderOpinions(opinions);
@@ -286,7 +440,7 @@ async function fetchMakmusNews(querySearch) {
         renderEnvironnement(environnement);
         renderSport(sport);
         renderMoreNews(moreNews);
-        renderAudios(audios || []); // ✅ AJOUT DU RENDU DES AUDIOS
+        renderAudios(audios || []);
         
         console.log('🔍 Vérification doublons: IDs uniques:', usedIds.size, '/ Total:', articles.length);
         
@@ -300,7 +454,7 @@ async function fetchMakmusNews(querySearch) {
 }
 
 /* ==========================================================================
-   8. HERO FLEXIBLE - CORRIGÉ (SANS MASQUAGE ALÉATOIRE)
+   8. HERO FLEXIBLE
    ========================================================================== */
 const heroFlexible = {
     currentIndex: 0,
@@ -452,7 +606,6 @@ function renderUI(heroArticle, gridArticles) {
         
         subArticles.forEach(sub => {
             if (!sub) return;
-            // ✅ CORRIGÉ : L'image s'affiche toujours si elle existe (pas de masquage aléatoire)
             const hasImage = sub.image_url && sub.image_url !== '';
             const readTime = calculerTempsLecture(sub.description);
             
@@ -521,13 +674,11 @@ function renderUI(heroArticle, gridArticles) {
         }).join('');
     }
 }
-/* ==========================================================================
-   9. FONCTION DE RENDU MÉDIA (COMME HERO) - CORRIGÉE
-   ========================================================================== */
 
-// Fonction utilitaire pour rendre les médias (vidéo, galerie, image) avec les mêmes icônes que Hero
+/* ==========================================================================
+   9. FONCTIONS DE RENDU MÉDIA ET SECTIONS
+   ========================================================================== */
 function renderSectionMedia(article) {
-    // CAS VIDÉO UNIQUE
     if (article.video_url && article.video_url !== '') {
         const videoCaption = article.video_caption || article.caption || '';
         return `
@@ -567,28 +718,11 @@ function renderSectionMedia(article) {
         `;
     }
     
-    // CAS GALERIE (images + vidéos avec descriptions individuelles)
     const articleMedias = article.medias || [];
     if (articleMedias.length > 0 || article.image_url) {
         const galleryItems = [];
-        
-        // Ajouter l'image à la une en premier avec sa description
-        if (article.image_url) {
-            galleryItems.push({ 
-                type: 'image', 
-                url: article.image_url, 
-                caption: article.image_caption || '' 
-            });
-        }
-        
-        // Ajouter tous les médias (images et vidéos)
-        articleMedias.forEach(media => {
-            galleryItems.push({ 
-                type: media.type || 'image', 
-                url: media.url, 
-                caption: media.caption || media.description || '' 
-            });
-        });
+        if (article.image_url) galleryItems.push({ type: 'image', url: article.image_url, caption: article.image_caption || '' });
+        articleMedias.forEach(media => galleryItems.push({ type: media.type || 'image', url: media.url, caption: media.caption || '' }));
         
         if (galleryItems.length > 1) {
             const galleryId = 'gallery_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -655,7 +789,6 @@ function renderSectionMedia(article) {
             `;
         }
         
-        // IMAGE UNIQUE avec description
         if (galleryItems.length === 1) {
             const singleItem = galleryItems[0];
             return `
@@ -667,14 +800,12 @@ function renderSectionMedia(article) {
         }
     }
     
-    // FALLBACK
     return `<div class="hero-single-image"><img src="${article.image_url || 'https://via.placeholder.com/800x450'}" onerror="this.src='https://via.placeholder.com/800x450'"></div>`;
 }
 
 /* ==========================================================================
-   FONCTIONS VIDÉO POUR LES SECTIONS (COMME HERO)
+   FONCTIONS VIDÉO POUR LES SECTIONS
    ========================================================================== */
-
 function toggleVideoPlaySection(btn) {
     const video = btn.closest('.hero-video-wrapper').querySelector('video');
     if (!video) return;
@@ -721,10 +852,8 @@ function shareSectionArticle(articleId, articleTitle) {
 }
 
 /* ==========================================================================
-   FONCTIONS GALERIE CORRIGÉES (SANS btn.closest)
+   FONCTIONS GALERIE
    ========================================================================== */
-
-// Variables pour stocker l'état des galeries
 const galleryStates = {};
 
 function goToGallerySlideSection(galleryId, index) {
@@ -738,7 +867,6 @@ function goToGallerySlideSection(galleryId, index) {
         slides.scrollTo({ left: index * slideWidth, behavior: 'smooth' });
     }
     
-    // Mettre à jour les dots
     const dots = wrapper.querySelectorAll('.gallery-dot');
     dots.forEach((dot, i) => {
         dot.classList.toggle('active', i === index);
@@ -791,10 +919,8 @@ function nextGallerySectionById(galleryId) {
 }
 
 /* ==========================================================================
-   SOUS-ARTICLES EN MEDIA OBJECT / FLEXBOX ROW / LIST ITEM WITH THUMBNAIL
+   SOUS-ARTICLES EN MEDIA OBJECT
    ========================================================================== */
-
-// Fonction pour générer les sous-articles en format Media Object (flexbox row)
 function renderSubArticlesAsMediaObject(subArticles) {
     if (!subArticles.length) return '';
     
@@ -822,35 +948,8 @@ function renderSubArticlesAsMediaObject(subArticles) {
     `;
 }
 
-// Version alternative : Row Pattern (liste horizontale)
-function renderSubArticlesAsRowPattern(subArticles) {
-    if (!subArticles.length) return '';
-    
-    return `
-        <div class="economy-sub-section">
-            <div class="economy-sub-header">
-                <span class="economy-sub-label">À LA UNE ÉCO</span>
-                <span class="economy-sub-line"></span>
-            </div>
-            <div class="row-pattern-list">
-                ${subArticles.map(art => `
-                    <div class="row-pattern-item" onclick="window.location.href='redaction.html?id=${art.id}'">
-                        <div class="row-pattern-thumb">
-                            <img src="${art.image_url || 'https://via.placeholder.com/60x60'}" alt="${escapeHtml(art.titre)}" onerror="this.src='https://via.placeholder.com/60x60'">
-                        </div>
-                        <div class="row-pattern-text">
-                            <h4>${escapeHtml(art.titre)}</h4>
-                            <span class="read-time">${calculerTempsLecture(art.description)}</span>
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-        </div>
-    `;
-}
-
 /* ==========================================================================
-   9.1 ECONOMY ZONE AVEC MEDIA OBJECT
+   RENDER ECONOMY, INTERNATIONAL, ENVIRONNEMENT, SPORT
    ========================================================================== */
 function renderEconomy(articles) {
     const container = document.getElementById('economy-grid');
@@ -871,15 +970,10 @@ function renderEconomy(articles) {
         <div class="economy-hero-right">${renderSectionMedia(heroArticle)}</div>
     </div></div>`;
     
-    // Utilisation du Media Object pour les sous-articles
     html += renderSubArticlesAsMediaObject(subArticles);
-    
     container.innerHTML = html;
 }
 
-/* ==========================================================================
-   9.2 INTERNATIONAL ZONE AVEC MEDIA OBJECT
-   ========================================================================== */
 function renderInternational(articles) {
     const container = document.getElementById('international-grid');
     if (!container) return;
@@ -900,13 +994,9 @@ function renderInternational(articles) {
     </div></div>`;
     
     html += renderSubArticlesAsMediaObject(subArticles);
-    
     container.innerHTML = html;
 }
 
-/* ==========================================================================
-   9.3 ENVIRONNEMENT ZONE AVEC MEDIA OBJECT
-   ========================================================================== */
 function renderEnvironnement(articles) {
     const container = document.getElementById('environnement-grid');
     if (!container) return;
@@ -927,13 +1017,9 @@ function renderEnvironnement(articles) {
     </div></div>`;
     
     html += renderSubArticlesAsMediaObject(subArticles);
-    
     container.innerHTML = html;
 }
 
-/* ==========================================================================
-   9.4 SPORT ZONE AVEC MEDIA OBJECT
-   ========================================================================== */
 function renderSport(articles) {
     const container = document.getElementById('sport-grid');
     if (!container) return;
@@ -955,51 +1041,11 @@ function renderSport(articles) {
     </div></div>`;
     
     html += renderSubArticlesAsMediaObject(subArticles);
-    
     container.innerHTML = html;
 }
 
 /* ==========================================================================
-   9.5 INIT SPORT NAVIGATION
-   ========================================================================== */
-function initSport() {
-    const sportTabs = document.querySelectorAll('.sport-nav-categories span');
-    if (!sportTabs.length) return;
-    sportTabs.forEach(tab => {
-        tab.addEventListener('click', function() {
-            sportTabs.forEach(t => t.classList.remove('active'));
-            this.classList.add('active');
-            const sportType = this.getAttribute('data-sport');
-            if (sportType) loadSportCategory(sportType);
-        });
-    });
-}
-
-async function loadSportCategory(category) {
-    const container = document.getElementById('sport-grid');
-    if (!container) return;
-    container.innerHTML = '<div class="sport-loading"><div class="sport-spinner"></div><span>Chargement...</span></div>';
-    try {
-        let sportCategory = '';
-        switch(category) {
-            case 'football': sportCategory = 'SPORT_FOOTBALL'; break;
-            case 'basketball': sportCategory = 'SPORT_BASKETBALL'; break;
-            case 'tennis': sportCategory = 'SPORT_TENNIS'; break;
-            case 'combat': sportCategory = 'SPORT_COMBAT'; break;
-            case 'e-sport': sportCategory = 'SPORT_ESPORT'; break;
-            default: sportCategory = 'SPORT';
-        }
-        const { data, error } = await supabaseClient.from('articles').select('*').eq('is_published', true).eq('category', sportCategory).order('created_at', { ascending: false }).limit(7);
-        if (error) throw error;
-        if (!data || data.length === 0) { container.innerHTML = '<div class="sport-empty">Aucun article dans cette catégorie</div>'; return; }
-        renderSport(data);
-    } catch (error) {
-        console.error("Sport category error:", error);
-        container.innerHTML = '<div class="sport-error"><p>Erreur de chargement</p><button onclick="loadSportCategory(\'' + category + '\')">Réessayer</button></div>';
-    }
-}
-/* ==========================================================================
-   10. AUTRE INFO & OPINIONS & LIFESTYLE & MORE NEWS
+   RENDER AUTRE INFO, OPINIONS, LIFESTYLE, MORE NEWS
    ========================================================================== */
 function renderAutreInfo(articles) {
     const container = document.getElementById('sidebar-list');
@@ -1063,154 +1109,83 @@ function renderMoreNews(articles) {
 }
 
 /* ==========================================================================
-   11. VIDEOS
+   SYNC SIDEBAR CONTENT
    ========================================================================== */
-async function fetchVideos() {
-    const { data } = await supabaseClient.from('videos_du_jour').select('*').eq('is_published', true);
-    const slider = document.getElementById('video-slider');
-    if (!slider || !data) return;
-    
-    slider.innerHTML = data.map((vid, index) => `
-        <div class="video-magazine-item">
-            <div class="video-card">
-                <video playsinline muted ${index === 0 ? 'autoplay' : ''} loop data-src="${vid.video_url}" preload="none"></video>
-                <div class="video-controls-vertical">
-                    <button class="video-control-btn play-pause-btn" onclick="window.toggleVideoPlay(this)">
-                        <svg viewBox="0 0 24 24" fill="white" width="20" height="20">
-                            <polygon points="5 3 19 12 5 21 5 3" class="play-icon"/>
-                            <rect x="6" y="4" width="4" height="16" class="pause-icon" style="display:none" rx="1"/>
-                            <rect x="14" y="4" width="4" height="16" class="pause-icon-2" style="display:none" rx="1"/>
-                        </svg>
-                    </button>
-                    <button class="video-control-btn volume-btn" onclick="window.toggleVideoVolume(this)">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="18" height="18">
-                            <path d="M11 5L6 9H2v6h4l5 4V5z"/>
-                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.08"/>
-                        </svg>
-                    </button>
-                    <button class="video-control-btn fullscreen-btn" onclick="window.toggleVideoFullscreen(this)">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="18" height="18">
-                            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
-                        </svg>
-                    </button>
-                </div>
-                <div class="play-overlay" onclick="window.playVideo(this)"><div class="play-button"><svg width="48" height="48" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
-            </div>
-            <h4 class="video-mag-title">${escapeHtml(vid.titre)}</h4>
-        </div>
-    `).join('');
-    
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const video = entry.target;
-                if (video.dataset.src && !video.src) {
-                    video.src = video.dataset.src;
-                    video.load();
-                    video.addEventListener('canplay', () => video.style.opacity = '1');
-                }
-                observer.unobserve(video);
-            }
-        });
-    }, { threshold: 0.3 });
-    
-    document.querySelectorAll('.video-card video').forEach(video => observer.observe(video));
-    setupVideoDots(data.length);
-}
-
-function setupVideoDots(count) {
-    const container = document.getElementById('video-dots');
-    if (!container) return;
-    container.innerHTML = Array.from({ length: count }, (_, i) => `<div class="dot ${i === 0 ? 'active' : ''}" data-index="${i}"></div>`).join('');
-    document.querySelectorAll('#video-dots .dot').forEach((dot, i) => {
-        dot.addEventListener('click', () => {
-            const items = document.querySelectorAll('.video-magazine-item');
-            items[i]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
-        });
-    });
-}
-
-window.toggleVideoPlay = function(btn) {
-    const video = btn.closest('.video-card').querySelector('video');
-    if (!video) return;
-    const playIcon = btn.querySelector('.play-icon');
-    const pauseIcons = btn.querySelectorAll('.pause-icon, .pause-icon-2');
-    if (video.paused) {
-        video.play();
-        if (playIcon) playIcon.style.display = 'none';
-        pauseIcons.forEach(icon => icon.style.display = 'block');
-    } else {
-        video.pause();
-        if (playIcon) playIcon.style.display = 'block';
-        pauseIcons.forEach(icon => icon.style.display = 'none');
+function syncSidebarContent() {
+    const desktopList = document.querySelector('#sidebar-list');
+    const mobileList = document.querySelector('#sidebar-list-mobile');
+    if (desktopList && mobileList) {
+        mobileList.innerHTML = desktopList.innerHTML;
     }
-};
+    
+    const desktopOpinion = document.querySelector('#opinion-list');
+    const mobileOpinion = document.querySelector('#opinion-list-mobile');
+    if (desktopOpinion && mobileOpinion) {
+        mobileOpinion.innerHTML = desktopOpinion.innerHTML;
+    }
+}
+// Synchroniser le contenu entre sidebar desktop et mobile
+function syncSidebarContent() {
+    // Synchroniser la liste "AUTRE INFO"
+    const desktopList = document.querySelector('#sidebar-list');
+    const mobileList = document.querySelector('#sidebar-list-mobile');
+    
+    if (desktopList && mobileList) {
+        mobileList.innerHTML = desktopList.innerHTML;
+        console.log('✅ Sidebar list synchronisée');
+    }
+    
+    // Synchroniser la liste "OPINION"
+    const desktopOpinion = document.querySelector('#opinion-list');
+    const mobileOpinion = document.querySelector('#opinion-list-mobile');
+    
+    if (desktopOpinion && mobileOpinion) {
+        mobileOpinion.innerHTML = desktopOpinion.innerHTML;
+        console.log('✅ Opinion list synchronisée');
+    }
+}
 
-window.toggleVideoVolume = function(btn) {
-    const video = btn.closest('.video-card').querySelector('video');
-    if (!video) return;
-    video.muted = !video.muted;
-    const svg = btn.querySelector('svg');
-    if (svg) svg.innerHTML = video.muted ? '<path d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6"/>' : '<path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.08"/>';
-};
+// Appeler après chaque rendu de contenu
+function renderAutreInfo(articles) {
+    const container = document.getElementById('sidebar-list');
+    if (!container || !articles || articles.length === 0) return;
+    setSlidesData(articles);
+    const mainArt = articles[0];
+    const secondaryArticles = articles.slice(1, 3);
+    let html = `<article class="main-trending-card" onclick="window.location.href='redaction.html?id=${encodeURIComponent(mainArt.id)}'">
+        <img src="${mainArt.image_url || 'https://via.placeholder.com/600x400'}" class="slide-cover" onerror="this.src='https://via.placeholder.com/600x400'">
+        <div class="card-content"><span class="photo-credit">${escapeHtml(mainArt.author_name || 'MakMus')}</span>
+        <h2 class="main-headline">${escapeHtml(mainArt.titre)}</h2>
+        <p class="summary-text">${escapeHtml((mainArt.description || "").replace(/<[^>]*>/g, '').substring(0, 100))}...</p>
+        <span class="main-read-time">${calculerTempsLecture(mainArt.description)}</span></div></article>`;
+    if (secondaryArticles.length) {
+        html += `<div class="secondary-grid">${secondaryArticles.map(art => `<article class="grid-card" onclick="window.location.href='redaction.html?id=${encodeURIComponent(art.id)}'">
+            <img src="${art.image_url || 'https://via.placeholder.com/300x300'}" class="grid-cover" onerror="this.src='https://via.placeholder.com/300x300'">
+            <h4 class="grid-headline">${escapeHtml(art.titre)}</h4><span class="grid-read-time">${calculerTempsLecture(art.description)}</span></article>`).join('')}</div>`;
+    }
+    container.innerHTML = html;
+    
+    // 🔄 SYNC AVEC LA SIDEBAR MOBILE
+    syncSidebarContent();
+}
 
-window.toggleVideoFullscreen = function(btn) {
-    const video = btn.closest('.video-card').querySelector('video');
-    if (!video) return;
-    if (video.requestFullscreen) video.requestFullscreen();
-    else if (video.webkitRequestFullscreen) video.webkitRequestFullscreen();
-};
-
-window.playVideo = function(overlay) {
-    const video = overlay.closest('.video-card').querySelector('video');
-    if (!video) return;
-    overlay.style.display = 'none';
-    video.play().catch(() => overlay.style.display = 'flex');
-};
-
-window.scrollVideoSlider = function(distance) {
-    const slider = document.getElementById('video-slider');
-    if (slider) slider.scrollBy({ left: distance, behavior: 'smooth' });
-};
-
+function renderOpinions(opinions) {
+    const container = document.getElementById('opinion-list');
+    if (!container || !opinions?.length) return;
+    container.innerHTML = opinions.map((op, i) => `<div class="opinion-container-box">
+        <div class="opinion-author-row"><span class="author-name">${escapeHtml(op.author_name || 'La Redaction')}</span>
+        <img class="author-avatar" src="${op.author_image || 'https://via.placeholder.com/40'}" onerror="this.src='https://via.placeholder.com/40'"></div>
+        <h4 class="opinion-text-title" onclick="window.location.href='redaction.html?id=${op.id}'">${escapeHtml(op.titre)}</h4>
+        <span class="read-time-small">${calculerTempsLecture(op.description)}</span>
+        ${i === 0 && op.image_url ? `<img class="opinion-main-cover" src="${op.image_url}" onclick="window.location.href='redaction.html?id=${op.id}'">` : ''}
+    </div>`).join('');
+    
+    // 🔄 SYNC AVEC LA SIDEBAR MOBILE
+    syncSidebarContent();
+}
 /* ==========================================================================
-   12. AUDIO SECTION
+   RENDER AUDIOS
    ========================================================================== */
-async function loadAudios() {
-    const container = document.getElementById('audio-grid');
-    if (!container) return;
-    container.innerHTML = '<div class="audio-loading">Chargement des audios...</div>';
-    try {
-        const { data, error } = await supabaseClient.from('audios').select('*').eq('is_published', true).order('created_at', { ascending: false }).limit(6);
-        if (error) throw error;
-        if (!data?.length) { container.innerHTML = '<div class="audio-empty">Aucun audio disponible</div>'; return; }
-        container.innerHTML = data.map(audio => {
-            const minutes = Math.floor(audio.duree / 60);
-            const seconds = audio.duree % 60;
-            const tag = audio.type === 'resume' ? 'RÉSUMÉ' : audio.type === 'podcast' ? 'PODCAST' : 'INFO';
-            return `<div class="audio-card" data-audio-url="${audio.audio_url}" data-audio-id="${audio.id}">
-                <div class="audio-image-wrapper"><img src="${audio.image_url || 'https://picsum.photos/80/80'}" onerror="this.src='https://picsum.photos/80/80'"></div>
-                <div class="audio-info"><div class="audio-label-group"><span class="audio-tag">${tag}</span>${audio.source ? `<span class="audio-source">${escapeHtml(audio.source)}</span>` : ''}</div>
-                <h4 class="audio-title">${escapeHtml(audio.titre)}</h4>${audio.description ? `<p class="audio-description">${escapeHtml(audio.description.substring(0, 100))}...</p>` : ''}
-                <div class="audio-player-bar"><button class="play-circle" data-audio-url="${audio.audio_url}" data-audio='${JSON.stringify(audio)}'><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></button>
-                <span class="audio-duration">${minutes}:${seconds < 10 ? '0' + seconds : seconds}</span></div></div></div>`;
-        }).join('');
-        
-        document.querySelectorAll('.play-circle').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const audioData = JSON.parse(btn.getAttribute('data-audio'));
-                showAudioWidget(audioData);
-            });
-        });
-    } catch (error) {
-        console.error('Erreur chargement audios:', error);
-        container.innerHTML = '<div class="audio-empty">Erreur de chargement</div>';
-    }
-}
-// Widget Audio
-let currentAudioObj = null;
-let currentAudioData = null;
 function renderAudios(audios) {
     const container = document.getElementById('audio-grid');
     if (!container) {
@@ -1254,7 +1229,6 @@ function renderAudios(audios) {
         `;
     }).join('');
     
-    // Attacher les événements
     document.querySelectorAll('.play-circle').forEach(btn => {
         btn.removeEventListener('click', handleAudioPlay);
         btn.addEventListener('click', handleAudioPlay);
@@ -1271,7 +1245,6 @@ function handleAudioPlay(e) {
         return;
     }
     
-    // Arrêter l'audio en cours
     if (currentAudioObj) {
         currentAudioObj.pause();
         if (currentPlayBtn) {
@@ -1279,7 +1252,6 @@ function handleAudioPlay(e) {
         }
     }
     
-    // Reprendre si c'est le même audio en pause
     if (currentAudioObj && currentAudioObj.src === audioUrl && currentAudioObj.paused) {
         currentAudioObj.play();
         btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
@@ -1287,7 +1259,6 @@ function handleAudioPlay(e) {
         return;
     }
     
-    // Pause si c'est le même audio qui joue
     if (currentAudioObj && currentAudioObj.src === audioUrl && !currentAudioObj.paused) {
         currentAudioObj.pause();
         btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
@@ -1296,7 +1267,6 @@ function handleAudioPlay(e) {
         return;
     }
     
-    // Nouvel audio
     currentAudioObj = new Audio(audioUrl);
     currentAudioObj.play().catch(error => {
         console.error('Erreur lecture:', error);
@@ -1315,164 +1285,157 @@ function handleAudioPlay(e) {
         currentPlayBtn = null;
     };
 }
-function playSimpleAudio(btn, audioUrl) {
-    if (!audioUrl) {
-        showToast('Audio non disponible', 'error');
-        return;
-    }
-    
-    // Arrêter l'audio en cours
-    if (currentAudioObj) {
-        currentAudioObj.pause();
-        if (currentPlayBtn) {
-            currentPlayBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
-        }
-    }
-    
-    // Reprendre si c'est le même audio en pause
-    if (currentAudioObj && currentAudioObj.src === audioUrl && currentAudioObj.paused) {
-        currentAudioObj.play();
-        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
-        return;
-    }
-    
-    // Pause si c'est le même audio qui joue
-    if (currentAudioObj && currentAudioObj.src === audioUrl && !currentAudioObj.paused) {
-        currentAudioObj.pause();
-        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
-        currentAudioObj = null;
-        currentPlayBtn = null;
-        return;
-    }
-    
-    // Nouvel audio
-    currentAudioObj = new Audio(audioUrl);
-    currentAudioObj.play().catch(error => {
-        console.error('Erreur lecture:', error);
-        showToast('Impossible de lire cet audio', 'error');
-        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
-        currentAudioObj = null;
-    });
-    
-    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
-    currentPlayBtn = btn;
-    
-    currentAudioObj.onended = () => {
-        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
-        currentAudioObj = null;
-    };
-    
-    currentAudioObj.onerror = () => {
-        showToast('Erreur de lecture', 'error');
-        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
-        currentAudioObj = null;
-        currentPlayBtn = null;
-    };
-}
-function showAudioWidget(audioData) {
-    currentAudioData = audioData;
-    const widget = document.getElementById('audio-widget');
-    const cover = document.getElementById('widget-cover');
-    const title = document.getElementById('widget-title');
-    const source = document.getElementById('widget-source');
-    
-    cover.src = audioData.image_url || 'https://via.placeholder.com/50';
-    title.textContent = audioData.titre;
-    source.textContent = audioData.source || 'MAKMUS Audio';
-    
-    widget.style.display = 'block';
-    
-    if (currentAudioObj) {
-        currentAudioObj.pause();
-    }
-    
-    currentAudioObj = new Audio(audioData.audio_url);
-    setupAudioEvents();
-}
 
-function setupAudioEvents() {
-    const playBtn = document.getElementById('widget-play');
-    const progressFill = document.getElementById('widget-progress-fill');
-    const currentSpan = document.getElementById('widget-current');
-    const durationSpan = document.getElementById('widget-duration');
-    const progressBar = document.querySelector('.progress-bar');
-    
-    currentAudioObj.addEventListener('loadedmetadata', () => {
-        const minutes = Math.floor(currentAudioObj.duration / 60);
-        const seconds = Math.floor(currentAudioObj.duration % 60);
-        durationSpan.textContent = `${minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
-    });
-    
-    currentAudioObj.addEventListener('timeupdate', () => {
-        const percent = (currentAudioObj.currentTime / currentAudioObj.duration) * 100;
-        progressFill.style.width = percent + '%';
-        
-        const minutes = Math.floor(currentAudioObj.currentTime / 60);
-        const seconds = Math.floor(currentAudioObj.currentTime % 60);
-        currentSpan.textContent = `${minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
-    });
-    
-    playBtn.onclick = () => {
-        if (currentAudioObj.paused) {
-            currentAudioObj.play();
-            playBtn.innerHTML = '⏸';
-        } else {
-            currentAudioObj.pause();
-            playBtn.innerHTML = '▶';
-        }
-    };
-    
-    progressBar.onclick = (e) => {
-        const rect = progressBar.getBoundingClientRect();
-        const percent = (e.clientX - rect.left) / rect.width;
-        currentAudioObj.currentTime = percent * currentAudioObj.duration;
-    };
-    
-    currentAudioObj.onended = () => {
-        playBtn.innerHTML = '▶';
-    };
-}
-
-document.getElementById('widget-close').onclick = () => {
-    if (currentAudioObj) {
-        currentAudioObj.pause();
-    }
-    document.getElementById('audio-widget').style.display = 'none';
-};
 /* ==========================================================================
-   13. PUBLICITE
+   PUBLICITE
    ========================================================================== */
+let adsData = [];
+let currentAdIdx = 0;
+let adsInterval = null;
+
 async function initAds() {
     try {
-        const { data, error } = await supabaseClient.from('publicites').select('*').eq('est_active', true).order('created_at', { ascending: true });
+        if (typeof supabaseClient === 'undefined') {
+            console.warn('Supabase non initialisé');
+            displayFallbackAd();
+            return;
+        }
+        
+        const { data, error } = await supabaseClient
+            .from('publicites')
+            .select('*')
+            .eq('est_active', true)
+            .order('created_at', { ascending: true });
+        
         if (error) throw error;
-        if (!data?.length) { showFallbackAd(); return; }
-        activeAds = data;
-        showNextAd();
-        setInterval(showNextAd, 15000);
+        
+        if (!data || data.length === 0) {
+            displayFallbackAd();
+            return;
+        }
+        
+        adsData = data;
+        currentAdIdx = 0;
+        displayNextAd();
+        
+        if (adsInterval) clearInterval(adsInterval);
+        adsInterval = setInterval(displayNextAd, 15000);
+        
     } catch (error) {
         console.error('Erreur chargement publicites:', error);
-        showFallbackAd();
+        displayFallbackAd();
     }
 }
 
-function showNextAd() {
+function displayNextAd() {
     const zone = document.getElementById('ad-display-zone');
-    if (!zone || !activeAds?.length) return;
-    const ad = activeAds[currentAdIndex];
-    currentAdIndex = (currentAdIndex + 1) % activeAds.length;
-    zone.innerHTML = ad.type === 'video' ? 
-        `<div class="ad-container ad-video"><div class="ad-label">PUBLICITE</div><video class="ad-raw-media" src="${ad.media_url}" autoplay muted loop playsinline onclick="window.open('${ad.lien_clic}', '_blank')"></video></div>` :
-        `<div class="ad-container ad-image"><div class="ad-label">PUBLICITE</div><img class="ad-raw-media" src="${ad.media_url}" onclick="window.open('${ad.lien_clic}', '_blank')" onerror="this.src='https://via.placeholder.com/728x90'"></div>`;
+    if (!zone) return;
+    
+    if (!adsData || adsData.length === 0) {
+        displayFallbackAd();
+        return;
+    }
+    
+    const ad = adsData[currentAdIdx];
+    if (!ad) {
+        displayFallbackAd();
+        return;
+    }
+    
+    const clickUrl = ad.lien_clic && ad.lien_clic !== '' ? ad.lien_clic : '#';
+    let adHtml = '';
+    const adLabel = '<div class="ad-label">PUBLICITÉ</div>';
+    
+    if (ad.type === 'video') {
+        adHtml = `
+            <div class="ad-container ad-video">
+                ${adLabel}
+                <video class="ad-raw-media" 
+                       src="${ad.media_url}" 
+                       autoplay 
+                       muted 
+                       loop 
+                       playsinline 
+                       onclick="window.open('${clickUrl}', '_blank')">
+                </video>
+            </div>
+        `;
+    } else {
+        const imageUrl = ad.media_url && ad.media_url !== '' 
+            ? ad.media_url 
+            : 'https://via.placeholder.com/728x90?text=Publicite';
+        
+        adHtml = `
+            <div class="ad-container ad-image">
+                ${adLabel}
+                <img class="ad-raw-media" 
+                     src="${imageUrl}" 
+                     onclick="window.open('${clickUrl}', '_blank')" 
+                     onerror="this.src='https://via.placeholder.com/728x90?text=Image+non+disponible'">
+            </div>
+        `;
+    }
+    
+    zone.innerHTML = adHtml;
+    currentAdIdx = (currentAdIdx + 1) % adsData.length;
 }
 
-function showFallbackAd() {
+function displayFallbackAd() {
     const zone = document.getElementById('ad-display-zone');
-    if (zone) zone.innerHTML = `<div class="ad-container ad-fallback"><div class="ad-label">ESPACE PUBLICITAIRE</div><div class="ad-fallback-content"><span>Votre publicite ici</span><small>Contactez-nous</small></div></div>`;
+    if (!zone) return;
+    
+    zone.innerHTML = `
+        <div class="ad-container ad-fallback">
+            <div class="ad-label">ESPACE PUBLICITAIRE</div>
+            <div class="ad-fallback-content">
+                <span>Votre publicité ici</span>
+                <small>Contactez-nous</small>
+            </div>
+        </div>
+    `;
 }
 
 /* ==========================================================================
-   14. TAGS TRENDING
+   VIDEOS
+   ========================================================================== */
+async function fetchVideos() {
+    const { data } = await supabaseClient.from('videos_du_jour').select('*').eq('is_published', true);
+    const slider = document.getElementById('video-slider');
+    if (!slider || !data) return;
+    
+    slider.innerHTML = data.map((vid, index) => `
+        <div class="video-magazine-item">
+            <div class="video-card">
+                <video playsinline muted ${index === 0 ? 'autoplay' : ''} loop data-src="${vid.video_url}" preload="none"></video>
+                <div class="video-controls-vertical">
+                    <button class="video-control-btn play-pause-btn" onclick="window.toggleVideoPlay(this)">
+                        <svg viewBox="0 0 24 24" fill="white" width="20" height="20">
+                            <polygon points="5 3 19 12 5 21 5 3" class="play-icon"/>
+                            <rect x="6" y="4" width="4" height="16" class="pause-icon" style="display:none" rx="1"/>
+                            <rect x="14" y="4" width="4" height="16" class="pause-icon-2" style="display:none" rx="1"/>
+                        </svg>
+                    </button>
+                    <button class="video-control-btn volume-btn" onclick="window.toggleVideoVolume(this)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="18" height="18">
+                            <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.08"/>
+                        </svg>
+                    </button>
+                    <button class="video-control-btn fullscreen-btn" onclick="window.toggleVideoFullscreen(this)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="18" height="18">
+                            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="play-overlay" onclick="window.playVideo(this)"><div class="play-button"><svg width="48" height="48" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
+            </div>
+            <h4 class="video-mag-title">${escapeHtml(vid.titre)}</h4>
+        </div>
+    `).join('');
+}
+
+/* ==========================================================================
+   TAGS TRENDING
    ========================================================================== */
 async function loadTrendingTags() {
     const container = document.getElementById('tags-container');
@@ -1489,7 +1452,7 @@ async function loadTrendingTags() {
 }
 
 /* ==========================================================================
-   15. SLIDER AUTRE INFO
+   SLIDER AUTRE INFO
    ========================================================================== */
 let currentSlideIndex = 0;
 let slidesData = [];
@@ -1524,44 +1487,33 @@ function updateSlideDisplay() {
     }
     container.innerHTML = html;
 }
-/* ==========================================================================
-   FONCTIONS DE PARTAGE AMÉLIORÉES
-   ========================================================================== */
 
-// Partager l'article avec les bonnes métadonnées
+/* ==========================================================================
+   FONCTIONS DE PARTAGE
+   ========================================================================== */
 window.shareArticle = function(articleId, articleTitle, articleImage, articleDescription) {
     const articleUrl = `${window.location.origin}/redaction.html?id=${articleId}`;
-    
-    // Données complètes pour le partage
     const shareData = {
         title: articleTitle,
         text: articleDescription || 'Découvrez cet article sur MAKMUS',
         url: articleUrl
     };
     
-    // Pour les navigateurs qui supportent l'API Web Share
     if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
         navigator.share(shareData).catch(e => console.log('Partage annulé:', e));
     } else {
-        // Fallback : ouvrir la modal de partage
         openShareModal(articleId, articleTitle, articleUrl);
     }
 };
 
-// Ouvrir la modal de partage
 function openShareModal(articleId, articleTitle, articleUrl) {
-    // Mettre à jour l'URL dans la modal
     const urlPreview = document.getElementById('share-url-preview');
     if (urlPreview) urlPreview.textContent = articleUrl;
-    
-    // Stocker l'URL pour les boutons
     window.currentShareUrl = articleUrl;
     window.currentShareTitle = articleTitle;
-    
     window.toggleModal('shareModal', true);
 }
 
-// Copier le lien
 window.copyLink = function() {
     const url = window.currentShareUrl || window.location.href;
     navigator.clipboard.writeText(url);
@@ -1569,7 +1521,6 @@ window.copyLink = function() {
     window.toggleModal('shareModal', false);
 };
 
-// Partager sur X (Twitter)
 window.shareToX = function() {
     const url = encodeURIComponent(window.currentShareUrl || window.location.href);
     const title = encodeURIComponent(window.currentShareTitle || document.title);
@@ -1577,14 +1528,12 @@ window.shareToX = function() {
     window.toggleModal('shareModal', false);
 };
 
-// Partager sur Facebook
 window.shareToFacebook = function() {
     const url = encodeURIComponent(window.currentShareUrl || window.location.href);
     window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank', 'width=600,height=450');
     window.toggleModal('shareModal', false);
 };
 
-// Partager sur WhatsApp
 window.shareToWhatsApp = function() {
     const url = encodeURIComponent(window.currentShareUrl || window.location.href);
     const title = encodeURIComponent(window.currentShareTitle || document.title);
@@ -1592,101 +1541,8 @@ window.shareToWhatsApp = function() {
     window.toggleModal('shareModal', false);
 };
 
-// Partager sur LinkedIn
-window.shareToLinkedIn = function() {
-    const url = encodeURIComponent(window.currentShareUrl || window.location.href);
-    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, '_blank', 'width=600,height=450');
-    window.toggleModal('shareModal', false);
-};
-
-// Partager sur Telegram
-window.shareToTelegram = function() {
-    const url = encodeURIComponent(window.currentShareUrl || window.location.href);
-    const title = encodeURIComponent(window.currentShareTitle || document.title);
-    window.open(`https://t.me/share/url?url=${url}&text=${title}`, '_blank', 'width=600,height=450');
-    window.toggleModal('shareModal', false);
-};
-// Fonction pour forcer la mise à jour des meta tags avant partage
-function prepareForSharing(article) {
-    // Mettre à jour les meta tags Open Graph
-    const updateMeta = (property, content) => {
-        let meta = document.querySelector(`meta[property="${property}"]`);
-        if (!meta) {
-            meta = document.createElement('meta');
-            meta.setAttribute('property', property);
-            document.head.appendChild(meta);
-        }
-        meta.setAttribute('content', content);
-    };
-    
-    updateMeta('og:title', article.titre + ' | MAKMUS');
-    updateMeta('og:description', (article.description || '').substring(0, 300));
-    updateMeta('og:image', article.image_url);
-    updateMeta('og:url', `${window.location.origin}/redaction.html?id=${article.id}`);
-    
-    // Twitter Card
-    let twitterTitle = document.querySelector('meta[name="twitter:title"]');
-    if (!twitterTitle) {
-        twitterTitle = document.createElement('meta');
-        twitterTitle.setAttribute('name', 'twitter:title');
-        document.head.appendChild(twitterTitle);
-    }
-    twitterTitle.setAttribute('content', article.titre + ' | MAKMUS');
-    
-    let twitterImage = document.querySelector('meta[name="twitter:image"]');
-    if (!twitterImage) {
-        twitterImage = document.createElement('meta');
-        twitterImage.setAttribute('name', 'twitter:image');
-        document.head.appendChild(twitterImage);
-    }
-    twitterImage.setAttribute('content', article.image_url);
-}
-function updateOpenGraphTags(article) {
-    // Helper pour créer/mettre à jour les meta tags
-    const setMeta = (selector, attribute, content, isProperty = true) => {
-        let meta = document.querySelector(selector);
-        if (!meta) {
-            meta = document.createElement('meta');
-            if (isProperty) meta.setAttribute('property', attribute);
-            else meta.setAttribute('name', attribute);
-            document.head.appendChild(meta);
-        }
-        meta.setAttribute('content', content);
-    };
-    
-    // Nettoyer la description
-    const cleanDesc = (article.description || '').replace(/<[^>]*>/g, '').substring(0, 300);
-    
-    // ✅ RÉCUPÉRER L'URL DE L'IMAGE (déjà dans la table)
-    let imageUrl = article.image_url;
-    
-    // Fallback si pas d'image
-    if (!imageUrl) {
-        imageUrl = 'https://logphtrdkpbfgtejtime.supabase.co/storage/v1/object/public/Photo,%20Image/Untitled%20folder/MAK_MUS__1_-removebg-preview.png';
-    }
-    
-    // ✅ Vérifier si l'URL est valide
-    if (!imageUrl.startsWith('http')) {
-        // Si c'est une URL relative, ajouter le domaine
-        imageUrl = window.location.origin + imageUrl;
-    }
-    
-    console.log('📷 Image partagée:', imageUrl);
-    
-    // Open Graph
-    setMeta('meta[property="og:title"]', 'og:title', article.titre + ' | MAKMUS', true);
-    setMeta('meta[property="og:description"]', 'og:description', cleanDesc, true);
-    setMeta('meta[property="og:image"]', 'og:image', imageUrl, true);
-    setMeta('meta[property="og:url"]', 'og:url', window.location.href, true);
-    
-    // Twitter Card
-    setMeta('meta[name="twitter:card"]', 'twitter:card', 'summary_large_image', false);
-    setMeta('meta[name="twitter:title"]', 'twitter:title', article.titre + ' | MAKMUS', false);
-    setMeta('meta[name="twitter:description"]', 'twitter:description', cleanDesc, false);
-    setMeta('meta[name="twitter:image"]', 'twitter:image', imageUrl, false);
-}
 /* ==========================================================================
-   16. INITIALISATION
+   INITIALISATION
    ========================================================================== */
 function renderEmptyStates() {
     const hero = document.getElementById('hero-zone');
@@ -1716,14 +1572,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (dateEl) dateEl.textContent = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase();
     
     window.checkUserStatus();
-    fetchMakmusNews(); // Charge tout (articles + audios)
+    fetchMakmusNews();
     
     fetchMarketData().then(success => { if (success) { updateTickerUI(); setInterval(updateTickerUI, 10000); } });
     setInterval(fetchMarketData, 3600000);
     fetchVideos();
     initAds();
     loadTrendingTags();
-    initSport();
     
     console.log("MAKMUS — Initialisé avec succès");
 });

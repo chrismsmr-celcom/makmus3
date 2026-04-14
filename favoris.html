@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mes favoris - MAKMUS</title>
+    
+    <!-- Charger Supabase d'abord -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- CSS avec chemin relatif correct -->
+    <link rel="stylesheet" href="redaction.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Lora', Georgia, serif;
+            background: #fff;
+            color: #121212;
+        }
+        
+        .favorites-container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #a30000;
+        }
+        
+        .header h1 {
+            font-family: 'Libre Franklin', Arial, sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 0;
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #a30000;
+            text-decoration: none;
+            font-family: 'Libre Franklin', Arial, sans-serif;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: transform 0.2s ease;
+        }
+        
+        .back-link:hover {
+            transform: translateX(-3px);
+            text-decoration: underline;
+        }
+        
+        .back-link svg {
+            width: 18px;
+            height: 18px;
+        }
+        
+        .favorite-card {
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            border-bottom: 1px solid #e6e6e6;
+            margin-bottom: 20px;
+            transition: background 0.2s ease;
+        }
+        
+        .favorite-card:hover {
+            background: #f9f9f9;
+        }
+        
+        .favorite-card img {
+            width: 120px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        
+        .favorite-info {
+            flex: 1;
+        }
+        
+        .favorite-info h3 {
+            margin: 0 0 8px 0;
+            font-size: 1.1rem;
+        }
+        
+        .favorite-info h3 a {
+            text-decoration: none;
+            color: #121212;
+            transition: color 0.2s;
+        }
+        
+        .favorite-info h3 a:hover {
+            color: #a30000;
+        }
+        
+        .favorite-date {
+            font-size: 0.75rem;
+            color: #888;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .favorite-date svg {
+            width: 14px;
+            height: 14px;
+            fill: none;
+            stroke: #888;
+        }
+        
+        .empty-favorites {
+            text-align: center;
+            padding: 60px 20px;
+            color: #888;
+            font-family: 'Libre Franklin', Arial, sans-serif;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #888;
+            font-family: 'Libre Franklin', Arial, sans-serif;
+        }
+        
+        .error-message {
+            text-align: center;
+            padding: 60px 20px;
+            color: #a30000;
+            font-family: 'Libre Franklin', Arial, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div class="favorites-container">
+        <div class="header">
+            <a href="javascript:history.back()" class="back-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                Retour
+            </a>
+            <h1>Mes articles favoris</h1>
+        </div>
+        <div id="favorites-list" class="loading">Chargement de vos favoris...</div>
+    </div>
+
+    <script>
+        (function() {
+            const SUPABASE_URL = 'https://logphtrdkpbfgtejtime.supabase.co';
+            const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxvZ3BodHJka3BiZmd0ZWp0aW1lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNzY4MDYsImV4cCI6MjA4NTc1MjgwNn0.Uoxiax-whIdbB5oI3bof-hN0m5O9PDi96zmaUZ6BBio';
+            
+            // Attendre que Supabase soit chargé
+            if (!window.supabase) {
+                document.getElementById('favorites-list').innerHTML = '<div class="error-message">Erreur: Supabase non chargé</div>';
+                return;
+            }
+            
+            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            
+            function escapeHtml(text) {
+                if (!text) return '';
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+            
+            async function loadFavorites() {
+                const container = document.getElementById('favorites-list');
+                if (!container) return;
+                
+                try {
+                    const { data: { user }, error: userError } = await supabase.auth.getUser();
+                    
+                    if (userError || !user) {
+                        container.innerHTML = `
+                            <div class="empty-favorites">
+                                <p>Vous devez être connecté pour voir vos favoris.</p>
+                                <p style="margin-top: 15px;"><a href="redaction.html" style="color: #a30000;">Retour à l'accueil</a></p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    const { data: favorites, error } = await supabase
+                        .from('user_favorites')
+                        .select(`
+                            id,
+                            created_at,
+                            articles (
+                                id,
+                                titre,
+                                image_url,
+                                category
+                            )
+                        `)
+                        .eq('user_id', user.id)
+                        .order('created_at', { ascending: false });
+                    
+                    if (error) throw error;
+                    
+                    if (!favorites || favorites.length === 0) {
+                        container.innerHTML = `
+                            <div class="empty-favorites">
+                                <p>Vous n'avez pas encore d'articles favoris.</p>
+                                <p style="margin-top: 15px;"><a href="index.html" style="color: #a30000;">Découvrir des articles</a></p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    container.innerHTML = favorites.map(fav => {
+                        const article = fav.articles;
+                        if (!article) return '';
+                        return `
+                            <div class="favorite-card">
+                                ${article.image_url ? `<img src="${article.image_url}" alt="${escapeHtml(article.titre)}" onerror="this.src='https://via.placeholder.com/120x80?text=Image'">` : '<img src="https://via.placeholder.com/120x80?text=Image" alt="Image par défaut">'}
+                                <div class="favorite-info">
+                                    <h3><a href="redaction.html?id=${article.id}">${escapeHtml(article.titre)}</a></h3>
+                                    <div class="favorite-date">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"/>
+                                            <polyline points="12 6 12 12 16 14"/>
+                                        </svg>
+                                        Ajouté le ${new Date(fav.created_at).toLocaleDateString('fr-FR')}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                    
+                } catch (error) {
+                    console.error('Erreur:', error);
+                    container.innerHTML = `<div class="error-message">Erreur: ${error.message}</div>`;
+                }
+            }
+            
+            // Attendre que le DOM soit chargé
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', loadFavorites);
+            } else {
+                loadFavorites();
+            }
+        })();
+    </script>
+</body>
+</html>
