@@ -154,6 +154,17 @@ a {
     color: var(--black);
 }
 
+/* 📱 Cacher le texte "MENU" sur mobile */
+@media (max-width: 768px) {
+    .menu-label {
+        display: none;
+    }
+    
+    .menu-toggle {
+        gap: 0;
+    }
+}
+
 .top-bar {
     background: #fff;
     border-bottom: 1px solid var(--border);
@@ -231,6 +242,31 @@ a {
 #openModal img {
     width: 22px;
     height: 22px;
+}
+
+/* 📱 Ajustements supplémentaires pour mobile */
+@media (max-width: 768px) {
+    .main-header {
+        padding: 10px 15px;
+    }
+    
+    .logo-container img {
+        height: 30px;
+    }
+    
+    .btn-subscribe {
+        padding: 4px 10px;
+        font-size: 0.6rem;
+    }
+    
+    #openModal img {
+        width: 18px;
+        height: 18px;
+    }
+    
+    .header-right {
+        gap: 8px;
+    }
 }
 
 /* --------------------------------------

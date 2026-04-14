@@ -20,7 +20,7 @@ if (!articleId && !articleSlug && window.location.pathname.startsWith('/article/
     console.log('✅ SLUG détecté depuis pathname:', articleSlug);
 }
 
-// Redirection vers l'URL avec paramètre slug
+// Redirection si slug présent mais pas dans l'URL
 if (articleSlug && !window.location.search.includes('slug=')) {
     const newUrl = `${window.location.origin}/redaction.html?slug=${encodeURIComponent(articleSlug)}`;
     console.log('🔄 Redirection vers:', newUrl);
@@ -294,6 +294,7 @@ window.loadUserActivity = async function() {
         }
     }
 };
+
 /* --------------------------------------
    LIKES (avec BDD)
    -------------------------------------- */
@@ -510,7 +511,6 @@ function renderReplies(replies) {
             day: 'numeric', month: 'short', year: 'numeric'
         });
         
-        // Afficher l'email ou extraire le nom avant @
         var displayName = reply.nom;
         if (displayName && displayName.includes('@')) {
             displayName = displayName.split('@')[0];
@@ -535,6 +535,7 @@ function renderReplies(replies) {
         `;
     }).join('');
 }
+
 // Version améliorée de fetchComments avec likes et réponses
 async function fetchComments() {
     if (!currentArticle) return;
@@ -579,10 +580,9 @@ async function fetchComments() {
                         day: 'numeric', month: 'short', year: 'numeric'
                     });
                     
-                    // Afficher l'email ou extraire le nom avant @
                     var displayName = c.nom;
                     if (displayName && displayName.includes('@')) {
-                        displayName = displayName.split('@')[0]; // Afficher seulement "chrismsmr"
+                        displayName = displayName.split('@')[0];
                     }
                     
                     commentsHtml += `
@@ -626,7 +626,7 @@ async function fetchComments() {
         if (commSpan) commSpan.textContent = comments?.length || 0;
     } catch (error) {
         console.error('Erreur fetchComments:', error);
-                var list = document.getElementById('comments-list');
+        var list = document.getElementById('comments-list');
         if (list) {
             list.innerHTML = '<div class="comment-empty">Erreur de chargement des commentaires</div>';
         }
@@ -697,99 +697,7 @@ window.showReplyForm = function(commentId) {
     }
 };
 
-// Poster une réponse
-window.postReply = async function(parentId) {
-    var textInput = document.getElementById(`reply-text-${parentId}`);
-    var msg = textInput?.value.trim();
-    
-    if (!msg) {
-        showToast("Veuillez écrire une réponse", 'error');
-        return;
-    }
-    
-    if (!currentArticle) return;
-    
-    // Récupérer l'utilisateur connecté
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    
-    if (!user) {
-        showToast("Connectez-vous pour répondre", 'info');
-        window.toggleSidePanel(true);
-        return;
-    }
-    
-    try {
-        // NE PAS inclure user_id dans l'insertion
-        var { error } = await supabaseClient.from('article_comments').insert([{ 
-            article_id: currentArticle.id,
-            parent_id: parentId,
-            nom: user.email,  // Utiliser l'email complet
-            message: msg,
-            likes_count: 0
-        }]);
-        
-        if (!error) {
-            if (textInput) textInput.value = "";
-            fetchComments();
-            showToast("Réponse publiée !", 'success');
-        } else {
-            showToast("Erreur lors de la publication", 'error');
-        }
-    } catch (error) {
-        console.error('Erreur postReply:', error);
-        showToast("Erreur lors de la publication", 'error');
-    }
-};
-// Poster un commentaire principal
-window.postComment = async function() {
-    var msgInput = document.getElementById('comm-text');
-    var msg = msgInput?.value.trim();
-    
-    if (!msg) {
-        showToast("Veuillez écrire un commentaire", 'error');
-        return;
-    }
-    
-    if (!currentArticle) return;
-    
-    // Récupérer l'utilisateur connecté
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    
-    if (!user) {
-        showToast("Connectez-vous pour commenter", 'info');
-        window.toggleSidePanel(true);
-        return;
-    }
-    
-    try {
-        // Construction de l'objet à insérer (sans user_id si la colonne n'existe pas)
-        var commentData = { 
-            article_id: currentArticle.id,
-            parent_id: null,
-            nom: user.email,
-            message: msg,
-            likes_count: 0
-        };
-        
-        console.log('📝 Insertion commentaire:', commentData);
-        
-        var { error } = await supabaseClient.from('article_comments').insert([commentData]);
-        
-        if (!error) {
-            if (msgInput) msgInput.value = "";
-            fetchComments();
-            showToast("Commentaire publié !", 'success');
-        } else {
-            console.error('Erreur:', error);
-            showToast("Erreur: " + (error.message || "Publication impossible"), 'error');
-        }
-    } catch (error) {
-        console.error('Erreur postComment:', error);
-        showToast("Erreur lors de la publication", 'error');
-    }
-};
-
-// Poster une réponse
+// Poster une réponse (version unique)
 window.postReply = async function(parentId) {
     var textInput = document.getElementById(`reply-text-${parentId}`);
     var msg = textInput?.value.trim();
@@ -818,8 +726,6 @@ window.postReply = async function(parentId) {
             likes_count: 0
         };
         
-        console.log('📝 Insertion réponse:', replyData);
-        
         var { error } = await supabaseClient.from('article_comments').insert([replyData]);
         
         if (!error) {
@@ -835,6 +741,52 @@ window.postReply = async function(parentId) {
         showToast("Erreur lors de la publication", 'error');
     }
 };
+
+// Poster un commentaire principal
+window.postComment = async function() {
+    var msgInput = document.getElementById('comm-text');
+    var msg = msgInput?.value.trim();
+    
+    if (!msg) {
+        showToast("Veuillez écrire un commentaire", 'error');
+        return;
+    }
+    
+    if (!currentArticle) return;
+    
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    
+    if (!user) {
+        showToast("Connectez-vous pour commenter", 'info');
+        window.toggleSidePanel(true);
+        return;
+    }
+    
+    try {
+        var commentData = { 
+            article_id: currentArticle.id,
+            parent_id: null,
+            nom: user.email,
+            message: msg,
+            likes_count: 0
+        };
+        
+        var { error } = await supabaseClient.from('article_comments').insert([commentData]);
+        
+        if (!error) {
+            if (msgInput) msgInput.value = "";
+            fetchComments();
+            showToast("Commentaire publié !", 'success');
+        } else {
+            console.error('Erreur:', error);
+            showToast("Erreur: " + (error.message || "Publication impossible"), 'error');
+        }
+    } catch (error) {
+        console.error('Erreur postComment:', error);
+        showToast("Erreur lors de la publication", 'error');
+    }
+};
+
 /* --------------------------------------
    PARTAGE - SIDE PANEL
    -------------------------------------- */
@@ -921,7 +873,6 @@ window.shareToThreads = function() {
    METADATA OPEN GRAPH & TWITTER CARDS
    -------------------------------------- */
 function updateOpenGraphTags(article) {
-    // Helper pour créer/mettre à jour les meta tags
     const setMeta = (selector, attribute, content, isProperty = true) => {
         let meta = document.querySelector(selector);
         if (!meta) {
@@ -933,22 +884,14 @@ function updateOpenGraphTags(article) {
         meta.setAttribute('content', content);
     };
     
-    // Nettoyer la description
     const cleanDesc = (article.description || '').replace(/<[^>]*>/g, '').substring(0, 300);
-    
-    // Récupérer l'URL de l'image
     let imageUrl = article.image_url;
     if (!imageUrl) {
         imageUrl = 'https://i.postimg.cc/x88LbhZp/2_20251224_213424_0001.png';
     }
-    
-    // Construire l'URL complète de l'article
     const articleUrl = `${window.location.origin}/redaction.html?id=${article.id}`;
-    
-    // Mettre à jour le titre de la page
     document.title = `${article.titre} | MAKMUS`;
     
-    // Open Graph
     setMeta('meta[property="og:title"]', 'og:title', `${article.titre} | MAKMUS`, true);
     setMeta('meta[property="og:description"]', 'og:description', cleanDesc, true);
     setMeta('meta[property="og:image"]', 'og:image', imageUrl, true);
@@ -958,7 +901,6 @@ function updateOpenGraphTags(article) {
     setMeta('meta[property="og:image:width"]', 'og:image:width', '1200', true);
     setMeta('meta[property="og:image:height"]', 'og:image:height', '630', true);
     
-    // Twitter Card
     setMeta('meta[name="twitter:card"]', 'twitter:card', 'summary_large_image', false);
     setMeta('meta[name="twitter:site"]', 'twitter:site', '@MakMus', false);
     setMeta('meta[name="twitter:creator"]', 'twitter:creator', '@MakMus', false);
@@ -966,12 +908,23 @@ function updateOpenGraphTags(article) {
     setMeta('meta[name="twitter:description"]', 'twitter:description', cleanDesc, false);
     setMeta('meta[name="twitter:image"]', 'twitter:image', imageUrl, false);
     
-    // Description standard
     const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) metaDesc.setAttribute('content', cleanDesc);
     
     console.log('✅ Meta tags mis à jour pour:', article.titre);
-    console.log('📷 Image utilisée:', imageUrl);
+}
+
+// Générer un slug à partir d'un titre
+function generateSlug(title) {
+    if (!title) return '';
+    return title
+        .toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/['’]/g, '') // ← AJOUTE CETTE LIGNE (supprime les apostrophes)
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
 }
 /* --------------------------------------
    TTS & LECTEUR AUDIO
@@ -1212,10 +1165,8 @@ async function loadTrendingTags() {
 }
 
 /* --------------------------------------
-   UTILITAIRES AMÉLIORÉS (DÉPLACÉS AVANT RENDERARTICLE)
+   UTILITAIRES AMÉLIORÉS
    -------------------------------------- */
-
-// Nettoyage du contenu HTML
 function sanitizeContent(content) {
     if (!content) return '';
     return content
@@ -1225,14 +1176,11 @@ function sanitizeContent(content) {
         .replace(/style="font-family: georgia, palatino, serif;?"/gi, '');
 }
 
-// Validation d'URL pour sécurité XSS (version permissive)
 function isValidImageUrl(url) {
     if (!url) return false;
-    // Accepte toutes les URLs HTTPS/HTTP
     return url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:');
 }
 
-// Parse HTML proprement
 function parseHtmlToParagraphs(html) {
     if (!html) return [];
     var cleanHtml = sanitizeContent(html);
@@ -1252,7 +1200,6 @@ function parseHtmlToParagraphs(html) {
     return paragraphs;
 }
 
-// Initialisation des images lazy avec fade-in
 function initLazyImages() {
     var images = document.querySelectorAll('.article-media-wrapper img[loading="lazy"]');
     images.forEach(function(img) {
@@ -1268,8 +1215,6 @@ function initLazyImages() {
 /* --------------------------------------
    RENDER ARTICLE
    -------------------------------------- */
-
-// Rendu d'un média (image ou vidéo)
 function renderMedia(media) {
     var imageUrl = isValidImageUrl(media.url) ? media.url : 'https://via.placeholder.com/800x500?text=Image+non+disponible';
     
@@ -1297,7 +1242,6 @@ function renderMedia(media) {
     return '';
 }
 
-// Rendu de la publicité
 function renderAd() {
     return `
         <div class="ad-fullwidth-wrapper">
@@ -1313,7 +1257,6 @@ function renderAd() {
     `;
 }
 
-// Rendu des recommandations
 function renderRecommendations() {
     return `
         <div class="inline-recommendations">
@@ -1332,7 +1275,6 @@ function renderRecommendations() {
     `;
 }
 
-// Rendu du header de l'article
 function renderArticleHeader(art, readTime) {
     return `
         <header class="article-header">
@@ -1403,7 +1345,6 @@ function renderArticleHeader(art, readTime) {
     `;
 }
 
-// Rendu du média principal
 function renderMainMedia(art) {
     if (art.video_url && art.video_url !== '') {
         return `
@@ -1467,7 +1408,6 @@ function renderMainMedia(art) {
     return '';
 }
 
-// Rendu de la bio auteur
 function renderAuthorBio(art) {
     var authorBio = art.author_bio || '';
     var authorRole = art.author_role || 'Journaliste';
@@ -1520,7 +1460,6 @@ function renderAuthorBio(art) {
     return '';
 }
 
-// RENDER ARTICLE PRINCIPAL
 function renderArticle(art) {
     var cleanContent = sanitizeContent(art.content || art.description || '');
     var paragraphs = parseHtmlToParagraphs(cleanContent);
@@ -1535,31 +1474,26 @@ function renderArticle(art) {
         if (p.trim() === "") continue;
         textContent += p;
         
-        // Insertion des médias tous les 3 paragraphes
         if (idx > 0 && idx % 3 === 0 && mediaIndex < extraMedias.length) {
             textContent += renderMedia(extraMedias[mediaIndex]);
             mediaIndex++;
         }
         
-        // Insertion de la publicité
         if (idx === 1 && totalPara > 3) {
             textContent += renderAd();
         }
         
-        // Insertion des recommandations
         if (idx === Math.floor(totalPara / 2) && totalPara > 5) {
             textContent += renderRecommendations();
             setTimeout(function() { fillInlineGrid(art.category, art.id); }, 200);
         }
     }
     
-    // Ajout des médias restants
     while (mediaIndex < extraMedias.length) {
         textContent += renderMedia(extraMedias[mediaIndex]);
         mediaIndex++;
     }
     
-    // Assemblage final
     var fullHtml = `
         ${renderArticleHeader(art, readTime)}
         ${renderMainMedia(art)}
@@ -1571,7 +1505,6 @@ function renderArticle(art) {
     
     document.getElementById('full-article').innerHTML = fullHtml;
     
-    // Initialisations
     initArticleVideoPlayer();
     initLazyImages();
     
@@ -1740,6 +1673,12 @@ async function loadArticle() {
     
     currentArticle = art;
     document.title = art.titre + ' | MAKMUS';
+    
+    if (art.slug && !window.location.search.includes('slug=') && !window.location.pathname.includes(art.slug)) {
+        const newUrl = `${window.location.origin}/redaction.html?slug=${art.slug}`;
+        console.log('🔄 Mise à jour URL avec slug:', newUrl);
+        window.history.replaceState({}, '', newUrl);
+    }
     
     updateOpenGraphTags(art);
     renderArticle(art);

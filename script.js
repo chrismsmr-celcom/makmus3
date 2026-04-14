@@ -19,6 +19,14 @@ let currentTickerIndex = 0;
 let currentAudio = null;
 let currentPlayBtn = null;
 let sportCache = {};
+let currentAudioObj = null;
+let currentUser = null;
+let currentArticle = null;
+let adsData = [];
+let currentAdIdx = 0;
+let adsInterval = null;
+let currentSlideIndex = 0;
+let slidesData = [];
 
 /* --------------------------------------
    3. UTILITAIRES
@@ -69,6 +77,21 @@ window.toggleSidePanel = function(isOpen) {
     if (!panel) return;
     panel.classList.toggle('active', isOpen);
     document.body.style.overflow = isOpen ? 'hidden' : 'auto';
+};
+
+window.toggleSharePanel = function(isOpen) {
+    const panel = document.getElementById('sharePanel');
+    if (!panel) return;
+    panel.classList.toggle('active', isOpen);
+    document.body.style.overflow = isOpen ? 'hidden' : 'auto';
+};
+
+window.toggleModal = function(id, show) {
+    const modal = document.getElementById(id);
+    if (modal) {
+        modal.style.display = show ? 'flex' : 'none';
+        document.body.style.overflow = show ? 'hidden' : 'auto';
+    }
 };
 
 /* --------------------------------------
@@ -230,6 +253,46 @@ async function fetchLikesCount() {
         console.error('Erreur fetchLikesCount:', error);
     }
 }
+
+window.toggleLike = async function() {
+    if (!currentArticle) return;
+    
+    if (!currentUser) {
+        showToast('Connectez-vous pour aimer cet article', 'info');
+        window.toggleSidePanel(true);
+        return;
+    }
+    
+    const likeBtn = document.getElementById('like-btn');
+    if (likeBtn.disabled) {
+        showToast('Vous avez déjà aimé cet article', 'info');
+        return;
+    }
+    
+    try {
+        const { error } = await supabaseClient
+            .from('user_likes')
+            .insert([{ 
+                user_id: currentUser.id, 
+                article_id: currentArticle.id 
+            }]);
+        
+        if (error) {
+            console.error('Erreur insertion:', error);
+            showToast('Erreur lors du like', 'error');
+            return;
+        }
+        
+        likeBtn.classList.add('liked');
+        likeBtn.disabled = true;
+        likeBtn.title = "Vous avez déjà aimé cet article";
+        showToast('Article aimé !', 'success');
+        fetchLikesCount();
+    } catch (error) {
+        console.error('Erreur toggleLike:', error);
+        showToast('Erreur lors du like', 'error');
+    }
+};
 
 /* --------------------------------------
    FAVORIS (avec BDD)
@@ -596,6 +659,20 @@ const heroFlexible = {
     }
 };
 
+/* ==========================================================================
+   9. FONCTION UTILITAIRE POUR LES URLS
+   ========================================================================== */
+function getArticleUrl(article) {
+    if (!article) return '#';
+    if (article.slug && article.slug !== '') {
+        return `redaction.html?slug=${encodeURIComponent(article.slug)}`;
+    }
+    return `redaction.html?id=${article.id}`;
+}
+
+/* ==========================================================================
+   10. RENDER UI
+   ========================================================================== */
 function renderUI(heroArticle, gridArticles) {
     const heroZone = document.getElementById('hero-zone');
     const grid = document.getElementById('news-grid');
@@ -608,10 +685,11 @@ function renderUI(heroArticle, gridArticles) {
             if (!sub) return;
             const hasImage = sub.image_url && sub.image_url !== '';
             const readTime = calculerTempsLecture(sub.description);
+            const articleUrl = getArticleUrl(sub);
             
             if (hasImage) {
                 subHtml += `
-                    <div class="sub-article-card" onclick="window.location.href='redaction.html?id=${sub.id}'">
+                    <div class="sub-article-card" onclick="window.location.href='${articleUrl}'">
                         <img src="${sub.image_url}" class="sub-article-image" onerror="this.src='https://via.placeholder.com/100x100'">
                         <div class="sub-article-content">
                             <h4 class="sub-article-title">${escapeHtml(sub.titre)}</h4>
@@ -621,7 +699,7 @@ function renderUI(heroArticle, gridArticles) {
                 `;
             } else {
                 subHtml += `
-                    <div class="sub-article-text-only" onclick="window.location.href='redaction.html?id=${sub.id}'">
+                    <div class="sub-article-text-only" onclick="window.location.href='${articleUrl}'">
                         <h4 class="sub-article-title">${escapeHtml(sub.titre)}</h4>
                         <span class="sub-article-read-time">${readTime}</span>
                     </div>
@@ -630,11 +708,13 @@ function renderUI(heroArticle, gridArticles) {
         });
         
         const cleanDesc = (heroArticle.description || "").replace(/<[^>]*>/g, '').substring(0, 560);
+        const heroUrl = getArticleUrl(heroArticle);
+        
         heroZone.innerHTML = `
             <div class="hero-main-wrapper">
                 <div class="hero-two-columns">
                     <div class="hero-left">
-                        <h1 class="hero-title" onclick="window.location.href='redaction.html?id=${heroArticle.id}'">${escapeHtml(heroArticle.titre)}</h1>
+                        <h1 class="hero-title" onclick="window.location.href='${heroUrl}'">${escapeHtml(heroArticle.titre)}</h1>
                         <p class="hero-description">${cleanDesc}...</p>
                     </div>
                     <div class="hero-right">
@@ -661,22 +741,25 @@ function renderUI(heroArticle, gridArticles) {
     if (grid && gridArticles) {
         grid.innerHTML = gridArticles.slice(3, 15).map(art => {
             const excerpt = (art.description || "").replace(/<[^>]*>/g, '').substring(0, 120);
-            return `<div class="article-card" onclick="window.location.href='redaction.html?id=${art.id}'">
-                <div class="card-img-wrapper">
-                    <img class="article-image" src="${art.image_url || 'https://via.placeholder.com/400x250'}" onerror="this.src='https://via.placeholder.com/400x250'">
+            const articleUrl = getArticleUrl(art);
+            return `
+                <div class="article-card" onclick="window.location.href='${articleUrl}'">
+                    <div class="card-img-wrapper">
+                        <img class="article-image" src="${art.image_url || 'https://via.placeholder.com/400x250'}" onerror="this.src='https://via.placeholder.com/400x250'">
+                    </div>
+                    <div class="article-meta-content">
+                        <h3 class="article-title">${escapeHtml(art.titre)}</h3>
+                        <p class="article-excerpt">${escapeHtml(excerpt)}...</p>
+                        <span class="read-time-small">${calculerTempsLecture(art.description)}</span>
+                    </div>
                 </div>
-                <div class="article-meta-content">
-                    <h3 class="article-title">${escapeHtml(art.titre)}</h3>
-                    <p class="article-excerpt">${escapeHtml(excerpt)}...</p>
-                    <span class="read-time-small">${calculerTempsLecture(art.description)}</span>
-                </div>
-            </div>`;
+            `;
         }).join('');
     }
 }
 
 /* ==========================================================================
-   9. FONCTIONS DE RENDU MÉDIA ET SECTIONS
+   11. FONCTIONS DE RENDU MÉDIA ET SECTIONS
    ========================================================================== */
 function renderSectionMedia(article) {
     if (article.video_url && article.video_url !== '') {
@@ -804,7 +887,7 @@ function renderSectionMedia(article) {
 }
 
 /* ==========================================================================
-   FONCTIONS VIDÉO POUR LES SECTIONS
+   12. FONCTIONS VIDÉO POUR LES SECTIONS
    ========================================================================== */
 function toggleVideoPlaySection(btn) {
     const video = btn.closest('.hero-video-wrapper').querySelector('video');
@@ -852,7 +935,7 @@ function shareSectionArticle(articleId, articleTitle) {
 }
 
 /* ==========================================================================
-   FONCTIONS GALERIE
+   13. FONCTIONS GALERIE
    ========================================================================== */
 const galleryStates = {};
 
@@ -919,7 +1002,7 @@ function nextGallerySectionById(galleryId) {
 }
 
 /* ==========================================================================
-   SOUS-ARTICLES EN MEDIA OBJECT
+   14. SOUS-ARTICLES EN MEDIA OBJECT
    ========================================================================== */
 function renderSubArticlesAsMediaObject(subArticles) {
     if (!subArticles.length) return '';
@@ -931,8 +1014,10 @@ function renderSubArticlesAsMediaObject(subArticles) {
                 <span class="economy-sub-line"></span>
             </div>
             <div class="economy-sub-grid media-object-grid">
-                ${subArticles.map(art => `
-                    <div class="media-object-card" onclick="window.location.href='redaction.html?id=${art.id}'">
+                ${subArticles.map(art => {
+                    const articleUrl = getArticleUrl(art);
+                    return `
+                    <div class="media-object-card" onclick="window.location.href='${articleUrl}'">
                         <div class="media-object-thumbnail">
                             <img src="${art.image_url || 'https://via.placeholder.com/100x100'}" alt="${escapeHtml(art.titre)}" onerror="this.src='https://via.placeholder.com/100x100'">
                         </div>
@@ -942,14 +1027,14 @@ function renderSubArticlesAsMediaObject(subArticles) {
                             <span class="media-object-read-time">${calculerTempsLecture(art.description)}</span>
                         </div>
                     </div>
-                `).join('')}
+                `}).join('')}
             </div>
         </div>
     `;
 }
 
 /* ==========================================================================
-   RENDER ECONOMY, INTERNATIONAL, ENVIRONNEMENT, SPORT
+   15. RENDER ECONOMY, INTERNATIONAL, ENVIRONNEMENT, SPORT
    ========================================================================== */
 function renderEconomy(articles) {
     const container = document.getElementById('economy-grid');
@@ -960,13 +1045,14 @@ function renderEconomy(articles) {
     const heroArticle = ecoArticles[0];
     const subArticles = ecoArticles.slice(1, 6);
     const cleanDesc = (heroArticle.description || "").replace(/<[^>]*>/g, '').substring(0, 400);
+    const heroUrl = getArticleUrl(heroArticle);
     
     let html = `<div class="economy-hero-wrapper"><div class="economy-hero-flexible">
         <div class="economy-hero-left"><span class="economy-hero-category">${heroArticle.category || 'ÉCONOMIE'}</span>
-        <h1 class="economy-hero-title" onclick="window.location.href='redaction.html?id=${heroArticle.id}'">${escapeHtml(heroArticle.titre)}</h1>
+        <h1 class="economy-hero-title" onclick="window.location.href='${heroUrl}'">${escapeHtml(heroArticle.titre)}</h1>
         <p class="economy-hero-description">${cleanDesc}...</p>
         <div class="economy-hero-meta"><span class="economy-hero-read-time">${calculerTempsLecture(heroArticle.description)}</span>
-        <span class="economy-hero-cta" onclick="window.location.href='redaction.html?id=${heroArticle.id}'"></span></div></div>
+        <span class="economy-hero-cta" onclick="window.location.href='${heroUrl}'"></span></div></div>
         <div class="economy-hero-right">${renderSectionMedia(heroArticle)}</div>
     </div></div>`;
     
@@ -983,13 +1069,14 @@ function renderInternational(articles) {
     const heroArticle = internationalArticles[0];
     const subArticles = internationalArticles.slice(1, 6);
     const cleanDesc = (heroArticle.description || "").replace(/<[^>]*>/g, '').substring(0, 400);
+    const heroUrl = getArticleUrl(heroArticle);
     
     let html = `<div class="international-hero-wrapper"><div class="international-hero-flexible">
         <div class="international-hero-left"><span class="international-hero-category">${heroArticle.subcategory || heroArticle.category || 'INTERNATIONAL'}</span>
-        <h1 class="international-hero-title" onclick="window.location.href='redaction.html?id=${heroArticle.id}'">${escapeHtml(heroArticle.titre)}</h1>
+        <h1 class="international-hero-title" onclick="window.location.href='${heroUrl}'">${escapeHtml(heroArticle.titre)}</h1>
         <p class="international-hero-description">${cleanDesc}...</p>
         <div class="international-hero-meta"><span class="international-hero-read-time">${calculerTempsLecture(heroArticle.description)}</span>
-        <span class="international-hero-cta" onclick="window.location.href='redaction.html?id=${heroArticle.id}'"></span></div></div>
+        <span class="international-hero-cta" onclick="window.location.href='${heroUrl}'"></span></div></div>
         <div class="international-hero-right">${renderSectionMedia(heroArticle)}</div>
     </div></div>`;
     
@@ -1006,13 +1093,14 @@ function renderEnvironnement(articles) {
     const heroArticle = environnementArticles[0];
     const subArticles = environnementArticles.slice(1, 6);
     const cleanDesc = (heroArticle.description || "").replace(/<[^>]*>/g, '').substring(0, 400);
+    const heroUrl = getArticleUrl(heroArticle);
     
     let html = `<div class="environnement-hero-wrapper"><div class="environnement-hero-flexible">
         <div class="environnement-hero-left"><span class="environnement-hero-category">${heroArticle.subcategory || heroArticle.category || 'ENVIRONNEMENT'}</span>
-        <h1 class="environnement-hero-title" onclick="window.location.href='redaction.html?id=${heroArticle.id}'">${escapeHtml(heroArticle.titre)}</h1>
+        <h1 class="environnement-hero-title" onclick="window.location.href='${heroUrl}'">${escapeHtml(heroArticle.titre)}</h1>
         <p class="environnement-hero-description">${cleanDesc}...</p>
         <div class="environnement-hero-meta"><span class="environnement-hero-read-time">${calculerTempsLecture(heroArticle.description)}</span>
-        <span class="environnement-hero-cta" onclick="window.location.href='redaction.html?id=${heroArticle.id}'"></span></div></div>
+        <span class="environnement-hero-cta" onclick="window.location.href='${heroUrl}'"></span></div></div>
         <div class="environnement-hero-right">${renderSectionMedia(heroArticle)}</div>
     </div></div>`;
     
@@ -1030,13 +1118,14 @@ function renderSport(articles) {
     const heroArticle = sportArticles[0];
     const subArticles = sportArticles.slice(1, 6);
     const cleanDesc = (heroArticle.description || "").replace(/<[^>]*>/g, '').substring(0, 400);
+    const heroUrl = getArticleUrl(heroArticle);
     
     let html = `<div class="sport-hero-wrapper"><div class="sport-hero-flexible">
         <div class="sport-hero-left"><span class="sport-hero-category">${heroArticle.category?.replace('SPORT_', '') || 'SPORT'}</span>
-        <h1 class="sport-hero-title" onclick="window.location.href='redaction.html?id=${heroArticle.id}'">${escapeHtml(heroArticle.titre)}</h1>
+        <h1 class="sport-hero-title" onclick="window.location.href='${heroUrl}'">${escapeHtml(heroArticle.titre)}</h1>
         <p class="sport-hero-description">${cleanDesc}...</p>
         <div class="sport-hero-meta"><span class="sport-hero-read-time">${calculerTempsLecture(heroArticle.description)}</span>
-        <span class="sport-hero-cta" onclick="window.location.href='redaction.html?id=${heroArticle.id}'"></span></div></div>
+        <span class="sport-hero-cta" onclick="window.location.href='${heroUrl}'"></span></div></div>
         <div class="sport-hero-right">${renderSectionMedia(heroArticle)}</div>
     </div></div>`;
     
@@ -1045,7 +1134,7 @@ function renderSport(articles) {
 }
 
 /* ==========================================================================
-   RENDER AUTRE INFO, OPINIONS, LIFESTYLE, MORE NEWS
+   16. RENDER AUTRE INFO, OPINIONS, LIFESTYLE, MORE NEWS
    ========================================================================== */
 function renderAutreInfo(articles) {
     const container = document.getElementById('sidebar-list');
@@ -1053,30 +1142,43 @@ function renderAutreInfo(articles) {
     setSlidesData(articles);
     const mainArt = articles[0];
     const secondaryArticles = articles.slice(1, 3);
-    let html = `<article class="main-trending-card" onclick="window.location.href='redaction.html?id=${encodeURIComponent(mainArt.id)}'">
+    const mainUrl = getArticleUrl(mainArt);
+    
+    let html = `<article class="main-trending-card" onclick="window.location.href='${mainUrl}'">
         <img src="${mainArt.image_url || 'https://via.placeholder.com/600x400'}" class="slide-cover" onerror="this.src='https://via.placeholder.com/600x400'">
         <div class="card-content"><span class="photo-credit">${escapeHtml(mainArt.author_name || 'MakMus')}</span>
         <h2 class="main-headline">${escapeHtml(mainArt.titre)}</h2>
         <p class="summary-text">${escapeHtml((mainArt.description || "").replace(/<[^>]*>/g, '').substring(0, 100))}...</p>
         <span class="main-read-time">${calculerTempsLecture(mainArt.description)}</span></div></article>`;
+        
     if (secondaryArticles.length) {
-        html += `<div class="secondary-grid">${secondaryArticles.map(art => `<article class="grid-card" onclick="window.location.href='redaction.html?id=${encodeURIComponent(art.id)}'">
-            <img src="${art.image_url || 'https://via.placeholder.com/300x300'}" class="grid-cover" onerror="this.src='https://via.placeholder.com/300x300'">
-            <h4 class="grid-headline">${escapeHtml(art.titre)}</h4><span class="grid-read-time">${calculerTempsLecture(art.description)}</span></article>`).join('')}</div>`;
+        html += `<div class="secondary-grid">${secondaryArticles.map(art => {
+            const subUrl = getArticleUrl(art);
+            return `<article class="grid-card" onclick="window.location.href='${subUrl}'">
+                <img src="${art.image_url || 'https://via.placeholder.com/300x300'}" class="grid-cover" onerror="this.src='https://via.placeholder.com/300x300'">
+                <h4 class="grid-headline">${escapeHtml(art.titre)}</h4>
+                <span class="grid-read-time">${calculerTempsLecture(art.description)}</span>
+            </article>`;
+        }).join('')}</div>`;
     }
     container.innerHTML = html;
+    syncSidebarContent();
 }
 
 function renderOpinions(opinions) {
     const container = document.getElementById('opinion-list');
     if (!container || !opinions?.length) return;
-    container.innerHTML = opinions.map((op, i) => `<div class="opinion-container-box">
-        <div class="opinion-author-row"><span class="author-name">${escapeHtml(op.author_name || 'La Redaction')}</span>
-        <img class="author-avatar" src="${op.author_image || 'https://via.placeholder.com/40'}" onerror="this.src='https://via.placeholder.com/40'"></div>
-        <h4 class="opinion-text-title" onclick="window.location.href='redaction.html?id=${op.id}'">${escapeHtml(op.titre)}</h4>
-        <span class="read-time-small">${calculerTempsLecture(op.description)}</span>
-        ${i === 0 && op.image_url ? `<img class="opinion-main-cover" src="${op.image_url}" onclick="window.location.href='redaction.html?id=${op.id}'">` : ''}
-    </div>`).join('');
+    container.innerHTML = opinions.map((op, i) => {
+        const opUrl = getArticleUrl(op);
+        return `<div class="opinion-container-box">
+            <div class="opinion-author-row"><span class="author-name">${escapeHtml(op.author_name || 'La Redaction')}</span>
+            <img class="author-avatar" src="${op.author_image || 'https://via.placeholder.com/40'}" onerror="this.src='https://via.placeholder.com/40'"></div>
+            <h4 class="opinion-text-title" onclick="window.location.href='${opUrl}'">${escapeHtml(op.titre)}</h4>
+            <span class="read-time-small">${calculerTempsLecture(op.description)}</span>
+            ${i === 0 && op.image_url ? `<img class="opinion-main-cover" src="${op.image_url}" onclick="window.location.href='${opUrl}'">` : ''}
+        </div>`;
+    }).join('');
+    syncSidebarContent();
 }
 
 function renderLifestyle(articles) {
@@ -1084,12 +1186,17 @@ function renderLifestyle(articles) {
     if (!container || !articles?.length) return;
     const main = articles[0];
     const subs = articles.slice(1, 4);
-    container.innerHTML = `<div class="lifestyle-main" onclick="window.location.href='redaction.html?id=${main.id}'">
+    const mainUrl = getArticleUrl(main);
+    
+    container.innerHTML = `<div class="lifestyle-main" onclick="window.location.href='${mainUrl}'">
         <div class="ls-main-text"><h2 class="ls-main-title">${escapeHtml(main.titre)}</h2><p class="ls-excerpt">${(main.description || "").replace(/<[^>]*>/g, '').substring(0, 160)}...</p><span class="ls-read-time">${calculerTempsLecture(main.description)}</span></div>
         <div class="ls-main-img"><img src="${main.image_url || 'https://via.placeholder.com/800x500'}" onerror="this.src='https://via.placeholder.com/800x500'">${main.author_name ? `<span class="ls-photo-credit">${escapeHtml(main.author_name)}</span>` : ''}</div>
-    </div><div class="lifestyle-sub-grid">${subs.map(art => `<div class="ls-sub-card" onclick="window.location.href='redaction.html?id=${art.id}'">
-        <div class="ls-sub-text"><h4>${escapeHtml(art.titre)}</h4><span class="ls-read-time">${calculerTempsLecture(art.description)}</span></div>
-        <img src="${art.image_url || 'https://via.placeholder.com/150x150'}" class="ls-sub-img"></div>`).join('')}</div>`;
+    </div><div class="lifestyle-sub-grid">${subs.map(art => {
+        const subUrl = getArticleUrl(art);
+        return `<div class="ls-sub-card" onclick="window.location.href='${subUrl}'">
+            <div class="ls-sub-text"><h4>${escapeHtml(art.titre)}</h4><span class="ls-read-time">${calculerTempsLecture(art.description)}</span></div>
+            <img src="${art.image_url || 'https://via.placeholder.com/150x150'}" class="ls-sub-img"></div>`;
+    }).join('')}</div>`;
 }
 
 function renderMoreNews(articles) {
@@ -1101,32 +1208,22 @@ function renderMoreNews(articles) {
         if (!filtered.length) return '';
         const main = filtered[0];
         const subs = filtered.slice(1);
+        const mainUrl = getArticleUrl(main);
+        
         return `<div class="info-category-block"><span class="category-label">${cat.replace('_', ' ')}</span>
-            <img src="${main.image_url}" class="info-main-img" onclick="window.location.href='redaction.html?id=${main.id}'">
-            <h4 class="info-main-title" onclick="window.location.href='redaction.html?id=${main.id}'">${escapeHtml(main.titre)}</h4>
-            <div class="info-sub-list">${subs.map(s => `<p class="info-sub-title" onclick="window.location.href='redaction.html?id=${s.id}'">${escapeHtml(s.titre)}</p>`).join('')}</div></div>`;
+            <img src="${main.image_url}" class="info-main-img" onclick="window.location.href='${mainUrl}'">
+            <h4 class="info-main-title" onclick="window.location.href='${mainUrl}'">${escapeHtml(main.titre)}</h4>
+            <div class="info-sub-list">${subs.map(s => {
+                const subUrl = getArticleUrl(s);
+                return `<p class="info-sub-title" onclick="window.location.href='${subUrl}'">${escapeHtml(s.titre)}</p>`;
+            }).join('')}</div></div>`;
     }).join('');
 }
 
 /* ==========================================================================
-   SYNC SIDEBAR CONTENT
+   17. SYNC SIDEBAR CONTENT
    ========================================================================== */
 function syncSidebarContent() {
-    const desktopList = document.querySelector('#sidebar-list');
-    const mobileList = document.querySelector('#sidebar-list-mobile');
-    if (desktopList && mobileList) {
-        mobileList.innerHTML = desktopList.innerHTML;
-    }
-    
-    const desktopOpinion = document.querySelector('#opinion-list');
-    const mobileOpinion = document.querySelector('#opinion-list-mobile');
-    if (desktopOpinion && mobileOpinion) {
-        mobileOpinion.innerHTML = desktopOpinion.innerHTML;
-    }
-}
-// Synchroniser le contenu entre sidebar desktop et mobile
-function syncSidebarContent() {
-    // Synchroniser la liste "AUTRE INFO"
     const desktopList = document.querySelector('#sidebar-list');
     const mobileList = document.querySelector('#sidebar-list-mobile');
     
@@ -1135,7 +1232,6 @@ function syncSidebarContent() {
         console.log('✅ Sidebar list synchronisée');
     }
     
-    // Synchroniser la liste "OPINION"
     const desktopOpinion = document.querySelector('#opinion-list');
     const mobileOpinion = document.querySelector('#opinion-list-mobile');
     
@@ -1145,46 +1241,8 @@ function syncSidebarContent() {
     }
 }
 
-// Appeler après chaque rendu de contenu
-function renderAutreInfo(articles) {
-    const container = document.getElementById('sidebar-list');
-    if (!container || !articles || articles.length === 0) return;
-    setSlidesData(articles);
-    const mainArt = articles[0];
-    const secondaryArticles = articles.slice(1, 3);
-    let html = `<article class="main-trending-card" onclick="window.location.href='redaction.html?id=${encodeURIComponent(mainArt.id)}'">
-        <img src="${mainArt.image_url || 'https://via.placeholder.com/600x400'}" class="slide-cover" onerror="this.src='https://via.placeholder.com/600x400'">
-        <div class="card-content"><span class="photo-credit">${escapeHtml(mainArt.author_name || 'MakMus')}</span>
-        <h2 class="main-headline">${escapeHtml(mainArt.titre)}</h2>
-        <p class="summary-text">${escapeHtml((mainArt.description || "").replace(/<[^>]*>/g, '').substring(0, 100))}...</p>
-        <span class="main-read-time">${calculerTempsLecture(mainArt.description)}</span></div></article>`;
-    if (secondaryArticles.length) {
-        html += `<div class="secondary-grid">${secondaryArticles.map(art => `<article class="grid-card" onclick="window.location.href='redaction.html?id=${encodeURIComponent(art.id)}'">
-            <img src="${art.image_url || 'https://via.placeholder.com/300x300'}" class="grid-cover" onerror="this.src='https://via.placeholder.com/300x300'">
-            <h4 class="grid-headline">${escapeHtml(art.titre)}</h4><span class="grid-read-time">${calculerTempsLecture(art.description)}</span></article>`).join('')}</div>`;
-    }
-    container.innerHTML = html;
-    
-    // 🔄 SYNC AVEC LA SIDEBAR MOBILE
-    syncSidebarContent();
-}
-
-function renderOpinions(opinions) {
-    const container = document.getElementById('opinion-list');
-    if (!container || !opinions?.length) return;
-    container.innerHTML = opinions.map((op, i) => `<div class="opinion-container-box">
-        <div class="opinion-author-row"><span class="author-name">${escapeHtml(op.author_name || 'La Redaction')}</span>
-        <img class="author-avatar" src="${op.author_image || 'https://via.placeholder.com/40'}" onerror="this.src='https://via.placeholder.com/40'"></div>
-        <h4 class="opinion-text-title" onclick="window.location.href='redaction.html?id=${op.id}'">${escapeHtml(op.titre)}</h4>
-        <span class="read-time-small">${calculerTempsLecture(op.description)}</span>
-        ${i === 0 && op.image_url ? `<img class="opinion-main-cover" src="${op.image_url}" onclick="window.location.href='redaction.html?id=${op.id}'">` : ''}
-    </div>`).join('');
-    
-    // 🔄 SYNC AVEC LA SIDEBAR MOBILE
-    syncSidebarContent();
-}
 /* ==========================================================================
-   RENDER AUDIOS
+   18. RENDER AUDIOS
    ========================================================================== */
 function renderAudios(audios) {
     const container = document.getElementById('audio-grid');
@@ -1287,12 +1345,8 @@ function handleAudioPlay(e) {
 }
 
 /* ==========================================================================
-   PUBLICITE
+   19. PUBLICITE
    ========================================================================== */
-let adsData = [];
-let currentAdIdx = 0;
-let adsInterval = null;
-
 async function initAds() {
     try {
         if (typeof supabaseClient === 'undefined') {
@@ -1396,7 +1450,7 @@ function displayFallbackAd() {
 }
 
 /* ==========================================================================
-   VIDEOS
+   20. VIDEOS
    ========================================================================== */
 async function fetchVideos() {
     const { data } = await supabaseClient.from('videos_du_jour').select('*').eq('is_published', true);
@@ -1406,13 +1460,15 @@ async function fetchVideos() {
     slider.innerHTML = data.map((vid, index) => `
         <div class="video-magazine-item">
             <div class="video-card">
-                <video playsinline muted ${index === 0 ? 'autoplay' : ''} loop data-src="${vid.video_url}" preload="none"></video>
-                <div class="video-controls-vertical">
+                <video playsinline muted ${index === 0 ? 'autoplay' : ''} loop src="${vid.video_url}" preload="metadata" poster="${vid.image_url || ''}">
+                    <source src="${vid.video_url}" type="video/mp4">
+                </video>
+                <div class="video-controls-vertical hero-video-controls-vertical">
                     <button class="video-control-btn play-pause-btn" onclick="window.toggleVideoPlay(this)">
                         <svg viewBox="0 0 24 24" fill="white" width="20" height="20">
-                            <polygon points="5 3 19 12 5 21 5 3" class="play-icon"/>
-                            <rect x="6" y="4" width="4" height="16" class="pause-icon" style="display:none" rx="1"/>
-                            <rect x="14" y="4" width="4" height="16" class="pause-icon-2" style="display:none" rx="1"/>
+                            <polygon points="5 3 19 12 5 21 5 3" class="play-icon-section"/>
+                            <rect x="6" y="4" width="4" height="16" class="pause-icon-section" style="display:none" rx="1"/>
+                            <rect x="14" y="4" width="4" height="16" class="pause-icon-section-2" style="display:none" rx="1"/>
                         </svg>
                     </button>
                     <button class="video-control-btn volume-btn" onclick="window.toggleVideoVolume(this)">
@@ -1421,21 +1477,128 @@ async function fetchVideos() {
                             <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.08"/>
                         </svg>
                     </button>
+                    <button class="video-control-btn share-btn" onclick="window.shareVideoItem('${vid.id}', '${escapeHtml(vid.titre)}')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="18" height="18">
+                            <circle cx="18" cy="5" r="3"/>
+                            <circle cx="6" cy="12" r="3"/>
+                            <circle cx="18" cy="19" r="3"/>
+                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                        </svg>
+                    </button>
                     <button class="video-control-btn fullscreen-btn" onclick="window.toggleVideoFullscreen(this)">
                         <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="18" height="18">
                             <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
                         </svg>
                     </button>
                 </div>
-                <div class="play-overlay" onclick="window.playVideo(this)"><div class="play-button"><svg width="48" height="48" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
+                <div class="play-overlay" onclick="window.playVideo(this)">
+                    <div class="play-button">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2">
+                            <polygon points="5 3 19 12 5 21 5 3" fill="white"/>
+                        </svg>
+                    </div>
+                </div>
             </div>
             <h4 class="video-mag-title">${escapeHtml(vid.titre)}</h4>
         </div>
     `).join('');
 }
 
+// Fonction de partage pour les vidéos
+window.shareVideoItem = function(videoId, videoTitle) {
+    const videoUrl = `${window.location.origin}/video.html?id=${videoId}`;
+    if (navigator.share) {
+        navigator.share({
+            title: videoTitle,
+            text: 'Découvrez cette vidéo sur MAKMUS',
+            url: videoUrl
+        }).catch(() => copyToClipboard(videoUrl));
+    } else {
+        copyToClipboard(videoUrl);
+    }
+};
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        showToast('Lien copié dans le presse-papier');
+    }).catch(() => {
+        showToast('Impossible de copier le lien', 'error');
+    });
+}
+
+window.toggleVideoPlay = function(btn) {
+    const video = btn.closest('.video-card').querySelector('video');
+    if (!video) return;
+    
+    const playIcon = btn.querySelector('.play-icon-section');
+    const pauseIcons = btn.querySelectorAll('.pause-icon-section, .pause-icon-section-2');
+    
+    if (video.paused) {
+        video.play();
+        if (playIcon) playIcon.style.display = 'none';
+        pauseIcons.forEach(icon => icon.style.display = 'block');
+    } else {
+        video.pause();
+        if (playIcon) playIcon.style.display = 'block';
+        pauseIcons.forEach(icon => icon.style.display = 'none');
+    }
+};
+
+window.toggleVideoVolume = function(btn) {
+    const video = btn.closest('.video-card').querySelector('video');
+    if (!video) return;
+    video.muted = !video.muted;
+    const svg = btn.querySelector('svg');
+    if (svg) {
+        svg.innerHTML = video.muted ? 
+            '<path d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6"/>' : 
+            '<path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.08"/>';
+    }
+};
+
+window.toggleVideoFullscreen = function(btn) {
+    const video = btn.closest('.video-card').querySelector('video');
+    if (!video) return;
+    if (video.requestFullscreen) video.requestFullscreen();
+    else if (video.webkitRequestFullscreen) video.webkitRequestFullscreen();
+    else if (video.msRequestFullscreen) video.msRequestFullscreen();
+};
+
+window.playVideo = function(overlay) {
+    const video = overlay.closest('.video-card').querySelector('video');
+    if (!video) return;
+    overlay.style.display = 'none';
+    video.play().catch(() => overlay.style.display = 'flex');
+};
+
+window.scrollVideoSlider = function(distance) {
+    const slider = document.getElementById('video-slider');
+    if (slider) slider.scrollBy({ left: distance, behavior: 'smooth' });
+};
+
+// Initialiser les vidéos avec lazy loading
+function initVideoLazyLoading() {
+    const videos = document.querySelectorAll('.video-card video');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const video = entry.target;
+                if (video.dataset.src && !video.src) {
+                    video.src = video.dataset.src;
+                    video.load();
+                }
+                observer.unobserve(video);
+            }
+        });
+    }, { threshold: 0.1 });
+    
+    videos.forEach(video => observer.observe(video));
+}
+
+// Appeler cette fonction après fetchVideos
 /* ==========================================================================
-   TAGS TRENDING
+   21. TAGS TRENDING
    ========================================================================== */
 async function loadTrendingTags() {
     const container = document.getElementById('tags-container');
@@ -1452,11 +1615,8 @@ async function loadTrendingTags() {
 }
 
 /* ==========================================================================
-   SLIDER AUTRE INFO
+   22. SLIDER AUTRE INFO
    ========================================================================== */
-let currentSlideIndex = 0;
-let slidesData = [];
-
 function setSlidesData(slides) { slidesData = slides; currentSlideIndex = 0; }
 
 window.moveSlide = function(direction) {
@@ -1474,22 +1634,30 @@ function updateSlideDisplay() {
     if (!slide) return;
     const mainArt = slide;
     const secondaryArticles = slidesData.slice(1, 3);
-    let html = `<article class="main-trending-card" onclick="window.location.href='redaction.html?id=${encodeURIComponent(mainArt.id)}'">
+    const mainUrl = getArticleUrl(mainArt);
+    
+    let html = `<article class="main-trending-card" onclick="window.location.href='${mainUrl}'">
         <img src="${mainArt.image_url || 'https://via.placeholder.com/600x400'}" class="slide-cover" onerror="this.src='https://via.placeholder.com/600x400'">
         <div class="card-content"><span class="photo-credit">${escapeHtml(mainArt.author_name || 'MakMus')}</span>
         <h2 class="main-headline">${escapeHtml(mainArt.titre)}</h2>
         <p class="summary-text">${escapeHtml((mainArt.description || "").replace(/<[^>]*>/g, '').substring(0, 100))}...</p>
         <span class="main-read-time">${calculerTempsLecture(mainArt.description)}</span></div></article>`;
+        
     if (secondaryArticles.length) {
-        html += `<div class="secondary-grid">${secondaryArticles.map(art => `<article class="grid-card" onclick="window.location.href='redaction.html?id=${encodeURIComponent(art.id)}'">
-            <img src="${art.image_url || 'https://via.placeholder.com/300x300'}" class="grid-cover" onerror="this.src='https://via.placeholder.com/300x300'">
-            <h4 class="grid-headline">${escapeHtml(art.titre)}</h4><span class="grid-read-time">${calculerTempsLecture(art.description)}</span></article>`).join('')}</div>`;
+        html += `<div class="secondary-grid">${secondaryArticles.map(art => {
+            const subUrl = getArticleUrl(art);
+            return `<article class="grid-card" onclick="window.location.href='${subUrl}'">
+                <img src="${art.image_url || 'https://via.placeholder.com/300x300'}" class="grid-cover" onerror="this.src='https://via.placeholder.com/300x300'">
+                <h4 class="grid-headline">${escapeHtml(art.titre)}</h4>
+                <span class="grid-read-time">${calculerTempsLecture(art.description)}</span>
+            </article>`;
+        }).join('')}</div>`;
     }
     container.innerHTML = html;
 }
 
 /* ==========================================================================
-   FONCTIONS DE PARTAGE
+   23. FONCTIONS DE PARTAGE
    ========================================================================== */
 window.shareArticle = function(articleId, articleTitle, articleImage, articleDescription) {
     const articleUrl = `${window.location.origin}/redaction.html?id=${articleId}`;
@@ -1541,8 +1709,58 @@ window.shareToWhatsApp = function() {
     window.toggleModal('shareModal', false);
 };
 
+window.shareToLinkedIn = function() {
+    const url = encodeURIComponent(window.currentShareUrl || window.location.href);
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, '_blank', 'width=600,height=450');
+    window.toggleModal('shareModal', false);
+};
+
+window.shareToTelegram = function() {
+    const url = encodeURIComponent(window.currentShareUrl || window.location.href);
+    const title = encodeURIComponent(window.currentShareTitle || document.title);
+    window.open(`https://t.me/share/url?url=${url}&text=${title}`, '_blank', 'width=600,height=450');
+    window.toggleModal('shareModal', false);
+};
+
+window.shareToInstagram = function() {
+    const url = encodeURIComponent(window.currentShareUrl || window.location.href);
+    const title = encodeURIComponent(window.currentShareTitle || document.title);
+    const shareUrl = `https://www.instagram.com/?url=${url}&caption=${title}`;
+    window.open(shareUrl, '_blank', 'width=600,height=450');
+    window.closeShare();
+    showToast("Partagez le lien sur Instagram", 'info');
+};
+
+window.shareToBluesky = function() {
+    const url = encodeURIComponent(window.currentShareUrl || window.location.href);
+    const title = encodeURIComponent(window.currentShareTitle || document.title);
+    const shareUrl = `https://bsky.app/intent/compose?text=${title}%20${url}`;
+    window.open(shareUrl, '_blank', 'width=600,height=450');
+    window.closeShare();
+};
+
+window.shareToThreads = function() {
+    const url = encodeURIComponent(window.currentShareUrl || window.location.href);
+    const title = encodeURIComponent(window.currentShareTitle || document.title);
+    const shareUrl = `https://www.threads.net/intent/post?text=${title}%20${url}`;
+    window.open(shareUrl, '_blank', 'width=600,height=450');
+    window.closeShare();
+    showToast("Partagez le lien sur Threads", 'info');
+};
+// Générer un slug à partir d'un titre
+function generateSlug(title) {
+    if (!title) return '';
+    return title
+        .toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/['’]/g, '') // ← AJOUTE CETTE LIGNE (supprime les apostrophes)
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+}
 /* ==========================================================================
-   INITIALISATION
+   24. INITIALISATION
    ========================================================================== */
 function renderEmptyStates() {
     const hero = document.getElementById('hero-zone');
