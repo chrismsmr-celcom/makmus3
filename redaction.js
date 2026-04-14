@@ -921,56 +921,58 @@ window.shareToThreads = function() {
    METADATA OPEN GRAPH & TWITTER CARDS
    -------------------------------------- */
 function updateOpenGraphTags(article) {
-    if (!article) return;
-    
-    let imageUrl = article.image_url;
-    if (!imageUrl && article.medias) {
-        try {
-            const medias = typeof article.medias === 'string' ? JSON.parse(article.medias) : article.medias;
-            const firstImage = medias.find(m => m.type === 'image');
-            if (firstImage) imageUrl = firstImage.url;
-        } catch(e) {}
-    }
-    
-    if (!imageUrl) {
-        imageUrl = 'https://logphtrdkpbfgtejtime.supabase.co/storage/v1/object/public/Photo,%20Image/Untitled%20folder/MAK_MUS__1_-removebg-preview.png';
-    }
-    
-    const cleanDesc = (article.description || '').replace(/<[^>]*>/g, '').substring(0, 300);
-    const pageUrl = article.slug 
-        ? `${window.location.origin}/article/${article.slug}`
-        : window.location.href;
-    
-    function setMetaTag(selector, attribute, content, isProperty = true) {
+    // Helper pour créer/mettre à jour les meta tags
+    const setMeta = (selector, attribute, content, isProperty = true) => {
         let meta = document.querySelector(selector);
         if (!meta) {
             meta = document.createElement('meta');
-            if (isProperty) {
-                meta.setAttribute('property', attribute);
-            } else {
-                meta.setAttribute('name', attribute);
-            }
+            if (isProperty) meta.setAttribute('property', attribute);
+            else meta.setAttribute('name', attribute);
             document.head.appendChild(meta);
         }
         meta.setAttribute('content', content);
+    };
+    
+    // Nettoyer la description
+    const cleanDesc = (article.description || '').replace(/<[^>]*>/g, '').substring(0, 300);
+    
+    // Récupérer l'URL de l'image
+    let imageUrl = article.image_url;
+    if (!imageUrl) {
+        imageUrl = 'https://i.postimg.cc/x88LbhZp/2_20251224_213424_0001.png';
     }
     
-    setMetaTag('meta[property="og:title"]', 'og:title', article.titre + ' | MAKMUS', true);
-    setMetaTag('meta[property="og:description"]', 'og:description', cleanDesc, true);
-    setMetaTag('meta[property="og:image"]', 'og:image', imageUrl, true);
-    setMetaTag('meta[property="og:image:width"]', 'og:image:width', '1200', true);
-    setMetaTag('meta[property="og:image:height"]', 'og:image:height', '630', true);
-    setMetaTag('meta[property="og:url"]', 'og:url', pageUrl, true);
-    setMetaTag('meta[property="og:type"]', 'og:type', 'article', true);
-    setMetaTag('meta[property="og:site_name"]', 'og:site_name', 'MAKMUS', true);
+    // Construire l'URL complète de l'article
+    const articleUrl = `${window.location.origin}/redaction.html?id=${article.id}`;
     
-    setMetaTag('meta[name="twitter:card"]', 'twitter:card', 'summary_large_image', false);
-    setMetaTag('meta[name="twitter:site"]', 'twitter:site', '@MakMus', false);
-    setMetaTag('meta[name="twitter:title"]', 'twitter:title', article.titre + ' | MAKMUS', false);
-    setMetaTag('meta[name="twitter:description"]', 'twitter:description', cleanDesc, false);
-    setMetaTag('meta[name="twitter:image"]', 'twitter:image', imageUrl, false);
+    // Mettre à jour le titre de la page
+    document.title = `${article.titre} | MAKMUS`;
+    
+    // Open Graph
+    setMeta('meta[property="og:title"]', 'og:title', `${article.titre} | MAKMUS`, true);
+    setMeta('meta[property="og:description"]', 'og:description', cleanDesc, true);
+    setMeta('meta[property="og:image"]', 'og:image', imageUrl, true);
+    setMeta('meta[property="og:url"]', 'og:url', articleUrl, true);
+    setMeta('meta[property="og:type"]', 'og:type', 'article', true);
+    setMeta('meta[property="og:site_name"]', 'og:site_name', 'MAKMUS', true);
+    setMeta('meta[property="og:image:width"]', 'og:image:width', '1200', true);
+    setMeta('meta[property="og:image:height"]', 'og:image:height', '630', true);
+    
+    // Twitter Card
+    setMeta('meta[name="twitter:card"]', 'twitter:card', 'summary_large_image', false);
+    setMeta('meta[name="twitter:site"]', 'twitter:site', '@MakMus', false);
+    setMeta('meta[name="twitter:creator"]', 'twitter:creator', '@MakMus', false);
+    setMeta('meta[name="twitter:title"]', 'twitter:title', `${article.titre} | MAKMUS`, false);
+    setMeta('meta[name="twitter:description"]', 'twitter:description', cleanDesc, false);
+    setMeta('meta[name="twitter:image"]', 'twitter:image', imageUrl, false);
+    
+    // Description standard
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', cleanDesc);
+    
+    console.log('✅ Meta tags mis à jour pour:', article.titre);
+    console.log('📷 Image utilisée:', imageUrl);
 }
-
 /* --------------------------------------
    TTS & LECTEUR AUDIO
    -------------------------------------- */
