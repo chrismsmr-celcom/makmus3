@@ -1,0 +1,119 @@
+{
+    "name": "MAKMUS Admin",
+    "short_name": "Admin MAKMUS",
+    "description": "Interface d'administration MAKMUS - Gestion des articles, médias et modération",
+    "start_url": "/dashboard.html",
+    "scope": "/",
+    "display": "standalone",
+    "theme_color": "#a30000",
+    "background_color": "#ffffff",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "/assets/icons/icon-72x72.png",
+            "sizes": "72x72",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/assets/icons/icon-96x96.png",
+            "sizes": "96x96",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/assets/icons/icon-128x128.png",
+            "sizes": "128x128",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/assets/icons/icon-144x144.png",
+            "sizes": "144x144",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/assets/icons/icon-152x152.png",
+            "sizes": "152x152",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/assets/icons/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/assets/icons/icon-384x384.png",
+            "sizes": "384x384",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/assets/icons/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "/assets/screenshots/dashboard-mobile.png",
+            "sizes": "1080x1920",
+            "type": "image/png",
+            "form_factor": "narrow",
+            "label": "Dashboard mobile"
+        },
+        {
+            "src": "/assets/screenshots/dashboard-desktop.png",
+            "sizes": "1280x720",
+            "type": "image/png",
+            "form_factor": "wide",
+            "label": "Dashboard desktop"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "Nouvel article",
+            "short_name": "Article",
+            "description": "Créer un nouvel article",
+            "url": "/editor.html",
+            "icons": [
+                {
+                    "src": "/assets/icons/new-article.png",
+                    "sizes": "96x96"
+                }
+            ]
+        },
+        {
+            "name": "Modération",
+            "short_name": "Modérer",
+            "description": "Voir les commentaires à modérer",
+            "url": "/moderation.html",
+            "icons": [
+                {
+                    "src": "/assets/icons/moderation.png",
+                    "sizes": "96x96"
+                }
+            ]
+        },
+        {
+            "name": "Studio média",
+            "short_name": "Studio",
+            "description": "Gérer les médias",
+            "url": "/studio.html",
+            "icons": [
+                {
+                    "src": "/assets/icons/studio.png",
+                    "sizes": "96x96"
+                }
+            ]
+        }
+    ],
+    "categories": ["news", "productivity", "business"],
+    "lang": "fr",
+    "dir": "ltr",
+    "prefer_related_applications": false
+}
