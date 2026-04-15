@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Modération | MAKMUS Admin</title>
     <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <style>
@@ -43,23 +43,19 @@
             gap: 10px;
         }
 
-        .notif-badge {
-            background: #a30000;
-            color: white;
-            font-size: 0.7rem;
-            padding: 2px 8px;
-            border-radius: 20px;
-        }
-
         .logout-btn {
             background: none;
             border: 1px solid #e6e6e6;
             padding: 8px 16px;
             border-radius: 6px;
             cursor: pointer;
+            transition: all 0.2s;
         }
 
-        /* Notifications */
+        .logout-btn:hover {
+            background: #f0f0f0;
+        }
+
         .notifications-panel {
             background: white;
             border-radius: 12px;
@@ -91,10 +87,6 @@
             cursor: pointer;
         }
 
-        .notification-item:hover {
-            background: #f9f9f9;
-        }
-
         .notification-item.unread {
             background: #fff8e1;
             border-left: 3px solid #ffc107;
@@ -116,7 +108,6 @@
             margin-top: 5px;
         }
 
-        /* Tabs */
         .tabs {
             display: flex;
             gap: 10px;
@@ -140,7 +131,6 @@
             border-color: #a30000;
         }
 
-        /* Commentaires */
         .comments-list {
             background: white;
             border-radius: 12px;
@@ -199,7 +189,7 @@
             flex-wrap: wrap;
         }
 
-        .btn-delete, .btn-hide, .btn-unhide, .btn-approve {
+        .btn-delete, .btn-hide, .btn-unhide {
             padding: 6px 12px;
             border: none;
             border-radius: 6px;
@@ -261,6 +251,11 @@
             margin-left: 8px;
         }
 
+        @keyframes slideIn {
+            from { transform: translateX(100px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
         @media (max-width: 768px) {
             .moderation-container {
                 padding: 20px 15px;
@@ -285,7 +280,6 @@
             <button class="logout-btn" id="logout-btn">Déconnexion</button>
         </div>
 
-        <!-- Panel des notifications -->
         <div class="notifications-panel">
             <div class="notifications-header">
                 <span><strong>🔔 Notifications</strong></span>
@@ -296,18 +290,15 @@
             </div>
         </div>
 
-        <!-- Tabs -->
         <div class="tabs">
             <button class="tab-btn active" data-tab="active">📝 Commentaires actifs</button>
             <button class="tab-btn" data-tab="hidden">🚫 Commentaires masqués</button>
         </div>
 
-        <!-- Commentaires actifs -->
         <div id="active-tab" class="comments-list">
             <div class="empty-state">Chargement...</div>
         </div>
 
-        <!-- Commentaires masqués -->
         <div id="hidden-tab" class="comments-list" style="display: none;">
             <div class="empty-state">Chargement...</div>
         </div>
@@ -315,291 +306,314 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        const SUPABASE_URL = 'https://logphtrdkpbfgtejtime.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxvZ3BodHJka3BiZmd0ZWp0aW1lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNzY4MDYsImV4cCI6MjA4NTc1MjgwNn0.Uoxiax-whIdbB5oI3bof-hN0m5O9PDi96zmaUZ6BBio';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        let currentUser = null;
-        let notificationInterval = null;
-
-        // Vérifier l'authentification
-        async function checkAuth() {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
-                window.location.href = 'login.html';
-                return;
+        (function() {
+            const SUPABASE_URL = 'https://logphtrdkpbfgtejtime.supabase.co';
+            const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxvZ3BodHJka3BiZmd0ZWp0aW1lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNzY4MDYsImV4cCI6MjA4NTc1MjgwNn0.Uoxiax-whIdbB5oI3bof-hN0m5O9PDi96zmaUZ6BBio';
+            
+            let supabaseClient;
+            if (typeof window.supabaseClient !== 'undefined') {
+                supabaseClient = window.supabaseClient;
+            } else {
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                window.supabaseClient = supabaseClient;
             }
-            currentUser = user;
-            loadNotifications();
-            loadActiveComments();
-            loadHiddenComments();
-            startRealtimeNotifications();
-        }
 
-        // Démarrer les notifications en temps réel
-        function startRealtimeNotifications() {
-            // Écouter les nouveaux commentaires en temps réel
-            supabase
-                .channel('comments-channel')
-                .on('postgres_changes', 
-                    { event: 'INSERT', schema: 'public', table: 'article_comments' },
-                    (payload) => {
-                        loadNotifications();
-                        loadActiveComments();
-                        updatePendingBadge();
-                        showToast('📝 Nouveau commentaire !', 'info');
-                    }
-                )
-                .subscribe();
+            let currentUser = null;
+            let notificationInterval = null;
 
-            // Rafraîchir toutes les 30 secondes
-            notificationInterval = setInterval(() => {
+            async function checkAuth() {
+                const { data: { user } } = await supabaseClient.auth.getUser();
+                if (!user) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+                currentUser = user;
                 loadNotifications();
                 loadActiveComments();
-            }, 30000);
-        }
-
-        // Mettre à jour le badge des notifications non lues
-        async function updatePendingBadge() {
-            const { count } = await supabase
-                .from('admin_notifications')
-                .select('*', { count: 'exact', head: true })
-                .eq('is_read', false);
-            
-            const badge = document.getElementById('pending-badge');
-            if (badge && count > 0) {
-                badge.style.display = 'inline-block';
-                badge.textContent = count;
-                document.title = `(${count}) Modération MAKMUS`;
-            } else if (badge) {
-                badge.style.display = 'none';
-                document.title = 'Modération MAKMUS';
-            }
-        }
-
-        // Charger les notifications
-        async function loadNotifications() {
-            const { data, error } = await supabase
-                .from('admin_notifications')
-                .select('*')
-                .order('created_at', { ascending: false })
-                .limit(30);
-
-            const container = document.getElementById('notifications-list');
-            if (error || !data || data.length === 0) {
-                container.innerHTML = '<div class="empty-state">Aucune notification</div>';
-                return;
-            }
-
-            container.innerHTML = data.map(notif => `
-                <div class="notification-item ${!notif.is_read ? 'unread' : ''}" data-id="${notif.id}">
-                    <div class="notification-title">${escapeHtml(notif.title)}</div>
-                    <div class="notification-message">${escapeHtml(notif.message)}</div>
-                    <div class="notification-date">${new Date(notif.created_at).toLocaleString('fr-FR')}</div>
-                </div>
-            `).join('');
-
-            // Marquer comme lu au clic
-            document.querySelectorAll('.notification-item').forEach(item => {
-                item.addEventListener('click', async () => {
-                    const id = item.dataset.id;
-                    await supabase.from('admin_notifications').update({ is_read: true }).eq('id', id);
-                    item.classList.remove('unread');
-                    updatePendingBadge();
-                });
-            });
-
-            updatePendingBadge();
-        }
-
-        // Marquer toutes les notifications comme lues
-        document.getElementById('mark-all-read')?.addEventListener('click', async () => {
-            await supabase.from('admin_notifications').update({ is_read: true }).eq('is_read', false);
-            loadNotifications();
-            showToast('Toutes les notifications ont été marquées comme lues');
-        });
-
-        // Charger les commentaires actifs
-        async function loadActiveComments() {
-            const { data, error } = await supabase
-                .from('article_comments')
-                .select(`
-                    *,
-                    articles:titre
-                `)
-                .eq('is_hidden', false)
-                .order('created_at', { ascending: false });
-
-            const container = document.getElementById('active-tab');
-            if (error || !data || data.length === 0) {
-                container.innerHTML = '<div class="empty-state">Aucun commentaire actif</div>';
-                return;
-            }
-
-            container.innerHTML = data.map(comment => `
-                <div class="comment-item" data-id="${comment.id}">
-                    <div class="comment-header">
-                        <span class="comment-author">${escapeHtml(comment.nom)}</span>
-                        <span class="comment-date">${new Date(comment.created_at).toLocaleString('fr-FR')}</span>
-                    </div>
-                    <div class="comment-article">
-                        Article: <strong>${escapeHtml(comment.articles?.titre || 'Article inconnu')}</strong>
-                    </div>
-                    <div class="comment-message">${escapeHtml(comment.message)}</div>
-                    <div class="comment-actions">
-                        <button class="btn-delete" onclick="deleteComment('${comment.id}')">🗑️ Supprimer</button>
-                        <button class="btn-hide" onclick="hideComment('${comment.id}')">🙈 Masquer</button>
-                    </div>
-                    ${comment.moderation_note ? `<div class="moderation-note">📝 Note: ${escapeHtml(comment.moderation_note)}</div>` : ''}
-                </div>
-            `).join('');
-        }
-
-        // Charger les commentaires masqués
-        async function loadHiddenComments() {
-            const { data, error } = await supabase
-                .from('article_comments')
-                .select(`
-                    *,
-                    articles:titre
-                `)
-                .eq('is_hidden', true)
-                .order('created_at', { ascending: false });
-
-            const container = document.getElementById('hidden-tab');
-            if (error || !data || data.length === 0) {
-                container.innerHTML = '<div class="empty-state">Aucun commentaire masqué</div>';
-                return;
-            }
-
-            container.innerHTML = data.map(comment => `
-                <div class="comment-item hidden" data-id="${comment.id}">
-                    <div class="comment-header">
-                        <span class="comment-author">${escapeHtml(comment.nom)}</span>
-                        <span class="comment-date">${new Date(comment.created_at).toLocaleString('fr-FR')}</span>
-                    </div>
-                    <div class="comment-article">
-                        Article: <strong>${escapeHtml(comment.articles?.titre || 'Article inconnu')}</strong>
-                    </div>
-                    <div class="comment-message">${escapeHtml(comment.message)}</div>
-                    <div class="comment-actions">
-                        <button class="btn-delete" onclick="deleteComment('${comment.id}')">🗑️ Supprimer définitivement</button>
-                        <button class="btn-unhide" onclick="unhideComment('${comment.id}')">✓ Restaurer</button>
-                    </div>
-                    ${comment.moderation_note ? `<div class="moderation-note">📝 Note: ${escapeHtml(comment.moderation_note)}</div>` : ''}
-                </div>
-            `).join('');
-        }
-
-        // Supprimer un commentaire
-        window.deleteComment = async (commentId) => {
-            const note = prompt('Raison de la suppression (optionnel):');
-            if (!confirm('Supprimer définitivement ce commentaire ?')) return;
-            
-            const { error } = await supabase
-                .from('article_comments')
-                .delete()
-                .eq('id', commentId);
-            
-            if (error) {
-                showToast('Erreur lors de la suppression', 'error');
-            } else {
-                showToast('Commentaire supprimé', 'success');
-                loadActiveComments();
                 loadHiddenComments();
-                if (note) {
-                    console.log(`Commentaire ${commentId} supprimé: ${note}`);
+                startRealtimeNotifications();
+            }
+
+            function startRealtimeNotifications() {
+                supabaseClient
+                    .channel('comments-channel')
+                    .on('postgres_changes', 
+                        { event: 'INSERT', schema: 'public', table: 'article_comments' },
+                        function() {
+                            loadNotifications();
+                            loadActiveComments();
+                            updatePendingBadge();
+                            showToast('📝 Nouveau commentaire !', 'info');
+                        }
+                    )
+                    .subscribe();
+
+                notificationInterval = setInterval(function() {
+                    loadNotifications();
+                    loadActiveComments();
+                }, 30000);
+            }
+
+            async function updatePendingBadge() {
+                const { count } = await supabaseClient
+                    .from('admin_notifications')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('is_read', false);
+                
+                const badge = document.getElementById('pending-badge');
+                if (badge && count > 0) {
+                    badge.style.display = 'inline-block';
+                    badge.textContent = count;
+                    document.title = '(' + count + ') Modération MAKMUS';
+                } else if (badge) {
+                    badge.style.display = 'none';
+                    document.title = 'Modération MAKMUS';
                 }
             }
-        };
 
-        // Masquer un commentaire
-        window.hideComment = async (commentId) => {
-            const note = prompt('Raison du masquage (injurieux, haineux, etc.) :');
-            
-            const { error } = await supabase
-                .from('article_comments')
-                .update({ 
-                    is_hidden: true,
-                    moderation_note: note || 'Commentaire problématique',
-                    moderated_at: new Date().toISOString(),
-                    moderated_by: currentUser?.id
-                })
-                .eq('id', commentId);
-            
-            if (error) {
-                showToast('Erreur', 'error');
-            } else {
-                showToast('Commentaire masqué', 'success');
-                loadActiveComments();
-                loadHiddenComments();
+            async function loadNotifications() {
+                const { data, error } = await supabaseClient
+                    .from('admin_notifications')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(30);
+
+                const container = document.getElementById('notifications-list');
+                if (error || !data || data.length === 0) {
+                    container.innerHTML = '<div class="empty-state">Aucune notification</div>';
+                    return;
+                }
+
+                container.innerHTML = data.map(function(notif) {
+                    return '<div class="notification-item ' + (!notif.is_read ? 'unread' : '') + '" data-id="' + notif.id + '">' +
+                        '<div class="notification-title">' + escapeHtml(notif.title) + '</div>' +
+                        '<div class="notification-message">' + escapeHtml(notif.message) + '</div>' +
+                        '<div class="notification-date">' + new Date(notif.created_at).toLocaleString('fr-FR') + '</div>' +
+                    '</div>';
+                }).join('');
+
+                var items = document.querySelectorAll('.notification-item');
+                for (var i = 0; i < items.length; i++) {
+                    items[i].addEventListener('click', function() {
+                        var id = this.dataset.id;
+                        supabaseClient.from('admin_notifications').update({ is_read: true }).eq('id', id);
+                        this.classList.remove('unread');
+                        updatePendingBadge();
+                    });
+                }
+
+                updatePendingBadge();
             }
-        };
 
-        // Restaurer un commentaire masqué
-        window.unhideComment = async (commentId) => {
-            const { error } = await supabase
-                .from('article_comments')
-                .update({ 
-                    is_hidden: false,
-                    moderation_note: null
-                })
-                .eq('id', commentId);
-            
-            if (error) {
-                showToast('Erreur', 'error');
-            } else {
-                showToast('Commentaire restauré', 'success');
-                loadActiveComments();
-                loadHiddenComments();
-            }
-        };
-
-        // Changement d'onglet
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                
-                const tab = btn.dataset.tab;
-                document.getElementById('active-tab').style.display = tab === 'active' ? 'block' : 'none';
-                document.getElementById('hidden-tab').style.display = tab === 'hidden' ? 'block' : 'none';
+            document.getElementById('mark-all-read')?.addEventListener('click', async function() {
+                await supabaseClient.from('admin_notifications').update({ is_read: true }).eq('is_read', false);
+                loadNotifications();
+                showToast('Toutes les notifications ont été marquées comme lues');
             });
-        });
 
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
+            // ✅ CORRECTION : Requêtes sans jointure directe
+            async function loadActiveComments() {
+                // Récupérer d'abord les commentaires
+                const { data: comments, error } = await supabaseClient
+                    .from('article_comments')
+                    .select('*')
+                    .eq('is_hidden', false)
+                    .order('created_at', { ascending: false });
 
-        function showToast(message, type = 'success') {
-            const toast = document.createElement('div');
-            toast.textContent = message;
-            toast.style.cssText = `position: fixed; bottom: 20px; right: 20px; background: ${type === 'error' ? '#dc3545' : type === 'info' ? '#17a2b8' : '#28a745'}; color: white; padding: 12px 20px; border-radius: 8px; z-index: 1000; animation: slideIn 0.3s ease;`;
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
-        }
+                const container = document.getElementById('active-tab');
+                if (error || !comments || comments.length === 0) {
+                    container.innerHTML = '<div class="empty-state">Aucun commentaire actif</div>';
+                    return;
+                }
 
-        // Style pour l'animation
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideIn {
-                from { transform: translateX(100px); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
+                // Récupérer les titres des articles séparément
+                var articleIds = [];
+                for (var i = 0; i < comments.length; i++) {
+                    if (comments[i].article_id && articleIds.indexOf(comments[i].article_id) === -1) {
+                        articleIds.push(comments[i].article_id);
+                    }
+                }
+
+                var articlesMap = {};
+                if (articleIds.length > 0) {
+                    const { data: articles } = await supabaseClient
+                        .from('articles')
+                        .select('id, titre')
+                        .in('id', articleIds);
+                    
+                    if (articles) {
+                        for (var j = 0; j < articles.length; j++) {
+                            articlesMap[articles[j].id] = articles[j].titre;
+                        }
+                    }
+                }
+
+                container.innerHTML = comments.map(function(comment) {
+                    var articleTitle = articlesMap[comment.article_id] || 'Article inconnu';
+                    return '<div class="comment-item" data-id="' + comment.id + '">' +
+                        '<div class="comment-header">' +
+                            '<span class="comment-author">' + escapeHtml(comment.nom) + '</span>' +
+                            '<span class="comment-date">' + new Date(comment.created_at).toLocaleString('fr-FR') + '</span>' +
+                        '</div>' +
+                        '<div class="comment-article">Article: <strong>' + escapeHtml(articleTitle) + '</strong></div>' +
+                        '<div class="comment-message">' + escapeHtml(comment.message) + '</div>' +
+                        '<div class="comment-actions">' +
+                            '<button class="btn-delete" onclick="window.deleteComment(\'' + comment.id + '\')">🗑️ Supprimer</button>' +
+                            '<button class="btn-hide" onclick="window.hideComment(\'' + comment.id + '\')">🙈 Masquer</button>' +
+                        '</div>' +
+                        (comment.moderation_note ? '<div class="moderation-note">📝 Note: ' + escapeHtml(comment.moderation_note) + '</div>' : '') +
+                    '</div>';
+                }).join('');
             }
-        `;
-        document.head.appendChild(style);
 
-        // Déconnexion
-        document.getElementById('logout-btn')?.addEventListener('click', async () => {
-            if (notificationInterval) clearInterval(notificationInterval);
-            await supabase.auth.signOut();
-            window.location.href = 'login.html';
-        });
+            async function loadHiddenComments() {
+                const { data: comments, error } = await supabaseClient
+                    .from('article_comments')
+                    .select('*')
+                    .eq('is_hidden', true)
+                    .order('created_at', { ascending: false });
 
-        checkAuth();
+                const container = document.getElementById('hidden-tab');
+                if (error || !comments || comments.length === 0) {
+                    container.innerHTML = '<div class="empty-state">Aucun commentaire masqué</div>';
+                    return;
+                }
+
+                var articleIds = [];
+                for (var i = 0; i < comments.length; i++) {
+                    if (comments[i].article_id && articleIds.indexOf(comments[i].article_id) === -1) {
+                        articleIds.push(comments[i].article_id);
+                    }
+                }
+
+                var articlesMap = {};
+                if (articleIds.length > 0) {
+                    const { data: articles } = await supabaseClient
+                        .from('articles')
+                        .select('id, titre')
+                        .in('id', articleIds);
+                    
+                    if (articles) {
+                        for (var j = 0; j < articles.length; j++) {
+                            articlesMap[articles[j].id] = articles[j].titre;
+                        }
+                    }
+                }
+
+                container.innerHTML = comments.map(function(comment) {
+                    var articleTitle = articlesMap[comment.article_id] || 'Article inconnu';
+                    return '<div class="comment-item hidden" data-id="' + comment.id + '">' +
+                        '<div class="comment-header">' +
+                            '<span class="comment-author">' + escapeHtml(comment.nom) + '</span>' +
+                            '<span class="comment-date">' + new Date(comment.created_at).toLocaleString('fr-FR') + '</span>' +
+                        '</div>' +
+                        '<div class="comment-article">Article: <strong>' + escapeHtml(articleTitle) + '</strong></div>' +
+                        '<div class="comment-message">' + escapeHtml(comment.message) + '</div>' +
+                        '<div class="comment-actions">' +
+                            '<button class="btn-delete" onclick="window.deleteComment(\'' + comment.id + '\')">🗑️ Supprimer définitivement</button>' +
+                            '<button class="btn-unhide" onclick="window.unhideComment(\'' + comment.id + '\')">✓ Restaurer</button>' +
+                        '</div>' +
+                        (comment.moderation_note ? '<div class="moderation-note">📝 Note: ' + escapeHtml(comment.moderation_note) + '</div>' : '') +
+                    '</div>';
+                }).join('');
+            }
+
+            window.deleteComment = async function(commentId) {
+                if (!confirm('Supprimer définitivement ce commentaire ?')) return;
+                
+                const { error } = await supabaseClient
+                    .from('article_comments')
+                    .delete()
+                    .eq('id', commentId);
+                
+                if (error) {
+                    showToast('Erreur lors de la suppression', 'error');
+                } else {
+                    showToast('Commentaire supprimé', 'success');
+                    loadActiveComments();
+                    loadHiddenComments();
+                }
+            };
+
+            window.hideComment = async function(commentId) {
+                var note = prompt('Raison du masquage (injurieux, haineux, etc.) :');
+                
+                const { error } = await supabaseClient
+                    .from('article_comments')
+                    .update({ 
+                        is_hidden: true,
+                        moderation_note: note || 'Commentaire problématique',
+                        moderated_at: new Date().toISOString(),
+                        moderated_by: currentUser?.id
+                    })
+                    .eq('id', commentId);
+                
+                if (error) {
+                    showToast('Erreur', 'error');
+                } else {
+                    showToast('Commentaire masqué', 'success');
+                    loadActiveComments();
+                    loadHiddenComments();
+                }
+            };
+
+            window.unhideComment = async function(commentId) {
+                const { error } = await supabaseClient
+                    .from('article_comments')
+                    .update({ 
+                        is_hidden: false,
+                        moderation_note: null
+                    })
+                    .eq('id', commentId);
+                
+                if (error) {
+                    showToast('Erreur', 'error');
+                } else {
+                    showToast('Commentaire restauré', 'success');
+                    loadActiveComments();
+                    loadHiddenComments();
+                }
+            };
+
+            var tabs = document.querySelectorAll('.tab-btn');
+            for (var i = 0; i < tabs.length; i++) {
+                tabs[i].addEventListener('click', function() {
+                    var btns = document.querySelectorAll('.tab-btn');
+                    for (var j = 0; j < btns.length; j++) {
+                        btns[j].classList.remove('active');
+                    }
+                    this.classList.add('active');
+                    
+                    var tab = this.dataset.tab;
+                    document.getElementById('active-tab').style.display = tab === 'active' ? 'block' : 'none';
+                    document.getElementById('hidden-tab').style.display = tab === 'hidden' ? 'block' : 'none';
+                });
+            }
+
+            function escapeHtml(text) {
+                if (!text) return '';
+                var div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            function showToast(message, type) {
+                type = type || 'success';
+                var toast = document.createElement('div');
+                toast.textContent = message;
+                toast.style.cssText = 'position: fixed; bottom: 20px; right: 20px; background: ' + (type === 'error' ? '#dc3545' : type === 'info' ? '#17a2b8' : '#28a745') + '; color: white; padding: 12px 20px; border-radius: 8px; z-index: 1000; animation: slideIn 0.3s ease;';
+                document.body.appendChild(toast);
+                setTimeout(function() { toast.remove(); }, 3000);
+            }
+
+            document.getElementById('logout-btn')?.addEventListener('click', async function() {
+                if (notificationInterval) clearInterval(notificationInterval);
+                await supabaseClient.auth.signOut();
+                window.location.href = 'login.html';
+            });
+
+            checkAuth();
+        })();
     </script>
 </body>
 </html>
