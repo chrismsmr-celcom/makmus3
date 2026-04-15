@@ -457,7 +457,30 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+// Ouvrir le studio pour insérer des médias
+var openStudioBtn = document.getElementById('open-studio-btn');
+if (openStudioBtn) {
+    openStudioBtn.addEventListener('click', function() {
+        // Sauvegarder l'état actuel
+        sessionStorage.setItem('editor_return_url', window.location.href);
+        window.location.href = 'studio.html?select=true';
+    });
+}
 
+// Vérifier si on revient du studio avec des médias sélectionnés
+var urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('insert') === 'true') {
+    var urls = sessionStorage.getItem('inserted_media_urls');
+    if (urls) {
+        var mediaUrls = JSON.parse(urls);
+        for (var i = 0; i < mediaUrls.length; i++) {
+            // Ajouter un média dans l'éditeur
+            addMediaItem({ type: 'image', url: mediaUrls[i], caption: '' });
+        }
+        sessionStorage.removeItem('inserted_media_urls');
+        showToast(mediaUrls.length + ' média(s) ajouté(s)', 'success');
+    }
+}
 /* --------------------------------------
    INITIALISATION
    -------------------------------------- */

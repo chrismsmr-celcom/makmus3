@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Mots croisés - MAKMUS</title>
+    <link rel="stylesheet" href="redaction.css">
+    <style>
+        .crossword-container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        
+        .crossword-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .crossword-title {
+            font-family: var(--serif);
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--red);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        
+        .crossword-title svg {
+            width: 32px;
+            height: 32px;
+        }
+        
+        .crossword-date {
+            font-family: var(--sans);
+            font-size: 0.8rem;
+            color: var(--gray-light);
+            margin-top: 5px;
+        }
+        
+        .crossword-subtitle {
+            font-family: var(--sans);
+            font-size: 0.7rem;
+            color: var(--gray-light);
+            margin-top: 10px;
+        }
+        
+        .crossword-grid {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            overflow-x: auto;
+            padding: 10px 0;
+        }
+        
+        .crossword-table {
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .crossword-cell {
+            width: 45px;
+            height: 45px;
+            border: 1px solid var(--border);
+            text-align: center;
+            vertical-align: middle;
+            position: relative;
+        }
+        
+        .crossword-cell.black {
+            background: var(--black);
+        }
+        
+        .crossword-cell input {
+            width: 100%;
+            height: 100%;
+            border: none;
+            text-align: center;
+            font-family: var(--sans);
+            font-size: 1.2rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            background: transparent;
+            outline: none;
+            padding: 0;
+            cursor: pointer;
+        }
+        
+        .crossword-cell input:focus {
+            background: rgba(163,0,0,0.1);
+            box-shadow: inset 0 0 0 2px var(--red);
+        }
+        
+        .cell-number {
+            position: absolute;
+            top: 2px;
+            left: 3px;
+            font-size: 0.6rem;
+            font-weight: 700;
+            color: var(--gray);
+            pointer-events: none;
+        }
+        
+        .definitions-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 30px;
+        }
+        
+        .definitions-section h3 {
+            font-family: var(--sans);
+            font-size: 0.8rem;
+            font-weight: 800;
+            color: var(--red);
+            text-transform: uppercase;
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid var(--red);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .definitions-section h3 svg {
+            width: 16px;
+            height: 16px;
+        }
+        
+        .definition-item {
+            margin-bottom: 12px;
+            font-family: var(--serif);
+            font-size: 0.85rem;
+            line-height: 1.4;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        
+        .definition-item:hover {
+            color: var(--red);
+        }
+        
+        .definition-number {
+            font-weight: 700;
+            color: var(--red);
+            margin-right: 8px;
+        }
+        
+        .definition-text {
+            color: var(--gray-dark);
+        }
+        
+        .crossword-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .check-btn, .reset-btn, .reveal-btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 30px;
+            font-family: var(--sans);
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .check-btn svg, .reset-btn svg, .reveal-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+        
+        .check-btn {
+            background: var(--red);
+            color: white;
+        }
+        
+        .check-btn:hover {
+            background: var(--red-dark);
+            transform: scale(1.02);
+        }
+        
+        .reset-btn {
+            background: var(--gray-bg);
+            color: var(--gray-dark);
+        }
+        
+        .reset-btn:hover {
+            background: var(--border);
+        }
+        
+        .reveal-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+        }
+        
+        .reveal-btn:hover {
+            background: var(--gray-bg);
+            border-color: var(--red);
+        }
+        
+        .result-message {
+            text-align: center;
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 8px;
+            font-family: var(--sans);
+            font-size: 0.85rem;
+        }
+        
+        .result-message.success {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .result-message.error {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            color: var(--red);
+            text-decoration: none;
+            font-family: var(--sans);
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        
+        .word-found {
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+        
+        @keyframes successPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); background: rgba(39, 174, 96, 0.1); }
+            100% { transform: scale(1); }
+        }
+        
+        @media (max-width: 768px) {
+            .crossword-container {
+                padding: 15px;
+            }
+            
+            .crossword-cell {
+                width: 32px;
+                height: 32px;
+            }
+            
+            .crossword-cell input {
+                font-size: 0.9rem;
+            }
+            
+            .cell-number {
+                font-size: 0.5rem;
+                top: 1px;
+                left: 2px;
+            }
+            
+            .definitions-container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .crossword-title {
+                font-size: 1.4rem;
+            }
+            
+            .crossword-title svg {
+                width: 24px;
+                height: 24px;
+            }
+            
+            .check-btn, .reset-btn, .reveal-btn {
+                padding: 8px 16px;
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="crossword-container">
+        <a href="index.html" class="back-link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            Retour à l'accueil
+        </a>
+        
+        <div class="crossword-header">
+            <h1 class="crossword-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="9" y1="3" x2="9" y2="21"></line>
+                    <line x1="15" y1="3" x2="15" y2="21"></line>
+                    <line x1="3" y1="9" x2="21" y2="9"></line>
+                    <line x1="3" y1="15" x2="21" y2="15"></line>
+                </svg>
+                MOTS CROISÉS
+            </h1>
+            <div class="crossword-date" id="game-date"></div>
+            <div class="crossword-subtitle">Cliquez sur une case pour commencer | Tab / Flèches pour naviguer</div>
+        </div>
+        
+        <div id="crossword-grid" class="crossword-grid"></div>
+        
+        <div class="definitions-container" id="definitions-container"></div>
+        
+        <div class="crossword-controls">
+            <button class="check-btn" id="check-btn">Vérifier</button>
+            <button class="reset-btn" id="reset-btn">Effacer</button>
+            <button class="reveal-btn" id="reveal-btn">Révéler</button>
+        </div>
+        
+        <div id="result-message" class="result-message"></div>
+    </div>
+
+    <script>
+        // GRILLE DE DÉMONSTRATION (sans Supabase)
+        const demoGridData = {
+            grille: [
+                ['1', ' ', ' ', ' ', ' ', ' ', ' '],
+                [' ', '#', ' ', '#', ' ', ' ', ' '],
+                ['2', ' ', ' ', ' ', ' ', '#', ' '],
+                [' ', ' ', '#', ' ', ' ', ' ', ' '],
+                ['3', ' ', ' ', ' ', ' ', ' ', ' '],
+                [' ', '#', ' ', ' ', '#', ' ', ' '],
+                ['4', ' ', ' ', ' ', ' ', ' ', ' ']
+            ],
+            solution: [
+                ['M', 'A', 'K', 'M', 'U', 'S', 'P'],
+                [' ', '#', 'E', '#', 'C', 'I', 'F'],
+                ['R', 'D', 'C', 'I', 'T', '#', 'I'],
+                [' ', 'T', '#', 'C', 'L', 'I', 'Q'],
+                ['P', 'A', 'R', 'I', 'S', 'C', 'U'],
+                [' ', '#', 'C', 'E', '#', 'N', 'E'],
+                ['E', 'T', 'A', 'T', 'S', 'U', 'N']
+            ],
+            definitions: {
+                horizontal: [
+                    { numero: 1, definition: "Plateforme média (6 lettres)" },
+                    { numero: 2, definition: "Pays d'Afrique centrale (3 lettres)" },
+                    { numero: 3, definition: "Capitale de la France (5 lettres)" },
+                    { numero: 4, definition: "Pays nord-américain (6 lettres)" }
+                ],
+                vertical: [
+                    { numero: 1, definition: "Ville de la RDC (6 lettres)" },
+                    { numero: 2, definition: "Support d'information (5 lettres)" },
+                    { numero: 3, definition: "Océan le plus grand (9 lettres)" }
+                ]
+            }
+        };
+        
+        let currentSolution = [];
+        let currentDefinitions = { horizontal: [], vertical: [] };
+        let foundWords = [];
+        
+        // Afficher la date
+        document.getElementById('game-date').textContent = new Date().toLocaleDateString('fr-FR', {
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+        });
+        
+        function renderGrid() {
+            currentSolution = demoGridData.solution;
+            currentDefinitions = demoGridData.definitions;
+            
+            const gridData = demoGridData.grille;
+            const container = document.getElementById('crossword-grid');
+            
+            let html = '<table class="crossword-table">';
+            for (let i = 0; i < gridData.length; i++) {
+                html += '<tr>';
+                for (let j = 0; j < gridData[i].length; j++) {
+                    const cell = gridData[i][j];
+                    const isBlack = cell === '#';
+                    const number = (!isBlack && !isNaN(parseInt(cell)) && cell !== ' ') ? cell : '';
+                    
+                    html += `<td class="crossword-cell ${isBlack ? 'black' : ''}">`;
+                    if (!isBlack) {
+                        if (number) {
+                            html += `<span class="cell-number">${number}</span>`;
+                        }
+                        html += `<input type="text" maxlength="1" data-row="${i}" data-col="${j}">`;
+                    }
+                    html += '</td>';
+                }
+                html += '</tr>';
+            }
+            html += '</table>';
+            container.innerHTML = html;
+            
+            renderDefinitions();
+            attachEvents();
+        }
+        
+        function renderDefinitions() {
+            const container = document.getElementById('definitions-container');
+            
+            const horizontalHtml = `
+                <div class="definitions-section">
+                    <h3>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="4" y1="12" x2="20" y2="12"></line>
+                            <polyline points="14 6 20 12 14 18"></polyline>
+                        </svg>
+                        HORIZONTALEMENT
+                    </h3>
+                    ${currentDefinitions.horizontal.map(def => `
+                        <div class="definition-item" data-word-num="${def.numero}" data-direction="horizontal">
+                            <span class="definition-number">${def.numero}.</span>
+                            <span class="definition-text">${def.definition}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            const verticalHtml = `
+                <div class="definitions-section">
+                    <h3>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="4" x2="12" y2="20"></line>
+                            <polyline points="6 14 12 20 18 14"></polyline>
+                        </svg>
+                        VERTICALEMENT
+                    </h3>
+                    ${currentDefinitions.vertical.map(def => `
+                        <div class="definition-item" data-word-num="${def.numero}" data-direction="vertical">
+                            <span class="definition-number">${def.numero}.</span>
+                            <span class="definition-text">${def.definition}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            container.innerHTML = horizontalHtml + verticalHtml;
+            
+            // Ajouter les événements de clic sur les définitions
+            document.querySelectorAll('.definition-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const wordNum = this.dataset.wordNum;
+                    const direction = this.dataset.direction;
+                    highlightWord(wordNum, direction);
+                });
+            });
+        }
+        
+        function highlightWord(wordNum, direction) {
+            // Trouver la première case du mot
+            const cells = document.querySelectorAll('.crossword-cell input');
+            for (let input of cells) {
+                const cellNumber = input.parentElement.querySelector('.cell-number');
+                if (cellNumber && cellNumber.innerText == wordNum) {
+                    input.focus();
+                    input.style.backgroundColor = 'rgba(163,0,0,0.1)';
+                    setTimeout(() => {
+                        input.style.backgroundColor = '';
+                    }, 1000);
+                    break;
+                }
+            }
+        }
+        
+        function attachEvents() {
+            const inputs = document.querySelectorAll('.crossword-cell input');
+            
+            inputs.forEach(input => {
+                input.removeEventListener('input', handleInput);
+                input.removeEventListener('keydown', handleKeydown);
+                input.addEventListener('input', handleInput);
+                input.addEventListener('keydown', handleKeydown);
+            });
+        }
+        
+        function handleInput(e) {
+            const input = e.target;
+            input.value = input.value.toUpperCase();
+            
+            // Vérifier si la lettre est correcte
+            const row = parseInt(input.dataset.row);
+            const col = parseInt(input.dataset.col);
+            const solutionValue = currentSolution[row][col];
+            
+            if (input.value && solutionValue && input.value === solutionValue) {
+                input.style.color = '#27ae60';
+            } else if (input.value && solutionValue && input.value !== solutionValue) {
+                input.style.color = '#e74c3c';
+            } else {
+                input.style.color = '';
+            }
+            
+            // Auto-avancer
+            if (input.value.length === 1) {
+                const nextInput = input.parentElement.nextElementSibling?.querySelector('input');
+                if (nextInput) nextInput.focus();
+            }
+            
+            // Vérifier si des mots sont complets
+            checkWordsComplete();
+        }
+        
+        function handleKeydown(e) {
+            const input = e.target;
+            const inputs = document.querySelectorAll('.crossword-cell input');
+            const currentIndex = Array.from(inputs).indexOf(input);
+            const row = parseInt(input.dataset.row);
+            const col = parseInt(input.dataset.col);
+            
+            if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                if (inputs[currentIndex + 1]) inputs[currentIndex + 1].focus();
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                if (inputs[currentIndex - 1]) inputs[currentIndex - 1].focus();
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                const nextRow = row + 1;
+                const nextInput = document.querySelector(`input[data-row="${nextRow}"][data-col="${col}"]`);
+                if (nextInput) nextInput.focus();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                const prevRow = row - 1;
+                const prevInput = document.querySelector(`input[data-row="${prevRow}"][data-col="${col}"]`);
+                if (prevInput) prevInput.focus();
+            } else if (e.key === 'Backspace' && input.value === '') {
+                e.preventDefault();
+                if (inputs[currentIndex - 1]) inputs[currentIndex - 1].focus();
+            }
+        }
+        
+        function checkWordsComplete() {
+            // Vérifier les mots horizontaux
+            const horizontalWords = {};
+            const verticalWords = {};
+            
+            // Récupérer tous les mots horizontaux
+            const cells = document.querySelectorAll('.crossword-cell input');
+            cells.forEach(cell => {
+                const row = parseInt(cell.dataset.row);
+                const col = parseInt(cell.dataset.col);
+                const cellNumber = cell.parentElement.querySelector('.cell-number');
+                if (cellNumber) {
+                    const num = cellNumber.innerText;
+                    if (!horizontalWords[num]) horizontalWords[num] = [];
+                    horizontalWords[num].push(cell);
+                }
+            });
+            
+            // Vérifier chaque mot horizontal
+            for (let [num, wordCells] of Object.entries(horizontalWords)) {
+                let wordComplete = true;
+                let wordValue = '';
+                for (let cell of wordCells) {
+                    if (!cell.value) {
+                        wordComplete = false;
+                        break;
+                    }
+                    wordValue += cell.value;
+                }
+                
+                if (wordComplete) {
+                    // Marquer le mot comme trouvé
+                    const definitionItem = document.querySelector(`.definition-item[data-word-num="${num}"][data-direction="horizontal"]`);
+                    if (definitionItem && !foundWords.includes(`h${num}`)) {
+                        foundWords.push(`h${num}`);
+                        definitionItem.classList.add('word-found');
+                    }
+                }
+            }
+            
+            // Vérifier si la grille est complète
+            let allComplete = true;
+            cells.forEach(cell => {
+                const row = parseInt(cell.dataset.row);
+                const col = parseInt(cell.dataset.col);
+                const solutionValue = currentSolution[row][col];
+                if (solutionValue && solutionValue !== ' ' && cell.value !== solutionValue) {
+                    allComplete = false;
+                }
+            });
+            
+            if (allComplete) {
+                const message = document.getElementById('result-message');
+                message.className = 'result-message success';
+                message.innerHTML = 'Félicitations ! Grille complète avec succès !';
+                const table = document.querySelector('.crossword-table');
+                table.style.animation = 'successPulse 0.5s ease';
+                setTimeout(() => table.style.animation = '', 500);
+            }
+        }
+        
+        function checkGrid() {
+            const inputs = document.querySelectorAll('.crossword-cell input');
+            let correctCount = 0;
+            let total = 0;
+            
+            inputs.forEach((input) => {
+                const row = parseInt(input.dataset.row);
+                const col = parseInt(input.dataset.col);
+                const solutionValue = currentSolution[row][col];
+                
+                if (solutionValue && solutionValue !== ' ') {
+                    total++;
+                    if (input.value && input.value === solutionValue) {
+                        correctCount++;
+                        input.style.color = '#27ae60';
+                    } else if (input.value && input.value !== solutionValue) {
+                        input.style.color = '#e74c3c';
+                    }
+                }
+            });
+            
+            const message = document.getElementById('result-message');
+            
+            if (correctCount === total) {
+                message.className = 'result-message success';
+                message.innerHTML = 'Félicitations ! Grille complète avec succès !';
+            } else {
+                message.className = 'result-message error';
+                message.innerHTML = correctCount + '/' + total + ' lettres correctes. Continuez !';
+                setTimeout(() => {
+                    message.className = 'result-message';
+                    message.innerHTML = '';
+                }, 3000);
+            }
+        }
+        
+        function resetGrid() {
+            const inputs = document.querySelectorAll('.crossword-cell input');
+            inputs.forEach(input => {
+                input.value = '';
+                input.style.color = '';
+            });
+            foundWords = [];
+            document.querySelectorAll('.definition-item').forEach(item => {
+                item.classList.remove('word-found');
+            });
+            document.getElementById('result-message').className = 'result-message';
+            document.getElementById('result-message').innerHTML = '';
+        }
+        
+        function revealLetter() {
+            const inputs = document.querySelectorAll('.crossword-cell input');
+            const emptyInputs = Array.from(inputs).filter(input => input.value === '');
+            
+            if (emptyInputs.length > 0) {
+                const randomInput = emptyInputs[Math.floor(Math.random() * emptyInputs.length)];
+                const row = parseInt(randomInput.dataset.row);
+                const col = parseInt(randomInput.dataset.col);
+                randomInput.value = currentSolution[row][col];
+                randomInput.style.color = '#27ae60';
+                showToast('Une lettre a été révélée !');
+                checkWordsComplete();
+            } else {
+                showToast('Grille déjà complète !');
+            }
+        }
+        
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'makmus-toast';
+            toast.innerHTML = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+        }
+        
+        // Initialisation
+        renderGrid();
+        
+        // Attacher les événements des boutons
+        document.getElementById('check-btn').addEventListener('click', checkGrid);
+        document.getElementById('reset-btn').addEventListener('click', resetGrid);
+        document.getElementById('reveal-btn').addEventListener('click', revealLetter);
+    </script>
+</body>
+</html>

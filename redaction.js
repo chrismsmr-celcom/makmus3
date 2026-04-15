@@ -185,84 +185,10 @@ document.addEventListener('click', function(e) {
 });
 
 /* --------------------------------------
-   AUTHENTIFICATION
+   AUTHENTIFICATION - FONCTIONS
    -------------------------------------- */
-window.checkUserStatus = async function() {
-    try {
-        var { data: { user } } = await supabaseClient.auth.getUser();
-        currentUser = user;
-        var loggedOut = document.getElementById('logged-out-view');
-        var loggedIn = document.getElementById('logged-in-view');
-        var emailDisplay = document.getElementById('user-email-display');
-        var avatar = document.querySelector('.user-avatar');
-        
-        if (user) {
-            if (loggedOut) loggedOut.style.display = 'none';
-            if (loggedIn) loggedIn.style.display = 'block';
-            if (emailDisplay) emailDisplay.textContent = user.email;
-            if (avatar) avatar.textContent = user.email.charAt(0).toUpperCase();
-            window.loadUserActivity().catch(function() {});
-            if (currentArticle) {
-                fetchLikeStatus();
-                fetchBookmarkStatus();
-            }
-        } else {
-            if (loggedOut) loggedOut.style.display = 'block';
-            if (loggedIn) loggedIn.style.display = 'none';
-        }
-    } catch (error) {
-        console.error("Auth error:", error);
-    }
-};
 
-window.handleAuth = async function(type) {
-    var email = document.getElementById('auth-email')?.value;
-    var password = document.getElementById('auth-password')?.value;
-    if (!email || !password) return alert("Veuillez remplir tous les champs.");
-    
-    try {
-        var result;
-        if (type === 'signup') {
-            result = await supabaseClient.auth.signUp({ email: email, password: password });
-            if (!result.error) alert("Inscription reussie ! Verifiez vos emails.");
-        } else {
-            result = await supabaseClient.auth.signInWithPassword({ email: email, password: password });
-        }
-        if (result.error) throw result.error;
-        if (result.data.session) {
-            await window.checkUserStatus();
-            window.toggleSidePanel(false);
-            if (currentArticle) {
-                fetchLikeStatus();
-                fetchBookmarkStatus();
-                fetchLikesCount();
-            }
-        }
-    } catch (error) {
-        alert("Erreur : " + error.message);
-    }
-};
-
-window.handleLogout = async function() {
-    if (!confirm("Voulez-vous vous deconnecter ?")) return;
-    try {
-        await supabaseClient.auth.signOut();
-        currentUser = null;
-        window.location.reload();
-    } catch (error) {
-        alert("Erreur : " + error.message);
-    }
-};
-
-window.navigateToAccountOption = function(option) {
-    window.toggleSidePanel(false);
-    if (option === 'favoris') {
-        window.location.href = 'favoris.html';
-    } else if (option === 'commentaires') {
-        window.location.href = 'mes-commentaires.html';
-    }
-};
-
+// 1. D'abord définir loadUserActivity
 window.loadUserActivity = async function() {
     try {
         var { data: { user } } = await supabaseClient.auth.getUser();
@@ -295,11 +221,193 @@ window.loadUserActivity = async function() {
     }
 };
 
+// 2. Ensuite checkUserStatus
+window.checkUserStatus = async function() {
+    try {
+        var { data: { user } } = await supabaseClient.auth.getUser();
+        currentUser = user;
+        var loggedOut = document.getElementById('logged-out-view');
+        var loggedIn = document.getElementById('logged-in-view');
+        var emailDisplay = document.getElementById('user-email-display');
+        var avatar = document.querySelector('.user-avatar');
+        
+        if (user) {
+            if (loggedOut) loggedOut.style.display = 'none';
+            if (loggedIn) loggedIn.style.display = 'block';
+            if (emailDisplay) emailDisplay.textContent = user.email;
+            if (avatar) avatar.textContent = user.email.charAt(0).toUpperCase();
+            
+            // Vérifier que loadUserActivity existe avant de l'appeler
+            if (typeof window.loadUserActivity === 'function') {
+                window.loadUserActivity().catch(function(err) {
+                    console.warn('loadUserActivity error:', err);
+                });
+            }
+            
+            if (typeof currentArticle !== 'undefined' && currentArticle) {
+                if (typeof fetchLikeStatus === 'function') fetchLikeStatus();
+                if (typeof fetchBookmarkStatus === 'function') fetchBookmarkStatus();
+            }
+        } else {
+            if (loggedOut) loggedOut.style.display = 'block';
+            if (loggedIn) loggedIn.style.display = 'none';
+        }
+    } catch (error) {
+        console.error("Auth error:", error);
+    }
+};
+
+/* --------------------------------------
+   AUTHENTIFICATION SIMPLIFIÉE (sans vérification email)
+   -------------------------------------- */
+
+let isLoginMode = true;
+
+function updateAuthUI() {
+    const submitBtn = document.getElementById('auth-submit-btn');
+    const toggleBtn = document.getElementById('auth-toggle-btn');
+    const modeText = document.getElementById('auth-mode-text');
+    
+    if (!submitBtn) return;
+    
+    if (isLoginMode) {
+        submitBtn.textContent = 'SE CONNECTER';
+        if (toggleBtn) toggleBtn.textContent = 'CREER UN COMPTE';
+        if (modeText) modeText.innerHTML = 'Pas encore de compte ? Cliquez sur "Créer un compte"';
+    } else {
+        submitBtn.textContent = "S'INSCRIRE";
+        if (toggleBtn) toggleBtn.textContent = 'RETOUR A LA CONNEXION';
+        if (modeText) modeText.innerHTML = 'Déjà un compte ? Cliquez sur "Retour à la connexion"';
+    }
+}
+
+window.handleSimplifiedAuth = async function() {
+    const emailInput = document.getElementById('auth-email');
+    const passwordInput = document.getElementById('auth-password');
+    
+    const email = emailInput?.value.trim();
+    const password = passwordInput?.value;
+    
+    if (!email || !password) {
+        showToast('Veuillez remplir tous les champs', 'error');
+        return;
+    }
+    
+    if (!email.includes('@') || !email.includes('.')) {
+        showToast('Email invalide', 'error');
+        return;
+    }
+    
+    if (password.length < 6) {
+        showToast('Le mot de passe doit contenir au moins 6 caractères', 'error');
+        return;
+    }
+    
+    try {
+        let result;
+        
+        if (isLoginMode) {
+            result = await supabaseClient.auth.signInWithPassword({ 
+                email: email, 
+                password: password 
+            });
+            if (result.error) throw result.error;
+            showToast('Connexion réussie !', 'success');
+        } else {
+            result = await supabaseClient.auth.signUp({ 
+                email: email, 
+                password: password,
+                options: {
+                    emailRedirectTo: window.location.origin,
+                    data: { full_name: email.split('@')[0] }
+                }
+            });
+            if (result.error) throw result.error;
+            
+            if (result.data.session) {
+                showToast('Inscription réussie ! Bienvenue !', 'success');
+            } else {
+                showToast('Inscription réussie ! Connectez-vous', 'success');
+                isLoginMode = true;
+                updateAuthUI();
+                if (emailInput) emailInput.value = '';
+                if (passwordInput) passwordInput.value = '';
+                return;
+            }
+        }
+        
+        await window.checkUserStatus();
+        
+        if (typeof window.toggleSidePanel === 'function') {
+            window.toggleSidePanel(false);
+        }
+        
+        if (typeof currentArticle !== 'undefined' && currentArticle) {
+            if (typeof fetchLikeStatus === 'function') fetchLikeStatus();
+            if (typeof fetchBookmarkStatus === 'function') fetchBookmarkStatus();
+            if (typeof fetchLikesCount === 'function') fetchLikesCount();
+        }
+        
+        if (typeof window.loadUserActivity === 'function') {
+            window.loadUserActivity();
+        }
+        
+        if (emailInput) emailInput.value = '';
+        if (passwordInput) passwordInput.value = '';
+        
+    } catch (error) {
+        console.error('Auth error:', error);
+        
+        if (error.message.includes('Invalid login credentials')) {
+            showToast('Email ou mot de passe incorrect', 'error');
+        } else if (error.message.includes('User already registered')) {
+            showToast('Cet email est déjà utilisé. Connectez-vous.', 'error');
+            isLoginMode = true;
+            updateAuthUI();
+        } else {
+            showToast(error.message, 'error');
+        }
+    }
+};
+
+window.toggleAuthMode = function() {
+    isLoginMode = !isLoginMode;
+    updateAuthUI();
+    
+    const emailInput = document.getElementById('auth-email');
+    const passwordInput = document.getElementById('auth-password');
+    if (emailInput) emailInput.value = '';
+    if (passwordInput) passwordInput.value = '';
+};
+
+function initAuthEvents() {
+    const submitBtn = document.getElementById('auth-submit-btn');
+    const toggleBtn = document.getElementById('auth-toggle-btn');
+    
+    if (submitBtn) {
+        submitBtn.removeEventListener('click', window.handleSimplifiedAuth);
+        submitBtn.addEventListener('click', window.handleSimplifiedAuth);
+    }
+    if (toggleBtn) {
+        toggleBtn.removeEventListener('click', window.toggleAuthMode);
+        toggleBtn.addEventListener('click', window.toggleAuthMode);
+    }
+    
+    updateAuthUI();
+}
+
+window.isLoginMode = isLoginMode;
+window.updateAuthUI = updateAuthUI;
+window.initAuthEvents = initAuthEvents;
+
 /* --------------------------------------
    LIKES (avec BDD)
    -------------------------------------- */
 async function fetchLikeStatus() {
     if (!currentArticle || !currentUser) return;
+    
+    const likeBtn = document.getElementById('like-btn');
+    if (!likeBtn) return;
     
     try {
         const { data, error } = await supabaseClient
@@ -309,16 +417,13 @@ async function fetchLikeStatus() {
             .eq('article_id', currentArticle.id)
             .maybeSingle();
         
-        const likeBtn = document.getElementById('like-btn');
-        if (likeBtn) {
-            if (data && !error) {
-                likeBtn.classList.add('liked');
-                likeBtn.disabled = true;
-                likeBtn.title = "Vous avez déjà aimé cet article";
-            } else {
-                likeBtn.classList.remove('liked');
-                likeBtn.disabled = false;
-            }
+        if (data && !error) {
+            likeBtn.classList.add('liked');
+            likeBtn.disabled = true;
+            likeBtn.title = "Vous avez déjà aimé cet article";
+        } else {
+            likeBtn.classList.remove('liked');
+            likeBtn.disabled = false;
         }
     } catch (error) {
         console.error('Erreur fetchLikeStatus:', error);
@@ -328,16 +433,16 @@ async function fetchLikeStatus() {
 async function fetchLikesCount() {
     if (!currentArticle) return;
     
+    const likeSpan = document.getElementById('nb-like');
+    if (!likeSpan) return;
+    
     try {
         const { count, error } = await supabaseClient
             .from('user_likes')
             .select('id', { count: 'exact', head: true })
             .eq('article_id', currentArticle.id);
         
-        const likeSpan = document.getElementById('nb-like');
-        if (likeSpan) {
-            likeSpan.textContent = count || 0;
-        }
+        likeSpan.textContent = count || 0;
     } catch (error) {
         console.error('Erreur fetchLikesCount:', error);
     }
@@ -389,6 +494,11 @@ window.toggleLike = async function() {
 async function fetchBookmarkStatus() {
     if (!currentArticle || !currentUser) return;
     
+    const bookmarkBtn = document.getElementById('bookmark-btn');
+    if (!bookmarkBtn) return;
+    
+    const span = bookmarkBtn?.querySelector('span:last-child');
+    
     try {
         const { data, error } = await supabaseClient
             .from('user_favorites')
@@ -397,20 +507,15 @@ async function fetchBookmarkStatus() {
             .eq('article_id', currentArticle.id)
             .maybeSingle();
         
-        const bookmarkBtn = document.getElementById('bookmark-btn');
-        const span = bookmarkBtn?.querySelector('span:last-child');
-        
-        if (bookmarkBtn) {
-            if (data && !error) {
-                bookmarkBtn.classList.add('bookmarked');
-                bookmarkBtn.disabled = true;
-                if (span) span.textContent = 'Sauvegardé ✓';
-                bookmarkBtn.title = "Article déjà sauvegardé";
-            } else {
-                bookmarkBtn.classList.remove('bookmarked');
-                bookmarkBtn.disabled = false;
-                if (span) span.textContent = 'Sauvegarder';
-            }
+        if (data && !error) {
+            bookmarkBtn.classList.add('bookmarked');
+            bookmarkBtn.disabled = true;
+            if (span) span.textContent = 'Sauvegardé ✓';
+            bookmarkBtn.title = "Article déjà sauvegardé";
+        } else {
+            bookmarkBtn.classList.remove('bookmarked');
+            bookmarkBtn.disabled = false;
+            if (span) span.textContent = 'Sauvegarder';
         }
     } catch (error) {
         console.error('Erreur fetchBookmarkStatus:', error);
@@ -450,13 +555,46 @@ window.toggleBookmark = async function() {
         if (span) span.textContent = 'Sauvegardé ✓';
         bookmarkBtn.title = "Article déjà sauvegardé";
         showToast('Article sauvegardé dans vos favoris', 'success');
-        window.loadUserActivity();
+        
+        if (typeof window.loadUserActivity === 'function') {
+            window.loadUserActivity();
+        }
     } catch (error) {
         console.error('Erreur toggleBookmark:', error);
         showToast('Erreur lors de la sauvegarde', 'error');
     }
 };
-
+/* --------------------------------------
+   DECONNEXION
+   -------------------------------------- */
+window.handleLogout = async function() {
+    if (!confirm("Voulez-vous vous déconnecter ?")) return;
+    try {
+        await supabaseClient.auth.signOut();
+        currentUser = null;
+        
+        // Mettre à jour l'interface utilisateur
+        const loggedOut = document.getElementById('logged-out-view');
+        const loggedIn = document.getElementById('logged-in-view');
+        
+        if (loggedOut) loggedOut.style.display = 'block';
+        if (loggedIn) loggedIn.style.display = 'none';
+        
+        // Vider les favoris affichés
+        const favoritesContainer = document.getElementById('user-favorites-list');
+        if (favoritesContainer) {
+            favoritesContainer.innerHTML = '<div class="no-favs">Connectez-vous pour voir vos favoris</div>';
+        }
+        
+        showToast('Déconnexion réussie', 'success');
+        
+        // Optionnel : recharger la page pour rafraîchir tout l'état
+        // window.location.reload();
+    } catch (error) {
+        console.error("Erreur déconnexion:", error);
+        showToast('Erreur lors de la déconnexion', 'error');
+    }
+};
 /* --------------------------------------
    COMMENTAIRES - SIDE PANEL (VERSION UNIQUE AVEC LIKES)
    -------------------------------------- */
@@ -920,11 +1058,20 @@ function generateSlug(title) {
     return title
         .toLowerCase()
         .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .replace(/['’]/g, '') // ← AJOUTE CETTE LIGNE (supprime les apostrophes)
+        .replace(/['’]/g, '')
         .replace(/[^a-z0-9\s-]/g, '')
         .replace(/\s+/g, '-')
         .replace(/-+/g, '-')
         .replace(/^-|-$/g, '');
+}
+
+// ✅ AJOUTER ICI
+function getArticleUrl(article) {
+    if (!article) return '#';
+    if (article.slug && article.slug !== '') {
+        return `redaction.html?slug=${encodeURIComponent(article.slug)}`;
+    }
+    return `redaction.html?id=${article.id}`;
 }
 /* --------------------------------------
    TTS & LECTEUR AUDIO
@@ -1689,7 +1836,7 @@ async function loadArticle() {
 async function fillInlineGrid(category, currentId) {
     var { data: related } = await supabaseClient
         .from('articles')
-        .select('id, titre, image_url')
+        .select('id, titre, image_url, slug')
         .eq('category', category)
         .neq('id', currentId)
         .limit(2);
@@ -1698,7 +1845,8 @@ async function fillInlineGrid(category, currentId) {
             var item = related[i];
             var titleEl = document.getElementById('inline-title-' + (i+1));
             if (titleEl) {
-                titleEl.innerHTML = '<a href="redaction.html?id=' + item.id + '" style="text-decoration:none; color:#121212; font-weight:bold; font-size:0.9rem;">' + escapeHtml(item.titre) + '</a>';
+                // ✅ getArticleUrl est maintenant définie
+                titleEl.innerHTML = '<a href="' + getArticleUrl(item) + '" style="text-decoration:none; color:#121212; font-weight:bold; font-size:0.9rem;">' + escapeHtml(item.titre) + '</a>';
             }
         }
         if (related.length === 1) {
@@ -1716,22 +1864,51 @@ async function fetchRelatedArticles(tags, category) {
     var box = document.getElementById('recommendations-box');
     if (!grid) return;
     if (!currentArticle) return;
+    
     var { data: related } = await supabaseClient
         .from('articles')
-        .select('id, titre, image_url, category')
+        .select('id, titre, image_url, category, slug')
         .eq('category', category)
         .neq('id', currentArticle.id)
         .limit(6);
+    
     if (!related || related.length === 0) {
         if (box) box.style.display = 'none';
         return;
     }
     if (box) box.style.display = 'block';
+    
+    // ✅ getArticleUrl est maintenant définie
     grid.innerHTML = related.map(function(art) {
-        return '<a href="redaction.html?id=' + art.id + '" class="rec-card"><div class="rec-image-container"><img src="' + art.image_url + '" alt="' + escapeHtml(art.titre) + '" loading="lazy" onerror="this.src=\'https://via.placeholder.com/300x200\'"><div class="ad-badge">Recommandé</div></div><div class="rec-source">' + escapeHtml(art.category || 'MakMus') + '</div><h4 class="rec-title">' + escapeHtml(art.titre) + '</h4></a>';
+        return '<a href="' + getArticleUrl(art) + '" class="rec-card">' +
+            '<div class="rec-image-container">' +
+                '<img src="' + art.image_url + '" alt="' + escapeHtml(art.titre) + '" loading="lazy" onerror="this.src=\'https://via.placeholder.com/300x200\'">' +
+                '<div class="ad-badge">Recommandé</div>' +
+            '</div>' +
+            '<div class="rec-source">' + escapeHtml(art.category || 'MakMus') + '</div>' +
+            '<h4 class="rec-title">' + escapeHtml(art.titre) + '</h4>' +
+        '</a>';
     }).join('');
 }
-
+// À ajouter dans renderArticle ou loadArticle
+async function incrementArticleViews(articleId) {
+    if (!articleId) return;
+    
+    // Vérifier si l'utilisateur a déjà vu cet article (session)
+    var viewedKey = 'article_viewed_' + articleId;
+    if (sessionStorage.getItem(viewedKey)) return;
+    
+    try {
+        await supabaseClient
+            .from('articles')
+            .update({ views: supabaseClient.rpc('increment', { row_id: articleId }) })
+            .eq('id', articleId);
+        
+        sessionStorage.setItem(viewedKey, 'true');
+    } catch (error) {
+        console.error('Erreur incrémentation vues:', error);
+    }
+}
 /* --------------------------------------
    INITIALISATION
    -------------------------------------- */

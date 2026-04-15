@@ -177,7 +177,14 @@
             <label>Titre de l'article</label>
             <input type="text" id="article-title" placeholder="Titre principal..." required>
         </div>
-        
+        <div class="form-group">
+    <label>Médias (images/vidéos)</label>
+    <button type="button" id="open-studio-btn" class="btn-secondary" style="margin-bottom: 15px;">📁 Ouvrir la galerie média</button>
+    <div id="media-list-container">
+        <div id="media-items"></div>
+        <button type="button" class="add-media-btn" id="add-media-btn">+ Ajouter un média manuellement</button>
+    </div>
+</div>
         <div class="form-group">
             <label>Resume (chapeau)</label>
             <textarea id="article-excerpt" rows="3" placeholder="Court resume..."></textarea>

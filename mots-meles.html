@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Mots mêlés - MAKMUS</title>
+    <link rel="stylesheet" href="redaction.css">
+    <style>
+        .wordsearch-container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        
+        .wordsearch-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .wordsearch-title {
+            font-family: var(--serif);
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--red);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        
+        .wordsearch-title svg {
+            width: 32px;
+            height: 32px;
+        }
+        
+        .crossword-date {
+            font-family: var(--sans);
+            font-size: 0.8rem;
+            color: var(--gray-light);
+            margin-top: 5px;
+        }
+        
+        .words-list {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .word-chip {
+            background: var(--gray-bg);
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-family: var(--sans);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .word-chip.found {
+            background: #27ae60;
+            color: white;
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+        
+        .wordsearch-grid {
+            display: flex;
+            justify-content: center;
+            overflow-x: auto;
+        }
+        
+        .wordsearch-table {
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .letter-cell {
+            width: 45px;
+            height: 45px;
+            border: 1px solid var(--border);
+            text-align: center;
+            vertical-align: middle;
+            font-family: var(--sans);
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s;
+        }
+        
+        .letter-cell.selected {
+            background: rgba(163,0,0,0.3);
+        }
+        
+        .letter-cell.highlight {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .wordsearch-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .check-btn, .reset-btn, .reveal-btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 30px;
+            font-family: var(--sans);
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .check-btn svg, .reset-btn svg, .reveal-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+        
+        .check-btn {
+            background: var(--red);
+            color: white;
+        }
+        
+        .check-btn:hover {
+            background: var(--red-dark);
+            transform: scale(1.02);
+        }
+        
+        .reset-btn {
+            background: var(--gray-bg);
+            color: var(--gray-dark);
+        }
+        
+        .reset-btn:hover {
+            background: var(--border);
+        }
+        
+        .reveal-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+        }
+        
+        .reveal-btn:hover {
+            background: var(--gray-bg);
+            border-color: var(--red);
+        }
+        
+        .result-message {
+            text-align: center;
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 8px;
+            font-family: var(--sans);
+            font-size: 0.85rem;
+        }
+        
+        .result-message.success {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            color: var(--red);
+            text-decoration: none;
+            font-family: var(--sans);
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        
+        @keyframes successPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); background: rgba(39, 174, 96, 0.1); }
+            100% { transform: scale(1); }
+        }
+        
+        @media (max-width: 768px) {
+            .wordsearch-container {
+                padding: 15px;
+            }
+            
+            .letter-cell {
+                width: 32px;
+                height: 32px;
+                font-size: 0.9rem;
+            }
+            
+            .wordsearch-title {
+                font-size: 1.4rem;
+            }
+            
+            .wordsearch-title svg {
+                width: 24px;
+                height: 24px;
+            }
+            
+            .check-btn, .reset-btn, .reveal-btn {
+                padding: 8px 16px;
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="wordsearch-container">
+        <a href="index.html" class="back-link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            Retour à l'accueil
+        </a>
+        
+        <div class="wordsearch-header">
+            <h1 class="wordsearch-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="2" x2="12" y2="22"></line>
+                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                    <line x1="19.07" y1="4.93" x2="4.93" y2="19.07"></line>
+                </svg>
+                MOTS MÊLÉS
+            </h1>
+            <div class="crossword-date" id="game-date"></div>
+            <p>Trouvez tous les mots cachés dans la grille</p>
+        </div>
+        
+        <div id="words-list" class="words-list"></div>
+        
+        <div id="wordsearch-grid" class="wordsearch-grid"></div>
+        
+        <div class="wordsearch-controls">
+            <button class="check-btn" id="check-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                Vérifier
+            </button>
+            <button class="reset-btn" id="reset-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                    <polyline points="3 3 3 8 8 8"></polyline>
+                </svg>
+                Effacer
+            </button>
+            <button class="reveal-btn" id="reveal-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                Révéler
+            </button>
+        </div>
+        
+        <div id="result-message" class="result-message"></div>
+    </div>
+
+    <script>
+        // GRILLE DE DÉMONSTRATION
+        const demoData = {
+            mots_a_trouver: ['MAKMUS', 'JOURNAL', 'MEDIA', 'ACTU', 'MONDE', 'INFO', 'REPORTAGE'],
+            grille: [
+                ['M', 'A', 'K', 'M', 'U', 'S', 'X', 'Y', 'I', 'N', 'F', 'O'],
+                ['J', 'O', 'U', 'R', 'N', 'A', 'L', 'Z', 'R', 'E', 'P', 'O'],
+                ['M', 'E', 'D', 'I', 'A', 'W', 'Q', 'R', 'T', 'A', 'G', 'E'],
+                ['A', 'C', 'T', 'U', 'V', 'B', 'N', 'M', 'L', 'M', 'A', 'K'],
+                ['M', 'O', 'N', 'D', 'E', 'F', 'G', 'H', 'U', 'S', 'M', 'O'],
+                ['R', 'E', 'P', 'O', 'R', 'T', 'A', 'G', 'E', 'C', 'A', 'N'],
+                ['A', 'C', 'T', 'U', 'A', 'L', 'I', 'T', 'E', 'S', 'X', 'Y']
+            ]
+        };
+        
+        let currentWords = [];
+        let foundWords = [];
+        let currentGridLetters = [];
+        let selectedCells = [];
+        let isSelecting = false;
+        let startCell = null;
+        
+        // Afficher la date
+        document.getElementById('game-date').textContent = new Date().toLocaleDateString('fr-FR', {
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+        });
+        
+        function initGame() {
+            currentWords = [...demoData.mots_a_trouver];
+            currentGridLetters = demoData.grille.map(row => [...row]);
+            foundWords = [];
+            selectedCells = [];
+            
+            renderWordsList();
+            renderGrid();
+            attachGridEvents();
+        }
+        
+        function renderWordsList() {
+            const container = document.getElementById('words-list');
+            container.innerHTML = currentWords.map(word => `
+                <span class="word-chip" data-word="${word}">${word}</span>
+            `).join('');
+        }
+        
+        function renderGrid() {
+            const container = document.getElementById('wordsearch-grid');
+            let html = '<table class="wordsearch-table">';
+            for (let i = 0; i < currentGridLetters.length; i++) {
+                html += '<tr>';
+                for (let j = 0; j < currentGridLetters[i].length; j++) {
+                    const isHighlighted = isCellHighlighted(i, j);
+                    html += `<td class="letter-cell ${isHighlighted ? 'highlight' : ''}" data-row="${i}" data-col="${j}">${currentGridLetters[i][j]}</td>`;
+                }
+                html += '</tr>';
+            }
+            html += '</table>';
+            container.innerHTML = html;
+        }
+        
+        function isCellHighlighted(row, col) {
+            // Vérifier si la cellule fait partie d'un mot trouvé
+            for (let word of foundWords) {
+                if (word.positions && word.positions.some(pos => pos.row === row && pos.col === col)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        function attachGridEvents() {
+            const cells = document.querySelectorAll('.letter-cell');
+            cells.forEach(cell => {
+                cell.removeEventListener('mousedown', handleMouseDown);
+                cell.removeEventListener('mouseenter', handleMouseEnter);
+                cell.removeEventListener('mouseup', handleMouseUp);
+                cell.removeEventListener('touchstart', handleTouchStart);
+                cell.removeEventListener('touchmove', handleTouchMove);
+                cell.removeEventListener('touchend', handleTouchEnd);
+                
+                cell.addEventListener('mousedown', handleMouseDown);
+                cell.addEventListener('mouseenter', handleMouseEnter);
+                cell.addEventListener('mouseup', handleMouseUp);
+                cell.addEventListener('touchstart', handleTouchStart);
+                cell.addEventListener('touchmove', handleTouchMove);
+                cell.addEventListener('touchend', handleTouchEnd);
+            });
+        }
+        
+        function handleMouseDown(e) {
+            e.preventDefault();
+            const cell = e.target.closest('.letter-cell');
+            if (!cell) return;
+            
+            isSelecting = true;
+            startCell = {
+                row: parseInt(cell.dataset.row),
+                col: parseInt(cell.dataset.col)
+            };
+            selectedCells = [startCell];
+            updateSelection();
+        }
+        
+        function handleMouseEnter(e) {
+            if (!isSelecting) return;
+            const cell = e.target.closest('.letter-cell');
+            if (!cell) return;
+            
+            const currentCell = {
+                row: parseInt(cell.dataset.row),
+                col: parseInt(cell.dataset.col)
+            };
+            
+            if (startCell) {
+                selectedCells = getCellsBetween(startCell, currentCell);
+                updateSelection();
+            }
+        }
+        
+        function handleMouseUp(e) {
+            if (!isSelecting) return;
+            isSelecting = false;
+            
+            if (selectedCells.length > 0) {
+                const word = selectedCells.map(cell => currentGridLetters[cell.row][cell.col]).join('');
+                checkWord(word, selectedCells);
+            }
+            
+            clearSelection();
+        }
+        
+        function handleTouchStart(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const element = document.elementFromPoint(touch.clientX, touch.clientY);
+            const cell = element.closest('.letter-cell');
+            if (!cell) return;
+            
+            isSelecting = true;
+            startCell = {
+                row: parseInt(cell.dataset.row),
+                col: parseInt(cell.dataset.col)
+            };
+            selectedCells = [startCell];
+            updateSelection();
+        }
+        
+        function handleTouchMove(e) {
+            e.preventDefault();
+            if (!isSelecting) return;
+            const touch = e.touches[0];
+            const element = document.elementFromPoint(touch.clientX, touch.clientY);
+            const cell = element.closest('.letter-cell');
+            if (!cell) return;
+            
+            const currentCell = {
+                row: parseInt(cell.dataset.row),
+                col: parseInt(cell.dataset.col)
+            };
+            
+            if (startCell) {
+                selectedCells = getCellsBetween(startCell, currentCell);
+                updateSelection();
+            }
+        }
+        
+        function handleTouchEnd(e) {
+            e.preventDefault();
+            if (!isSelecting) return;
+            isSelecting = false;
+            
+            if (selectedCells.length > 0) {
+                const word = selectedCells.map(cell => currentGridLetters[cell.row][cell.col]).join('');
+                checkWord(word, selectedCells);
+            }
+            
+            clearSelection();
+        }
+        
+        function getCellsBetween(start, end) {
+            const cells = [];
+            const rowStep = start.row === end.row ? 0 : (start.row < end.row ? 1 : -1);
+            const colStep = start.col === end.col ? 0 : (start.col < end.col ? 1 : -1);
+            
+            let row = start.row;
+            let col = start.col;
+            
+            while (row !== end.row + rowStep || col !== end.col + colStep) {
+                cells.push({ row, col });
+                if (row !== end.row) row += rowStep;
+                if (col !== end.col) col += colStep;
+            }
+            
+            return cells;
+        }
+        
+        function updateSelection() {
+            // Supprimer la classe selected de toutes les cellules
+            document.querySelectorAll('.letter-cell').forEach(cell => {
+                cell.classList.remove('selected');
+            });
+            
+            // Ajouter la classe selected aux cellules sélectionnées
+            selectedCells.forEach(cell => {
+                const element = document.querySelector(`.letter-cell[data-row="${cell.row}"][data-col="${cell.col}"]`);
+                if (element) element.classList.add('selected');
+            });
+        }
+        
+        function checkWord(word, cells) {
+            // Vérifier le mot dans les deux sens
+            const foundWord = currentWords.find(w => w === word || w === word.split('').reverse().join(''));
+            
+            if (foundWord && !foundWords.some(w => w.word === foundWord)) {
+                // Mot trouvé
+                foundWords.push({
+                    word: foundWord,
+                    positions: [...cells]
+                });
+                
+                // Marquer les cellules comme highlight
+                cells.forEach(cell => {
+                    const element = document.querySelector(`.letter-cell[data-row="${cell.row}"][data-col="${cell.col}"]`);
+                    element.classList.add('highlight');
+                });
+                
+                // Marquer le mot dans la liste
+                markWordAsFound(foundWord);
+                showToast('Mot trouvé : ' + foundWord);
+                
+                // Vérifier si tous les mots sont trouvés
+                if (foundWords.length === currentWords.length) {
+                    const messageDiv = document.getElementById('result-message');
+                    messageDiv.className = 'result-message success';
+                    messageDiv.innerHTML = 'Félicitations ! Tous les mots ont été trouvés !';
+                    const table = document.querySelector('.wordsearch-table');
+                    table.style.animation = 'successPulse 0.5s ease';
+                    setTimeout(() => table.style.animation = '', 500);
+                }
+            } else if (foundWord && foundWords.some(w => w.word === foundWord)) {
+                showToast('"' + foundWord + '" déjà trouvé !');
+            } else {
+                showToast('"' + word + '" n\'est pas dans la liste');
+            }
+        }
+        
+        function markWordAsFound(word) {
+            const chips = document.querySelectorAll('.word-chip');
+            chips.forEach(chip => {
+                if (chip.dataset.word === word) {
+                    chip.classList.add('found');
+                }
+            });
+        }
+        
+        function clearSelection() {
+            document.querySelectorAll('.letter-cell').forEach(cell => {
+                cell.classList.remove('selected');
+            });
+            selectedCells = [];
+            startCell = null;
+        }
+        
+        function resetSelection() {
+            clearSelection();
+        }
+        
+        function checkAllWords() {
+            const remaining = currentWords.filter(w => !foundWords.some(f => f.word === w));
+            if (remaining.length === 0) {
+                showToast('Grille complète !');
+            } else {
+                showToast('Il reste ' + remaining.length + ' mot(s) à trouver : ' + remaining.join(', '));
+            }
+        }
+        
+        function revealRandomWord() {
+            const remaining = currentWords.filter(w => !foundWords.some(f => f.word === w));
+            if (remaining.length > 0) {
+                const randomWord = remaining[Math.floor(Math.random() * remaining.length)];
+                showToast('Mot à chercher : "' + randomWord + '"');
+            } else {
+                showToast('Tous les mots sont déjà trouvés !');
+            }
+        }
+        
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'makmus-toast';
+            toast.innerHTML = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+        }
+        
+        // Attacher les événements des boutons
+        document.getElementById('check-btn').addEventListener('click', checkAllWords);
+        document.getElementById('reset-btn').addEventListener('click', resetSelection);
+        document.getElementById('reveal-btn').addEventListener('click', revealRandomWord);
+        
+        // Initialiser le jeu
+        initGame();
+    </script>
+</body>
+</html>

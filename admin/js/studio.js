@@ -1,5 +1,5 @@
 /* ==========================================================================
-   STUDIO MÉDIA MAKMUS (CORRIGÉ)
+   STUDIO MÉDIA MAKMUS (CORRIGÉ AVEC COPIE DE LIEN)
    ========================================================================== */
 
 var SUPABASE_URL = 'https://logphtrdkpbfgtejtime.supabase.co';
@@ -24,24 +24,25 @@ async function checkAdminAuth() {
         
         if (error || !user) {
             window.location.href = 'login.html';
-            return;
+            return false;
         }
         
         currentUser = user;
         initBucket();
         loadMedia();
+        return true;
     } catch (error) {
         console.error('Auth error:', error);
         window.location.href = 'login.html';
+        return false;
     }
 }
 
 /* --------------------------------------
-   BUCKET STORAGE (CORRIGÉ)
+   BUCKET STORAGE
    -------------------------------------- */
 async function initBucket() {
     try {
-        // Vérifier si le bucket existe
         var { data: buckets, error: listError } = await supabaseClient.storage.listBuckets();
         
         if (listError) {
@@ -79,6 +80,7 @@ async function initBucket() {
         console.error('Erreur initBucket:', error);
     }
 }
+
 /* --------------------------------------
    UPLOAD
    -------------------------------------- */
@@ -87,12 +89,12 @@ async function uploadFiles(files) {
         var file = files[f];
         
         if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
-            showToast(file.name + ' non supporte', 'error');
+            showToast(file.name + ' non supporté', 'error');
             continue;
         }
         
         if (file.size > 10 * 1024 * 1024) {
-            showToast(file.name + ' depasse 10MB', 'error');
+            showToast(file.name + ' dépasse 10MB', 'error');
             continue;
         }
         
@@ -105,7 +107,10 @@ async function uploadFiles(files) {
         
         var { error } = await supabaseClient.storage
             .from(BUCKET_NAME)
-            .upload(filePath, file);
+            .upload(filePath, file, {
+                cacheControl: '3600',
+                upsert: false
+            });
         
         if (error) {
             showToast('Erreur: ' + file.name, 'error');
@@ -117,7 +122,8 @@ async function uploadFiles(files) {
             .from(BUCKET_NAME)
             .getPublicUrl(filePath);
         
-        await supabaseClient
+        // Sauvegarder dans la table media
+        var { error: dbError } = await supabaseClient
             .from('media')
             .insert([{
                 filename: file.name,
@@ -128,7 +134,12 @@ async function uploadFiles(files) {
                 uploaded_by: currentUser.id
             }]);
         
-        showToast(file.name + ' uploadé !', 'success');
+        if (dbError) {
+            console.error('Erreur sauvegarde BDD:', dbError);
+            showToast('Erreur lors de l\'enregistrement', 'error');
+        } else {
+            showToast(file.name + ' uploadé !', 'success');
+        }
     }
     
     loadMedia();
@@ -178,7 +189,7 @@ function renderMediaGrid() {
     if (!grid) return;
     
     if (mediaList.length === 0) {
-        grid.innerHTML = '<div class="loading">Aucun media trouve</div>';
+        grid.innerHTML = '<div class="loading">Aucun média trouvé</div>';
         return;
     }
     
@@ -186,29 +197,76 @@ function renderMediaGrid() {
     for (var i = 0; i < mediaList.length; i++) {
         var media = mediaList[i];
         var isSelected = selectedMedia.has(media.id);
+        
         html += '<div class="media-card ' + (isSelected ? 'selected' : '') + '" data-id="' + media.id + '">';
+        
         if (media.type === 'image') {
-            html += '<img src="' + media.url + '" class="media-preview" alt="' + media.filename + '">';
+            html += '<img src="' + media.url + '" class="media-preview" alt="' + escapeHtml(media.filename) + '">';
         } else {
-            html += '<video src="' + media.url + '" class="media-preview" muted></video>';
+            html += '<video src="' + media.url + '" class="media-preview" muted preload="metadata"></video>';
         }
+        
         html += '<div class="media-info">';
-        html += '<div class="media-filename">' + media.filename + '</div>';
+        html += '<div class="media-filename" title="' + escapeHtml(media.filename) + '">' + escapeHtml(media.filename) + '</div>';
         html += '<div class="media-meta">' + new Date(media.created_at).toLocaleDateString('fr-FR') + '</div>';
+        html += '<div class="media-actions">';
+        html += '<button class="media-action-btn copy-link" data-url="' + media.url + '" title="Copier le lien">📋</button>';
+        html += '<button class="media-action-btn view-link" data-url="' + media.url + '" title="Voir">👁️</button>';
+        html += '</div>';
         html += '</div>';
         html += '<div class="media-select-overlay">' + (isSelected ? '✓' : '') + '</div>';
         html += '</div>';
     }
     grid.innerHTML = html;
     
+    // Attacher les événements
     var cards = document.querySelectorAll('.media-card');
     for (var j = 0; j < cards.length; j++) {
         cards[j].addEventListener('click', function(e) {
-            e.stopPropagation();
+            // Ne pas sélectionner si on clique sur un bouton d'action
+            if (e.target.classList.contains('media-action-btn') || 
+                e.target.classList.contains('copy-link') || 
+                e.target.classList.contains('view-link')) {
+                return;
+            }
             var id = this.getAttribute('data-id');
             toggleSelection(id);
         });
     }
+    
+    // Boutons de copie de lien
+    var copyBtns = document.querySelectorAll('.copy-link');
+    for (var k = 0; k < copyBtns.length; k++) {
+        copyBtns[k].addEventListener('click', function(e) {
+            e.stopPropagation();
+            var url = this.getAttribute('data-url');
+            copyToClipboard(url);
+            showToast('Lien copié !', 'success');
+        });
+    }
+    
+    // Boutons de visualisation
+    var viewBtns = document.querySelectorAll('.view-link');
+    for (var l = 0; l < viewBtns.length; l++) {
+        viewBtns[l].addEventListener('click', function(e) {
+            e.stopPropagation();
+            var url = this.getAttribute('data-url');
+            window.open(url, '_blank');
+        });
+    }
+}
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).catch(function(err) {
+        console.error('Erreur copie:', err);
+        // Fallback
+        var textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+    });
 }
 
 function toggleSelection(id) {
@@ -242,7 +300,7 @@ function updateSelectionBar() {
     if (bar && info) {
         if (count > 0) {
             bar.classList.add('show');
-            info.textContent = count + ' media' + (count > 1 ? 's' : '') + ' selectionne' + (count > 1 ? 's' : '');
+            info.textContent = count + ' média' + (count > 1 ? 's' : '') + ' sélectionné' + (count > 1 ? 's' : '');
         } else {
             bar.classList.remove('show');
         }
@@ -252,16 +310,11 @@ function updateSelectionBar() {
 function insertMedia() {
     if (selectedMedia.size === 0) return;
     
-    var selected = [];
+    var urls = [];
     for (var i = 0; i < mediaList.length; i++) {
         if (selectedMedia.has(mediaList[i].id)) {
-            selected.push(mediaList[i]);
+            urls.push(mediaList[i].url);
         }
-    }
-    
-    var urls = [];
-    for (var j = 0; j < selected.length; j++) {
-        urls.push(selected[j].url);
     }
     
     sessionStorage.setItem('inserted_media_urls', JSON.stringify(urls));
@@ -280,12 +333,24 @@ function renderPagination(total) {
     }
     
     var html = '';
-    for (var i = 1; i <= totalPages; i++) {
-        html += '<button class="' + (i === currentPage ? 'active' : '') + '" data-page="' + i + '">' + i + '</button>';
+    if (currentPage > 1) {
+        html += '<button class="page-btn prev" data-page="' + (currentPage - 1) + '">←</button>';
     }
+    
+    var startPage = Math.max(1, currentPage - 2);
+    var endPage = Math.min(totalPages, currentPage + 2);
+    
+    for (var i = startPage; i <= endPage; i++) {
+        html += '<button class="page-btn ' + (i === currentPage ? 'active' : '') + '" data-page="' + i + '">' + i + '</button>';
+    }
+    
+    if (currentPage < totalPages) {
+        html += '<button class="page-btn next" data-page="' + (currentPage + 1) + '">→</button>';
+    }
+    
     container.innerHTML = html;
     
-    var btns = container.querySelectorAll('button');
+    var btns = container.querySelectorAll('.page-btn');
     for (var j = 0; j < btns.length; j++) {
         btns[j].addEventListener('click', function() {
             currentPage = parseInt(this.getAttribute('data-page'));
@@ -377,18 +442,26 @@ function showToast(message, type) {
     var toast = document.createElement('div');
     toast.className = 'admin-toast ' + type;
     toast.textContent = message;
-    toast.style.cssText = 'position: fixed; bottom: 20px; right: 20px; background: ' + (type === 'error' ? '#dc3545' : type === 'success' ? '#28a745' : '#17a2b8') + '; color: white; padding: 12px 20px; border-radius: 8px; font-size: 14px; z-index: 1000;';
+    toast.style.cssText = 'position: fixed; bottom: 20px; right: 20px; background: ' + (type === 'error' ? '#dc3545' : type === 'success' ? '#28a745' : '#17a2b8') + '; color: white; padding: 12px 20px; border-radius: 8px; font-size: 14px; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.15);';
     
     document.body.appendChild(toast);
     
     setTimeout(function() {
         toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s';
         setTimeout(function() { toast.remove(); }, 300);
     }, 3000);
 }
 
+function escapeHtml(text) {
+    if (!text) return '';
+    var div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 async function logout() {
-    if (confirm('Voulez-vous vous deconnecter ?')) {
+    if (confirm('Voulez-vous vous déconnecter ?')) {
         await supabaseClient.auth.signOut();
         window.location.href = 'login.html';
     }

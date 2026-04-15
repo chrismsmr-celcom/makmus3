@@ -2142,7 +2142,7 @@ body.dark-mode .comment-replies {
     margin-bottom: 32px;
 }
 
-/* Formulaire d'authentification */
+/* Formulaire d'authentification - Version unifiée */
 .auth-form {
     display: flex;
     flex-direction: column;
@@ -2233,6 +2233,14 @@ body.dark-mode .comment-replies {
     background: var(--border, #e6e6e6);
 }
 
+.auth-mode-text {
+    text-align: center;
+    margin-top: 15px;
+    font-size: 0.7rem;
+    color: var(--gray-light, #888);
+    font-family: var(--sans, 'Libre Franklin', Arial, sans-serif);
+}
+
 /* Profil utilisateur connecté */
 .user-profile-header {
     display: flex;
@@ -2240,7 +2248,7 @@ body.dark-mode .comment-replies {
     gap: 16px;
     padding-bottom: 24px;
     margin-bottom: 24px;
-    border-bottom: 1px solid var(--border, #e6e6e6); /* solid classique */
+    border-bottom: 1px solid var(--border, #e6e6e6);
 }
 
 .user-avatar {
@@ -2310,7 +2318,7 @@ body.dark-mode .comment-replies {
     padding: 10px 0;
     transition: color 0.2s ease;
     display: block;
-    border-bottom: none; /* Pas de bordure */
+    border-bottom: none;
 }
 
 .nav-item:hover {
@@ -2329,13 +2337,80 @@ body.dark-mode .comment-replies {
     padding: 14px 0;
     margin-top: 20px;
     transition: color 0.2s ease;
-    border-top: 1px solid var(--border, #e6e6e6); /* solid classique */
+    border-top: 1px solid var(--border, #e6e6e6);
 }
 
 .btn-logout-link:hover {
     color: var(--red, #a30000);
 }
 
+/* ========================================
+   MODE SOMBRE POUR LE COMPTE
+   ======================================== */
+body.dark-mode .premium-title {
+    color: #e0e0e0;
+}
+
+body.dark-mode .premium-subtitle {
+    color: #aaa;
+}
+
+body.dark-mode .premium-input {
+    border-bottom-color: #444;
+    color: #e0e0e0;
+}
+
+body.dark-mode .premium-input:focus {
+    border-bottom-color: var(--red, #a30000);
+}
+
+body.dark-mode .auth-divider span {
+    background: #1a1a1a;
+}
+
+body.dark-mode .auth-divider::before {
+    background: #444;
+}
+
+body.dark-mode .user-email {
+    color: #e0e0e0;
+}
+
+body.dark-mode .nav-item {
+    color: #ccc;
+}
+
+body.dark-mode .nav-item:hover {
+    color: var(--red, #a30000);
+}
+
+body.dark-mode .btn-logout-link {
+    border-top-color: #444;
+    color: #aaa;
+}
+
+/* ========================================
+   RESPONSIVE POUR LE COMPTE
+   ======================================== */
+@media (max-width: 480px) {
+    .premium-title {
+        font-size: 1.5rem;
+    }
+    
+    .user-profile-header {
+        gap: 12px;
+    }
+    
+    .user-avatar {
+        width: 48px;
+        height: 48px;
+        font-size: 1.2rem;
+    }
+    
+    .user-email {
+        font-size: 0.85rem;
+    }
+}
 /* ========================================
    VOS FAVORIS RÉCENTS - BORDURE DOTTED
    ======================================== */

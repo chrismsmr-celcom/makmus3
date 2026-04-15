@@ -95,85 +95,10 @@ window.toggleModal = function(id, show) {
 };
 
 /* --------------------------------------
-   AUTHENTIFICATION
+   AUTHENTIFICATION - FONCTIONS
    -------------------------------------- */
-window.checkUserStatus = async function() {
-    try {
-        var { data: { user } } = await supabaseClient.auth.getUser();
-        currentUser = user;
-        var loggedOut = document.getElementById('logged-out-view');
-        var loggedIn = document.getElementById('logged-in-view');
-        var emailDisplay = document.getElementById('user-email-display');
-        var avatar = document.querySelector('.user-avatar');
-        
-        if (user) {
-            if (loggedOut) loggedOut.style.display = 'none';
-            if (loggedIn) loggedIn.style.display = 'block';
-            if (emailDisplay) emailDisplay.textContent = user.email;
-            if (avatar) avatar.textContent = user.email.charAt(0).toUpperCase();
-            window.loadUserActivity().catch(function() {});
-            
-            if (typeof currentArticle !== 'undefined' && currentArticle) {
-                if (typeof fetchLikeStatus === 'function') fetchLikeStatus();
-                if (typeof fetchBookmarkStatus === 'function') fetchBookmarkStatus();
-            }
-        } else {
-            if (loggedOut) loggedOut.style.display = 'block';
-            if (loggedIn) loggedIn.style.display = 'none';
-        }
-    } catch (error) {
-        console.error("Auth error:", error);
-    }
-};
 
-window.handleAuth = async function(type) {
-    var email = document.getElementById('auth-email')?.value;
-    var password = document.getElementById('auth-password')?.value;
-    if (!email || !password) return alert("Veuillez remplir tous les champs.");
-    
-    try {
-        var result;
-        if (type === 'signup') {
-            result = await supabaseClient.auth.signUp({ email: email, password: password });
-            if (!result.error) alert("Inscription reussie ! Verifiez vos emails.");
-        } else {
-            result = await supabaseClient.auth.signInWithPassword({ email: email, password: password });
-        }
-        if (result.error) throw result.error;
-        if (result.data.session) {
-            await window.checkUserStatus();
-            window.toggleSidePanel(false);
-            if (currentArticle) {
-                fetchLikeStatus();
-                fetchBookmarkStatus();
-                fetchLikesCount();
-            }
-        }
-    } catch (error) {
-        alert("Erreur : " + error.message);
-    }
-};
-
-window.handleLogout = async function() {
-    if (!confirm("Voulez-vous vous deconnecter ?")) return;
-    try {
-        await supabaseClient.auth.signOut();
-        currentUser = null;
-        window.location.reload();
-    } catch (error) {
-        alert("Erreur : " + error.message);
-    }
-};
-
-window.navigateToAccountOption = function(option) {
-    window.toggleSidePanel(false);
-    if (option === 'favoris') {
-        window.location.href = 'favoris.html';
-    } else if (option === 'commentaires') {
-        window.location.href = 'mes-commentaires.html';
-    }
-};
-
+// 1. D'abord définir loadUserActivity
 window.loadUserActivity = async function() {
     try {
         var { data: { user } } = await supabaseClient.auth.getUser();
@@ -205,6 +130,185 @@ window.loadUserActivity = async function() {
         }
     }
 };
+
+// 2. Ensuite checkUserStatus
+window.checkUserStatus = async function() {
+    try {
+        var { data: { user } } = await supabaseClient.auth.getUser();
+        currentUser = user;
+        var loggedOut = document.getElementById('logged-out-view');
+        var loggedIn = document.getElementById('logged-in-view');
+        var emailDisplay = document.getElementById('user-email-display');
+        var avatar = document.querySelector('.user-avatar');
+        
+        if (user) {
+            if (loggedOut) loggedOut.style.display = 'none';
+            if (loggedIn) loggedIn.style.display = 'block';
+            if (emailDisplay) emailDisplay.textContent = user.email;
+            if (avatar) avatar.textContent = user.email.charAt(0).toUpperCase();
+            
+            // Vérifier que loadUserActivity existe avant de l'appeler
+            if (typeof window.loadUserActivity === 'function') {
+                window.loadUserActivity().catch(function(err) {
+                    console.warn('loadUserActivity error:', err);
+                });
+            }
+            
+            if (typeof currentArticle !== 'undefined' && currentArticle) {
+                if (typeof fetchLikeStatus === 'function') fetchLikeStatus();
+                if (typeof fetchBookmarkStatus === 'function') fetchBookmarkStatus();
+            }
+        } else {
+            if (loggedOut) loggedOut.style.display = 'block';
+            if (loggedIn) loggedIn.style.display = 'none';
+        }
+    } catch (error) {
+        console.error("Auth error:", error);
+    }
+};
+
+/* --------------------------------------
+   AUTHENTIFICATION SIMPLIFIÉE (sans vérification email)
+   -------------------------------------- */
+
+let isLoginMode = true;
+
+function updateAuthUI() {
+    const submitBtn = document.getElementById('auth-submit-btn');
+    const toggleBtn = document.getElementById('auth-toggle-btn');
+    const modeText = document.getElementById('auth-mode-text');
+    
+    if (!submitBtn) return;
+    
+    if (isLoginMode) {
+        submitBtn.textContent = 'SE CONNECTER';
+        if (toggleBtn) toggleBtn.textContent = 'CREER UN COMPTE';
+        if (modeText) modeText.innerHTML = 'Pas encore de compte ? Cliquez sur "Créer un compte"';
+    } else {
+        submitBtn.textContent = "S'INSCRIRE";
+        if (toggleBtn) toggleBtn.textContent = 'RETOUR A LA CONNEXION';
+        if (modeText) modeText.innerHTML = 'Déjà un compte ? Cliquez sur "Retour à la connexion"';
+    }
+}
+
+window.handleSimplifiedAuth = async function() {
+    const emailInput = document.getElementById('auth-email');
+    const passwordInput = document.getElementById('auth-password');
+    
+    const email = emailInput?.value.trim();
+    const password = passwordInput?.value;
+    
+    if (!email || !password) {
+        showToast('Veuillez remplir tous les champs', 'error');
+        return;
+    }
+    
+    if (!email.includes('@') || !email.includes('.')) {
+        showToast('Email invalide', 'error');
+        return;
+    }
+    
+    if (password.length < 6) {
+        showToast('Le mot de passe doit contenir au moins 6 caractères', 'error');
+        return;
+    }
+    
+    try {
+        let result;
+        
+        if (isLoginMode) {
+            result = await supabaseClient.auth.signInWithPassword({ 
+                email: email, 
+                password: password 
+            });
+            if (result.error) throw result.error;
+            showToast('Connexion réussie !', 'success');
+        } else {
+            result = await supabaseClient.auth.signUp({ 
+                email: email, 
+                password: password,
+                options: {
+                    emailRedirectTo: window.location.origin,
+                    data: { full_name: email.split('@')[0] }
+                }
+            });
+            if (result.error) throw result.error;
+            
+            if (result.data.session) {
+                showToast('Inscription réussie ! Bienvenue !', 'success');
+            } else {
+                showToast('Inscription réussie ! Connectez-vous', 'success');
+                isLoginMode = true;
+                updateAuthUI();
+                if (emailInput) emailInput.value = '';
+                if (passwordInput) passwordInput.value = '';
+                return;
+            }
+        }
+        
+        await window.checkUserStatus();
+        
+        if (typeof window.toggleSidePanel === 'function') {
+            window.toggleSidePanel(false);
+        }
+        
+        if (typeof currentArticle !== 'undefined' && currentArticle) {
+            if (typeof fetchLikeStatus === 'function') fetchLikeStatus();
+            if (typeof fetchBookmarkStatus === 'function') fetchBookmarkStatus();
+            if (typeof fetchLikesCount === 'function') fetchLikesCount();
+        }
+        
+        if (typeof window.loadUserActivity === 'function') {
+            window.loadUserActivity();
+        }
+        
+        if (emailInput) emailInput.value = '';
+        if (passwordInput) passwordInput.value = '';
+        
+    } catch (error) {
+        console.error('Auth error:', error);
+        
+        if (error.message.includes('Invalid login credentials')) {
+            showToast('Email ou mot de passe incorrect', 'error');
+        } else if (error.message.includes('User already registered')) {
+            showToast('Cet email est déjà utilisé. Connectez-vous.', 'error');
+            isLoginMode = true;
+            updateAuthUI();
+        } else {
+            showToast(error.message, 'error');
+        }
+    }
+};
+
+window.toggleAuthMode = function() {
+    isLoginMode = !isLoginMode;
+    updateAuthUI();
+    
+    const emailInput = document.getElementById('auth-email');
+    const passwordInput = document.getElementById('auth-password');
+    if (emailInput) emailInput.value = '';
+    if (passwordInput) passwordInput.value = '';
+};
+
+function initAuthEvents() {
+    const submitBtn = document.getElementById('auth-submit-btn');
+    const toggleBtn = document.getElementById('auth-toggle-btn');
+    
+    if (submitBtn) {
+        submitBtn.removeEventListener('click', window.handleSimplifiedAuth);
+        submitBtn.addEventListener('click', window.handleSimplifiedAuth);
+    }
+    if (toggleBtn) {
+        toggleBtn.removeEventListener('click', window.toggleAuthMode);
+        toggleBtn.addEventListener('click', window.toggleAuthMode);
+    }
+    
+    updateAuthUI();
+}
+
+window.isLoginMode = isLoginMode;
+window.updateAuthUI = updateAuthUI;
+window.initAuthEvents = initAuthEvents;
 
 /* --------------------------------------
    LIKES (avec BDD)
@@ -361,13 +465,46 @@ window.toggleBookmark = async function() {
         if (span) span.textContent = 'Sauvegardé ✓';
         bookmarkBtn.title = "Article déjà sauvegardé";
         showToast('Article sauvegardé dans vos favoris', 'success');
-        window.loadUserActivity();
+        
+        if (typeof window.loadUserActivity === 'function') {
+            window.loadUserActivity();
+        }
     } catch (error) {
         console.error('Erreur toggleBookmark:', error);
         showToast('Erreur lors de la sauvegarde', 'error');
     }
 };
-
+/* --------------------------------------
+   DECONNEXION
+   -------------------------------------- */
+window.handleLogout = async function() {
+    if (!confirm("Voulez-vous vous déconnecter ?")) return;
+    try {
+        await supabaseClient.auth.signOut();
+        currentUser = null;
+        
+        // Mettre à jour l'interface utilisateur
+        const loggedOut = document.getElementById('logged-out-view');
+        const loggedIn = document.getElementById('logged-in-view');
+        
+        if (loggedOut) loggedOut.style.display = 'block';
+        if (loggedIn) loggedIn.style.display = 'none';
+        
+        // Vider les favoris affichés
+        const favoritesContainer = document.getElementById('user-favorites-list');
+        if (favoritesContainer) {
+            favoritesContainer.innerHTML = '<div class="no-favs">Connectez-vous pour voir vos favoris</div>';
+        }
+        
+        showToast('Déconnexion réussie', 'success');
+        
+        // Optionnel : recharger la page pour rafraîchir tout l'état
+        // window.location.reload();
+    } catch (error) {
+        console.error("Erreur déconnexion:", error);
+        showToast('Erreur lors de la déconnexion', 'error');
+    }
+};
 /* --------------------------------------
    6. TICKER BOURSIER
    -------------------------------------- */
@@ -504,6 +641,7 @@ async function fetchMakmusNews(querySearch) {
         renderSport(sport);
         renderMoreNews(moreNews);
         renderAudios(audios || []);
+        renderGamesPromo();
         
         console.log('🔍 Vérification doublons: IDs uniques:', usedIds.size, '/ Total:', articles.length);
         
@@ -1450,8 +1588,9 @@ function displayFallbackAd() {
 }
 
 /* ==========================================================================
-   20. VIDEOS
+   20. VIDEOS - VERSION CORRIGÉE POUR MOBILE
    ========================================================================== */
+
 async function fetchVideos() {
     const { data } = await supabaseClient.from('videos_du_jour').select('*').eq('is_published', true);
     const slider = document.getElementById('video-slider');
@@ -1460,11 +1599,12 @@ async function fetchVideos() {
     slider.innerHTML = data.map((vid, index) => `
         <div class="video-magazine-item">
             <div class="video-card">
-                <video playsinline muted ${index === 0 ? 'autoplay' : ''} loop src="${vid.video_url}" preload="metadata" poster="${vid.image_url || ''}">
+                <video playsinline ${index === 0 ? 'autoplay muted' : ''} loop preload="metadata" poster="${vid.image_url || ''}">
                     <source src="${vid.video_url}" type="video/mp4">
+                    Votre navigateur ne supporte pas la vidéo.
                 </video>
                 <div class="video-controls-vertical hero-video-controls-vertical">
-                    <button class="video-control-btn play-pause-btn" onclick="window.toggleVideoPlay(this)">
+                    <button class="video-control-btn play-pause-btn" data-video-index="${index}" onclick="window.toggleVideoPlay(this)">
                         <svg viewBox="0 0 24 24" fill="white" width="20" height="20">
                             <polygon points="5 3 19 12 5 21 5 3" class="play-icon-section"/>
                             <rect x="6" y="4" width="4" height="16" class="pause-icon-section" style="display:none" rx="1"/>
@@ -1503,6 +1643,23 @@ async function fetchVideos() {
             <h4 class="video-mag-title">${escapeHtml(vid.titre)}</h4>
         </div>
     `).join('');
+    
+    // Initialiser les sources vidéo après le rendu
+    setTimeout(() => {
+        const videos = document.querySelectorAll('.video-card video');
+        data.forEach((vid, index) => {
+            if (videos[index]) {
+                const videoElement = videos[index];
+                videoElement.src = vid.video_url;
+                videoElement.load();
+                
+                // Pour la première vidéo, essayer de la jouer silencieusement
+                if (index === 0) {
+                    videoElement.play().catch(e => console.log('Autoplay bloqué:', e));
+                }
+            }
+        });
+    }, 100);
 }
 
 // Fonction de partage pour les vidéos
@@ -1528,20 +1685,24 @@ function copyToClipboard(text) {
 }
 
 window.toggleVideoPlay = function(btn) {
-    const video = btn.closest('.video-card').querySelector('video');
+    const videoCard = btn.closest('.video-card');
+    const video = videoCard.querySelector('video');
     if (!video) return;
     
     const playIcon = btn.querySelector('.play-icon-section');
     const pauseIcons = btn.querySelectorAll('.pause-icon-section, .pause-icon-section-2');
+    const playOverlay = videoCard.querySelector('.play-overlay');
     
     if (video.paused) {
         video.play();
         if (playIcon) playIcon.style.display = 'none';
         pauseIcons.forEach(icon => icon.style.display = 'block');
+        if (playOverlay) playOverlay.style.display = 'none';
     } else {
         video.pause();
         if (playIcon) playIcon.style.display = 'block';
         pauseIcons.forEach(icon => icon.style.display = 'none');
+        if (playOverlay) playOverlay.style.display = 'flex';
     }
 };
 
@@ -1558,18 +1719,47 @@ window.toggleVideoVolume = function(btn) {
 };
 
 window.toggleVideoFullscreen = function(btn) {
-    const video = btn.closest('.video-card').querySelector('video');
+    const videoCard = btn.closest('.video-card');
+    const video = videoCard.querySelector('video');
     if (!video) return;
-    if (video.requestFullscreen) video.requestFullscreen();
-    else if (video.webkitRequestFullscreen) video.webkitRequestFullscreen();
-    else if (video.msRequestFullscreen) video.msRequestFullscreen();
+    
+    // Pour mobile et desktop
+    if (video.requestFullscreen) {
+        video.requestFullscreen();
+    } else if (video.webkitRequestFullscreen) { // Safari
+        video.webkitRequestFullscreen();
+    } else if (video.msRequestFullscreen) { // IE/Edge
+        video.msRequestFullscreen();
+    } else if (videoCard.requestFullscreen) {
+        videoCard.requestFullscreen();
+    }
+    
+    // Afficher un message si le plein écran n'est pas supporté
+    if (!video.requestFullscreen && !video.webkitRequestFullscreen) {
+        showToast('Plein écran non supporté sur ce navigateur', 'info');
+    }
 };
 
 window.playVideo = function(overlay) {
-    const video = overlay.closest('.video-card').querySelector('video');
+    const videoCard = overlay.closest('.video-card');
+    const video = videoCard.querySelector('video');
     if (!video) return;
+    
     overlay.style.display = 'none';
-    video.play().catch(() => overlay.style.display = 'flex');
+    video.play().catch(error => {
+        console.log('Erreur lecture:', error);
+        overlay.style.display = 'flex';
+        showToast('Lecture impossible, vérifiez votre connexion', 'error');
+    });
+    
+    // Mettre à jour l'icône play/pause
+    const playPauseBtn = videoCard.querySelector('.play-pause-btn');
+    if (playPauseBtn) {
+        const playIcon = playPauseBtn.querySelector('.play-icon-section');
+        const pauseIcons = playPauseBtn.querySelectorAll('.pause-icon-section, .pause-icon-section-2');
+        if (playIcon) playIcon.style.display = 'none';
+        pauseIcons.forEach(icon => icon.style.display = 'block');
+    }
 };
 
 window.scrollVideoSlider = function(distance) {
@@ -1577,16 +1767,20 @@ window.scrollVideoSlider = function(distance) {
     if (slider) slider.scrollBy({ left: distance, behavior: 'smooth' });
 };
 
-// Initialiser les vidéos avec lazy loading
+// Initialiser les vidéos avec lazy loading et gestion mobile
 function initVideoLazyLoading() {
     const videos = document.querySelectorAll('.video-card video');
+    
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 const video = entry.target;
-                if (video.dataset.src && !video.src) {
-                    video.src = video.dataset.src;
-                    video.load();
+                // Ne charger que si la vidéo n'a pas de source
+                if (!video.src || video.src === '') {
+                    const source = video.querySelector('source');
+                    if (source && source.src) {
+                        video.load();
+                    }
                 }
                 observer.unobserve(video);
             }
@@ -1596,7 +1790,18 @@ function initVideoLazyLoading() {
     videos.forEach(video => observer.observe(video));
 }
 
-// Appeler cette fonction après fetchVideos
+// Gestion du plein écran au niveau du document
+document.addEventListener('fullscreenchange', exitHandler);
+document.addEventListener('webkitfullscreenchange', exitHandler);
+document.addEventListener('mozfullscreenchange', exitHandler);
+document.addEventListener('MSFullscreenChange', exitHandler);
+
+function exitHandler() {
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        console.log('Sortie du mode plein écran');
+    }
+}
+
 /* ==========================================================================
    21. TAGS TRENDING
    ========================================================================== */
@@ -1747,20 +1952,57 @@ window.shareToThreads = function() {
     window.closeShare();
     showToast("Partagez le lien sur Threads", 'info');
 };
+
 // Générer un slug à partir d'un titre
 function generateSlug(title) {
     if (!title) return '';
     return title
         .toLowerCase()
         .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .replace(/['’]/g, '') // ← AJOUTE CETTE LIGNE (supprime les apostrophes)
+        .replace(/['’]/g, '')
         .replace(/[^a-z0-9\s-]/g, '')
         .replace(/\s+/g, '-')
         .replace(/-+/g, '-')
         .replace(/^-|-$/g, '');
 }
+
 /* ==========================================================================
-   24. INITIALISATION
+   24. JEUX
+   ========================================================================== */
+  
+// Ajouter la section jeux dans la sidebar
+function renderGamesPromo() {
+    const sidebar = document.querySelector('.sidebar-column .sidebar-section');
+    if (!sidebar) return;
+    
+    const gamesHtml = `
+        <div class="games-promo">
+            <div class="games-promo-header">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="6" width="20" height="12" rx="2"></rect>
+                    <path d="M8 12h8"></path>
+                    <path d="M12 8v8"></path>
+                </svg>
+                <span>JEUX</span>
+            </div>
+            <a href="mots-croises.html" class="game-link">
+                <img src="https://logphtrdkpbfgtejtime.supabase.co/storage/v1/object/public/logo%20makmus/Cachamot%20(1).png" alt="Mots croisés" class="game-icon">
+                <span class="game-name">Mots croisés</span>
+                <span class="game-badge">Nouveau</span>
+            </a>
+            <a href="mots-meles.html" class="game-link">
+                <img src="https://logphtrdkpbfgtejtime.supabase.co/storage/v1/object/public/logo%20makmus/Cachamot.png" alt="Mots mêlés" class="game-icon">
+                <span class="game-name">Mots mêlés</span>
+                <span class="game-badge">Chaque jour</span>
+            </a>
+        </div>
+    `;
+    
+    sidebar.insertAdjacentHTML('beforeend', gamesHtml);
+}
+
+/* ==========================================================================
+   25. INITIALISATION
    ========================================================================== */
 function renderEmptyStates() {
     const hero = document.getElementById('hero-zone');
@@ -1796,6 +2038,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(fetchMarketData, 3600000);
     fetchVideos();
     initAds();
+    initAuthEvents();
     loadTrendingTags();
     
     console.log("MAKMUS — Initialisé avec succès");
