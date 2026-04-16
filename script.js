@@ -810,7 +810,7 @@ function getPlaceholderImage(width, height, text) {
 }
 
 /* ==========================================================================
-   10. RENDER UI - AVEC GESTION DES VIDÉOS EN SOUS-ARTICLES
+   10. RENDER UI - AVEC GESTION DES VIDÉOS EN SOUS-ARTICLES (SANS ICÔNE PLAY)
    ========================================================================== */
 function renderUI(heroArticle, gridArticles) {
     const heroZone = document.getElementById('hero-zone');
@@ -839,7 +839,6 @@ function renderUI(heroArticle, gridArticles) {
                     <div class="sub-article-card" onclick="window.location.href='${articleUrl}'">
                         <div class="sub-article-image-wrapper">
                             <img src="${displayImage}" class="sub-article-image" onerror="this.src='${getPlaceholderImage(100, 100, 'Image')}'">
-                            ${hasVideo ? '<div class="video-play-badge">▶</div>' : ''}
                         </div>
                         <div class="sub-article-content">
                             <h4 class="sub-article-title">${escapeHtml(sub.titre)}</h4>
@@ -1094,7 +1093,7 @@ function shareSectionArticle(articleId, articleTitle) {
 }
 
 /* ==========================================================================
-   13. FONCTIONS GALERIE
+   13. FONCTIONS GALERIE CORRIGÉES
    ========================================================================== */
 const galleryStates = {};
 
@@ -1103,9 +1102,18 @@ function goToGallerySlideSection(galleryId, index) {
     if (!wrapper) return;
     
     const slides = wrapper.querySelector('.hero-gallery-slides');
-    const slideWidth = wrapper.offsetWidth;
+    if (!slides) return;
     
-    if (slides) {
+    const slideElements = wrapper.querySelectorAll('.hero-gallery-slide');
+    
+    if (slideElements.length > 0 && slideElements[index]) {
+        slideElements[index].scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'nearest', 
+            inline: 'start' 
+        });
+    } else if (slides) {
+        const slideWidth = slides.querySelector('.hero-gallery-slide')?.offsetWidth || wrapper.offsetWidth;
         slides.scrollTo({ left: index * slideWidth, behavior: 'smooth' });
     }
     
@@ -1126,7 +1134,13 @@ function prevGallerySectionById(galleryId) {
     const currentIndex = galleryStates[galleryId] || 0;
     const newIndex = Math.max(0, currentIndex - 1);
     
-    if (slides) {
+    if (slides && slides.children[newIndex]) {
+        slides.children[newIndex].scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'nearest', 
+            inline: 'start' 
+        });
+    } else if (slides) {
         const slideWidth = wrapper.offsetWidth;
         slides.scrollTo({ left: newIndex * slideWidth, behavior: 'smooth' });
     }
@@ -1148,7 +1162,13 @@ function nextGallerySectionById(galleryId) {
     const currentIndex = galleryStates[galleryId] || 0;
     const newIndex = Math.min(totalSlides - 1, currentIndex + 1);
     
-    if (slides) {
+    if (slides && slides.children[newIndex]) {
+        slides.children[newIndex].scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'nearest', 
+            inline: 'start' 
+        });
+    } else if (slides) {
         const slideWidth = wrapper.offsetWidth;
         slides.scrollTo({ left: newIndex * slideWidth, behavior: 'smooth' });
     }
@@ -1158,6 +1178,32 @@ function nextGallerySectionById(galleryId) {
     });
     
     galleryStates[galleryId] = newIndex;
+}
+
+function initGalleryScrollObserver(galleryId) {
+    const wrapper = document.getElementById(galleryId);
+    if (!wrapper) return;
+    
+    const slidesContainer = wrapper.querySelector('.hero-gallery-slides');
+    if (!slidesContainer) return;
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const index = Array.from(slidesContainer.children).indexOf(entry.target);
+                if (index !== -1 && galleryStates[galleryId] !== index) {
+                    galleryStates[galleryId] = index;
+                    
+                    const dots = wrapper.querySelectorAll('.gallery-dot');
+                    dots.forEach((dot, i) => {
+                        dot.classList.toggle('active', i === index);
+                    });
+                }
+            }
+        });
+    }, { threshold: 0.5 });
+    
+    Array.from(slidesContainer.children).forEach(slide => observer.observe(slide));
 }
 
 /* ==========================================================================
