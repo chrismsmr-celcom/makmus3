@@ -713,7 +713,7 @@ const heroFlexible = {
                 this.currentIndex = 0;
                 let slidesHtml = '', dotsHtml = '';
                 galleryItems.forEach((item, i) => {
-                    slidesHtml += `<div class="hero-gallery-slide">${item.type === 'video' ? `<video src="${item.url}" controls></video>` : `<img src="${item.url}" onerror="this.src='https://via.placeholder.com/800x500'">`}</div>`;
+                    slidesHtml += `<div class="hero-gallery-slide">${item.type === 'video' ? `<video src="${item.url}" controls></video>` : `<img src="${item.url}" onerror="this.src='${getPlaceholderImage(800, 500, 'Image')}'">`}</div>`;
                     dotsHtml += `<div class="gallery-dot ${i === 0 ? 'active' : ''}" data-index="${i}"></div>`;
                 });
                 setTimeout(() => {
@@ -727,11 +727,11 @@ const heroFlexible = {
                         <button class="gallery-next" onclick="heroFlexible.nextSlide()">›</button></div></div>`;
             }
             if (galleryItems.length === 1) {
-                return `<div class="hero-single-image"><img src="${galleryItems[0].url}" onerror="this.src='https://via.placeholder.com/800x500'">${galleryItems[0].caption ? `<div class="photo-credit">${escapeHtml(galleryItems[0].caption)}</div>` : ''}</div>`;
+                return `<div class="hero-single-image"><img src="${galleryItems[0].url}" onerror="this.src='${getPlaceholderImage(800, 500, 'Image')}'">${galleryItems[0].caption ? `<div class="photo-credit">${escapeHtml(galleryItems[0].caption)}</div>` : ''}</div>`;
             }
         }
         
-        return `<div class="hero-single-image"><img src="https://via.placeholder.com/800x500" alt="Image par défaut"></div>`;
+        return `<div class="hero-single-image"><img src="${getPlaceholderImage(800, 500, 'Image par défaut')}" alt="Image par défaut"></div>`;
     },
     
     goToSlide(index) {
@@ -807,12 +807,14 @@ function getArticleUrl(article) {
     }
     return `redaction.html?id=${article.id}`;
 }
+
 function getPlaceholderImage(width, height, text) {
     text = text || 'Image';
-    return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${width}' height='${height}' viewBox='0 0 ${width} ${height}'%3E%3Crect width='${width}' height='${height}' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23999' font-size='${Math.min(width, height) * 0.1}'%3E${text}%3C/text%3E%3C/svg%3E`;
+    return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${width}' height='${height}' viewBox='0 0 ${width} ${height}'%3E%3Crect width='${width}' height='${height}' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23999' font-size='${Math.min(width, height) * 0.1}'%3E${encodeURIComponent(text)}%3C/text%3E%3C/svg%3E`;
 }
+
 /* ==========================================================================
-   10. RENDER UI
+   10. RENDER UI - AVEC GESTION DES VIDÉOS EN SOUS-ARTICLES
    ========================================================================== */
 function renderUI(heroArticle, gridArticles) {
     const heroZone = document.getElementById('hero-zone');
@@ -824,14 +826,27 @@ function renderUI(heroArticle, gridArticles) {
         
         subArticles.forEach(sub => {
             if (!sub) return;
-            const hasImage = sub.image_url && sub.image_url !== '';
+            
+            // ✅ Priorité à l'image, sinon utiliser l'image de la vidéo comme poster
+            let displayImage = sub.image_url;
+            let hasVideo = sub.video_url && sub.video_url !== '';
+            
+            // Si c'est une vidéo mais pas d'image, on utilise un placeholder
+            if (!displayImage && hasVideo) {
+                displayImage = sub.video_thumbnail || getPlaceholderImage(100, 100, 'Vidéo');
+            }
+            
+            const hasImage = displayImage && displayImage !== '';
             const readTime = calculerTempsLecture(sub.description);
             const articleUrl = getArticleUrl(sub);
             
             if (hasImage) {
                 subHtml += `
                     <div class="sub-article-card" onclick="window.location.href='${articleUrl}'">
-                        <img src="${sub.image_url}" class="sub-article-image" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 100 100\'%3E%3Crect width=\'100\' height=\'100\' fill=\'%23f0f0f0\'/%3E%3Ctext x=\'50\' y=\'50\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%23999\' font-size=\'10\'%3EImage%3C/text%3E%3C/svg%3E'">
+                        <div class="sub-article-image-wrapper">
+                            <img src="${displayImage}" class="sub-article-image" onerror="this.src='${getPlaceholderImage(100, 100, 'Image')}'">
+                            ${hasVideo ? '<div class="video-play-badge">▶</div>' : ''}
+                        </div>
                         <div class="sub-article-content">
                             <h4 class="sub-article-title">${escapeHtml(sub.titre)}</h4>
                             <span class="sub-article-read-time">${readTime}</span>
@@ -883,10 +898,20 @@ function renderUI(heroArticle, gridArticles) {
         grid.innerHTML = gridArticles.slice(3, 15).map(art => {
             const excerpt = (art.description || "").replace(/<[^>]*>/g, '').substring(0, 120);
             const articleUrl = getArticleUrl(art);
+            
+            // ✅ Gérer l'image ou la vignette vidéo
+            let displayImage = art.image_url;
+            const hasVideo = art.video_url && art.video_url !== '';
+            
+            if (!displayImage && hasVideo) {
+                displayImage = art.video_thumbnail || getPlaceholderImage(400, 250, 'Vidéo');
+            }
+            
             return `
                 <div class="article-card" onclick="window.location.href='${articleUrl}'">
                     <div class="card-img-wrapper">
-                        <img class="article-image" src="${art.image_url || 'https://via.placeholder.com/400x250'}" onerror="this.src='https://via.placeholder.com/400x250'">
+                        <img class="article-image" src="${displayImage || getPlaceholderImage(400, 250, 'Image')}" onerror="this.src='${getPlaceholderImage(400, 250, 'Image')}'">
+                        ${hasVideo ? '<div class="video-play-badge video-play-small">▶</div>' : ''}
                     </div>
                     <div class="article-meta-content">
                         <h3 class="article-title">${escapeHtml(art.titre)}</h3>
@@ -960,7 +985,7 @@ function renderSectionMedia(article) {
                     <div class="hero-gallery-slide" data-index="${i}">
                         ${mediaType === 'video' ? 
                             `<video src="${item.url}" controls poster="${item.url}?frame=1"></video>` : 
-                            `<img src="${item.url}" onerror="this.src='https://via.placeholder.com/800x500'">`
+                            `<img src="${item.url}" onerror="this.src='${getPlaceholderImage(800, 500, 'Image')}'">`
                         }
                         ${captionText ? `<div class="hero-slide-caption"><p>${escapeHtml(captionText)}</p></div>` : ''}
                     </div>
@@ -1017,14 +1042,14 @@ function renderSectionMedia(article) {
             const singleItem = galleryItems[0];
             return `
                 <div class="hero-single-image">
-                    <img src="${singleItem.url}" onerror="this.src='https://via.placeholder.com/800x500'">
+                    <img src="${singleItem.url}" onerror="this.src='${getPlaceholderImage(800, 500, 'Image')}'">
                     ${singleItem.caption ? `<div class="photo-credit">${escapeHtml(singleItem.caption)}</div>` : ''}
                 </div>
             `;
         }
     }
     
-    return `<div class="hero-single-image"><img src="${article.image_url || 'https://via.placeholder.com/800x450'}" onerror="this.src='https://via.placeholder.com/800x450'"></div>`;
+    return `<div class="hero-single-image"><img src="${article.image_url || getPlaceholderImage(800, 450, 'Image par défaut')}" onerror="this.src='${getPlaceholderImage(800, 450, 'Image par défaut')}'"></div>`;
 }
 
 /* ==========================================================================
@@ -1143,7 +1168,7 @@ function nextGallerySectionById(galleryId) {
 }
 
 /* ==========================================================================
-   14. SOUS-ARTICLES EN MEDIA OBJECT
+   14. SOUS-ARTICLES EN MEDIA OBJECT (VERSION ULTRA SIMPLE)
    ========================================================================== */
 function renderSubArticlesAsMediaObject(subArticles) {
     if (!subArticles.length) return '';
@@ -1151,16 +1176,27 @@ function renderSubArticlesAsMediaObject(subArticles) {
     return `
         <div class="economy-sub-section">
             <div class="economy-sub-header">
-                <span class="economy-sub-label">À LA UNE ÉCO</span>
+                <span class="economy-sub-label">À LA UNE</span>
                 <span class="economy-sub-line"></span>
             </div>
             <div class="economy-sub-grid media-object-grid">
                 ${subArticles.map(art => {
                     const articleUrl = getArticleUrl(art);
+                    const hasVideo = art.video_url && art.video_url !== '';
+                    
+                    // ✅ La miniature d'une vidéo = son image_url
+                    // Si pas d'image, rien ne s'affiche (pas de placeholder)
+                    const displayImage = art.image_url || '';
+                    
                     return `
                     <div class="media-object-card" onclick="window.location.href='${articleUrl}'">
-                        <div class="media-object-thumbnail">
-                            <img src="${art.image_url || 'https://via.placeholder.com/100x100'}" alt="${escapeHtml(art.titre)}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 100 100\'%3E%3Crect width=\'100\' height=\'100\' fill=\'%23f0f0f0\'/%3E%3Ctext x=\'50\' y=\'50\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%23999\' font-size=\'10\'%3EImage%3C/text%3E%3C/svg%3E'">
+                        <div class="media-object-thumbnail" style="position: relative;">
+                            ${displayImage ? `
+                                <img src="${displayImage}" alt="${escapeHtml(art.titre)}">
+                            ` : `
+                                <div style="width:100%; height:100%; background:#f5f5f5;"></div>
+                            `}
+                            ${hasVideo && displayImage ? '<div class="media-video-badge">▶</div>' : ''}
                         </div>
                         <div class="media-object-content">
                             <h3 class="media-object-title">${escapeHtml(art.titre)}</h3>
@@ -1173,7 +1209,6 @@ function renderSubArticlesAsMediaObject(subArticles) {
         </div>
     `;
 }
-
 /* ==========================================================================
    15. RENDER ECONOMY, INTERNATIONAL, ENVIRONNEMENT, SPORT
    ========================================================================== */
@@ -1284,9 +1319,18 @@ function renderAutreInfo(articles) {
     const mainArt = articles[0];
     const secondaryArticles = articles.slice(1, 3);
     const mainUrl = getArticleUrl(mainArt);
+    const hasVideo = mainArt.video_url && mainArt.video_url !== '';
+    let displayImage = mainArt.image_url;
+    
+    if (!displayImage && hasVideo) {
+        displayImage = mainArt.video_thumbnail || getPlaceholderImage(600, 400, 'Vidéo');
+    }
     
     let html = `<article class="main-trending-card" onclick="window.location.href='${mainUrl}'">
-        <img src="${mainArt.image_url || 'https://via.placeholder.com/600x400'}" class="slide-cover" onerror="this.src='https://via.placeholder.com/600x400'">
+        <div style="position: relative;">
+            <img src="${displayImage || getPlaceholderImage(600, 400, 'Image')}" class="slide-cover" onerror="this.src='${getPlaceholderImage(600, 400, 'Image')}'">
+            ${hasVideo ? '<div class="video-play-badge" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">▶</div>' : ''}
+        </div>
         <div class="card-content"><span class="photo-credit">${escapeHtml(mainArt.author_name || 'MakMus')}</span>
         <h2 class="main-headline">${escapeHtml(mainArt.titre)}</h2>
         <p class="summary-text">${escapeHtml((mainArt.description || "").replace(/<[^>]*>/g, '').substring(0, 100))}...</p>
@@ -1295,8 +1339,18 @@ function renderAutreInfo(articles) {
     if (secondaryArticles.length) {
         html += `<div class="secondary-grid">${secondaryArticles.map(art => {
             const subUrl = getArticleUrl(art);
+            const subHasVideo = art.video_url && art.video_url !== '';
+            let subDisplayImage = art.image_url;
+            
+            if (!subDisplayImage && subHasVideo) {
+                subDisplayImage = art.video_thumbnail || getPlaceholderImage(300, 300, 'Vidéo');
+            }
+            
             return `<article class="grid-card" onclick="window.location.href='${subUrl}'">
-                <img src="${art.image_url || 'https://via.placeholder.com/300x300'}" class="grid-cover" onerror="this.src='https://via.placeholder.com/300x300'">
+                <div style="position: relative;">
+                    <img src="${subDisplayImage || getPlaceholderImage(300, 300, 'Image')}" class="grid-cover" onerror="this.src='${getPlaceholderImage(300, 300, 'Image')}'">
+                    ${subHasVideo ? '<div class="video-play-badge-small">▶</div>' : ''}
+                </div>
                 <h4 class="grid-headline">${escapeHtml(art.titre)}</h4>
                 <span class="grid-read-time">${calculerTempsLecture(art.description)}</span>
             </article>`;
@@ -1311,12 +1365,22 @@ function renderOpinions(opinions) {
     if (!container || !opinions?.length) return;
     container.innerHTML = opinions.map((op, i) => {
         const opUrl = getArticleUrl(op);
+        const hasVideo = op.video_url && op.video_url !== '';
+        let displayImage = op.image_url;
+        
+        if (!displayImage && hasVideo) {
+            displayImage = op.video_thumbnail || getPlaceholderImage(40, 40, 'Avatar');
+        }
+        
         return `<div class="opinion-container-box">
             <div class="opinion-author-row"><span class="author-name">${escapeHtml(op.author_name || 'La Redaction')}</span>
-            <img class="author-avatar" src="${op.author_image || 'https://via.placeholder.com/40'}" onerror="this.src='https://via.placeholder.com/40'"></div>
+            <img class="author-avatar" src="${op.author_image || getPlaceholderImage(40, 40, 'Avatar')}" onerror="this.src='${getPlaceholderImage(40, 40, 'Avatar')}'"></div>
             <h4 class="opinion-text-title" onclick="window.location.href='${opUrl}'">${escapeHtml(op.titre)}</h4>
             <span class="read-time-small">${calculerTempsLecture(op.description)}</span>
-            ${i === 0 && op.image_url ? `<img class="opinion-main-cover" src="${op.image_url}" onclick="window.location.href='${opUrl}'">` : ''}
+            ${i === 0 ? `<div style="position: relative;">
+                <img class="opinion-main-cover" src="${op.image_url || getPlaceholderImage(800, 500, 'Image')}" onclick="window.location.href='${opUrl}'" onerror="this.src='${getPlaceholderImage(800, 500, 'Image')}'">
+                ${hasVideo ? '<div class="video-play-badge" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">▶</div>' : ''}
+            </div>` : ''}
         </div>`;
     }).join('');
     syncSidebarContent();
@@ -1328,15 +1392,32 @@ function renderLifestyle(articles) {
     const main = articles[0];
     const subs = articles.slice(1, 4);
     const mainUrl = getArticleUrl(main);
+    const mainHasVideo = main.video_url && main.video_url !== '';
+    let mainDisplayImage = main.image_url;
+    
+    if (!mainDisplayImage && mainHasVideo) {
+        mainDisplayImage = main.video_thumbnail || getPlaceholderImage(800, 500, 'Vidéo');
+    }
     
     container.innerHTML = `<div class="lifestyle-main" onclick="window.location.href='${mainUrl}'">
         <div class="ls-main-text"><h2 class="ls-main-title">${escapeHtml(main.titre)}</h2><p class="ls-excerpt">${(main.description || "").replace(/<[^>]*>/g, '').substring(0, 160)}...</p><span class="ls-read-time">${calculerTempsLecture(main.description)}</span></div>
-        <div class="ls-main-img"><img src="${main.image_url || 'https://via.placeholder.com/800x500'}" onerror="this.src='https://via.placeholder.com/800x500'">${main.author_name ? `<span class="ls-photo-credit">${escapeHtml(main.author_name)}</span>` : ''}</div>
+        <div class="ls-main-img" style="position: relative;"><img src="${mainDisplayImage || getPlaceholderImage(800, 500, 'Image')}" onerror="this.src='${getPlaceholderImage(800, 500, 'Image')}'">${main.author_name ? `<span class="ls-photo-credit">${escapeHtml(main.author_name)}</span>` : ''}${mainHasVideo ? '<div class="video-play-badge" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">▶</div>' : ''}</div>
     </div><div class="lifestyle-sub-grid">${subs.map(art => {
         const subUrl = getArticleUrl(art);
+        const subHasVideo = art.video_url && art.video_url !== '';
+        let subDisplayImage = art.image_url;
+        
+        if (!subDisplayImage && subHasVideo) {
+            subDisplayImage = art.video_thumbnail || getPlaceholderImage(150, 150, 'Vidéo');
+        }
+        
         return `<div class="ls-sub-card" onclick="window.location.href='${subUrl}'">
             <div class="ls-sub-text"><h4>${escapeHtml(art.titre)}</h4><span class="ls-read-time">${calculerTempsLecture(art.description)}</span></div>
-            <img src="${art.image_url || 'https://via.placeholder.com/150x150'}" class="ls-sub-img"></div>`;
+            <div style="position: relative;">
+                <img src="${subDisplayImage || getPlaceholderImage(150, 150, 'Image')}" class="ls-sub-img" onerror="this.src='${getPlaceholderImage(150, 150, 'Image')}'">
+                ${subHasVideo ? '<div class="video-play-badge-small">▶</div>' : ''}
+            </div>
+        </div>`;
     }).join('')}</div>`;
 }
 
@@ -1350,9 +1431,18 @@ function renderMoreNews(articles) {
         const main = filtered[0];
         const subs = filtered.slice(1);
         const mainUrl = getArticleUrl(main);
+        const mainHasVideo = main.video_url && main.video_url !== '';
+        let mainDisplayImage = main.image_url;
+        
+        if (!mainDisplayImage && mainHasVideo) {
+            mainDisplayImage = main.video_thumbnail || getPlaceholderImage(800, 500, 'Vidéo');
+        }
         
         return `<div class="info-category-block"><span class="category-label">${cat.replace('_', ' ')}</span>
-            <img src="${main.image_url}" class="info-main-img" onclick="window.location.href='${mainUrl}'">
+            <div style="position: relative;">
+                <img src="${mainDisplayImage || getPlaceholderImage(800, 500, 'Image')}" class="info-main-img" onclick="window.location.href='${mainUrl}'" onerror="this.src='${getPlaceholderImage(800, 500, 'Image')}'">
+                ${mainHasVideo ? '<div class="video-play-badge" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">▶</div>' : ''}
+            </div>
             <h4 class="info-main-title" onclick="window.location.href='${mainUrl}'">${escapeHtml(main.titre)}</h4>
             <div class="info-sub-list">${subs.map(s => {
                 const subUrl = getArticleUrl(s);
@@ -1360,7 +1450,6 @@ function renderMoreNews(articles) {
             }).join('')}</div></div>`;
     }).join('');
 }
-
 /* ==========================================================================
    17. SYNC SIDEBAR CONTENT
    ========================================================================== */

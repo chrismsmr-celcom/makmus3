@@ -68,6 +68,9 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
         .add-media-btn {
             background: #a30000;
@@ -78,6 +81,9 @@
             cursor: pointer;
             font-size: 13px;
             margin-top: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
         .media-type-select {
             width: auto;
@@ -98,6 +104,9 @@
             padding: 12px 24px;
             cursor: pointer;
             border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
         .btn-secondary {
             background: #f5f5f5;
@@ -106,6 +115,9 @@
             padding: 12px 24px;
             cursor: pointer;
             border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
         .status {
             padding: 10px;
@@ -133,6 +145,9 @@
         .admin-nav a {
             text-decoration: none;
             color: #666;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
         .admin-nav a.active {
             color: #a30000;
@@ -158,16 +173,57 @@
             margin-top: 5px;
             font-size: 12px;
         }
+        .nav-icon {
+            width: 16px;
+            height: 16px;
+        }
+        .btn-icon {
+            width: 16px;
+            height: 16px;
+        }
+        .small-icon {
+            width: 14px;
+            height: 14px;
+        }
+        .subcategory-option {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
     </style>
 </head>
 <body>
 
 <div class="editor-container">
     <div class="admin-nav">
-        <a href="dashboard.html">Dashboard</a>
-        <a href="editor.html" class="active">Editeur</a>
-        <a href="studio.html">Studio</a>
-        <a href="#" id="logout-nav">Deconnexion</a>
+        <a href="dashboard.html">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"/>
+                <rect x="14" y="3" width="7" height="7"/>
+                <rect x="14" y="14" width="7" height="7"/>
+                <rect x="3" y="14" width="7" height="7"/>
+            </svg>
+            Dashboard
+        </a>
+        <a href="editor.html" class="active">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+            </svg>
+            Editeur
+        </a>
+        <a href="studio.html">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="2" width="20" height="20" rx="2.18"/>
+                <path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 17h5M17 7h5"/>
+            </svg>
+            Studio
+        </a>
+        <a href="#" id="logout-nav">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+            </svg>
+            Déconnexion
+        </a>
     </div>
     
     <div id="status-message" class="status"></div>
@@ -177,14 +233,27 @@
             <label>Titre de l'article</label>
             <input type="text" id="article-title" placeholder="Titre principal..." required>
         </div>
+        
         <div class="form-group">
-    <label>Médias (images/vidéos)</label>
-    <button type="button" id="open-studio-btn" class="btn-secondary" style="margin-bottom: 15px;">📁 Ouvrir la galerie média</button>
-    <div id="media-list-container">
-        <div id="media-items"></div>
-        <button type="button" class="add-media-btn" id="add-media-btn">+ Ajouter un média manuellement</button>
-    </div>
-</div>
+            <label>Médias (images/vidéos)</label>
+            <button type="button" id="open-studio-btn" class="btn-secondary" style="margin-bottom: 15px;">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="2" width="20" height="20" rx="2.18"/>
+                    <path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 17h5M17 7h5"/>
+                </svg>
+                Ouvrir la galerie média
+            </button>
+            <div id="media-list-container">
+                <div id="media-items"></div>
+                <button type="button" class="add-media-btn" id="add-media-btn">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                    Ajouter un média manuellement
+                </button>
+            </div>
+        </div>
+        
         <div class="form-group">
             <label>Resume (chapeau)</label>
             <textarea id="article-excerpt" rows="3" placeholder="Court resume..."></textarea>
@@ -222,25 +291,105 @@
             <label>Sous-catégorie / Région (pour International)</label>
             <select id="article-subcategory">
                 <option value="">Sélectionner...</option>
-                <option value="Afrique">🌍 Afrique</option>
-                <option value="Europe">🇪🇺 Europe</option>
-                <option value="Amériques">🌎 Amériques</option>
-                <option value="Asie">🌏 Asie</option>
-                <option value="Moyen-Orient">🕌 Moyen-Orient</option>
-                <option value="Océanie">🏝️ Océanie</option>
-                <option value="ENVIRONNEMENT">🌱 Environnement</option>
-                <option value="CLIMAT">🌡️ Climat</option>
-                <option value="ECOLOGIE">🌍 Écologie</option>
+                <option value="Afrique">
+                    <span class="subcategory-option">
+                        <svg class="small-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                        </svg>
+                        Afrique
+                    </span>
+                </option>
+                <option value="Europe">
+                    <span class="subcategory-option">
+                        <svg class="small-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 2a10 10 0 0 0 0 20"/>
+                            <path d="M12 2a10 10 0 0 1 0 20"/>
+                        </svg>
+                        Europe
+                    </span>
+                </option>
+                <option value="Amériques">
+                    <span class="subcategory-option">
+                        <svg class="small-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M2 12h20"/>
+                            <path d="M12 2a8 8 0 0 0 0 20"/>
+                        </svg>
+                        Amériques
+                    </span>
+                </option>
+                <option value="Asie">
+                    <span class="subcategory-option">
+                        <svg class="small-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 2a8 8 0 0 1 0 20"/>
+                            <path d="M2 12h20"/>
+                        </svg>
+                        Asie
+                    </span>
+                </option>
+                <option value="Moyen-Orient">
+                    <span class="subcategory-option">
+                        <svg class="small-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2v20M2 12h20"/>
+                            <circle cx="12" cy="12" r="10"/>
+                        </svg>
+                        Moyen-Orient
+                    </span>
+                </option>
+                <option value="Océanie">
+                    <span class="subcategory-option">
+                        <svg class="small-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 2v20"/>
+                            <path d="M2 12h20"/>
+                            <circle cx="12" cy="12" r="4"/>
+                        </svg>
+                        Océanie
+                    </span>
+                </option>
+                <option value="ENVIRONNEMENT">
+                    <span class="subcategory-option">
+                        <svg class="small-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        Environnement
+                    </span>
+                </option>
+                <option value="CLIMAT">
+                    <span class="subcategory-option">
+                        <svg class="small-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M8 8l-2-2M16 16l2 2"/>
+                        </svg>
+                        Climat
+                    </span>
+                </option>
+                <option value="ECOLOGIE">
+                    <span class="subcategory-option">
+                        <svg class="small-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                            <path d="M12 8a4 4 0 0 0-4 4"/>
+                        </svg>
+                        Écologie
+                    </span>
+                </option>
             </select>
             <small class="helper-text">Utilisé pour le filtrage dans la section International</small>
         </div>
-    <div class="form-group">
-    <label>Slug (URL personnalisée)</label>
-    <input type="text" id="article-slug" placeholder="ex: mon-article-personnalise">
-    <small style="color:#666; display:block; margin-top:5px;">
-        Laissez vide pour génération automatique. Exemple: /article/mon-article-personnalise
-    </small>
-         </div>
+        
+        <div class="form-group">
+            <label>Slug (URL personnalisée)</label>
+            <input type="text" id="article-slug" placeholder="ex: mon-article-personnalise">
+            <small style="color:#666; display:block; margin-top:5px;">
+                Laissez vide pour génération automatique. Exemple: /article/mon-article-personnalise
+            </small>
+        </div>
+        
         <div class="form-group">
             <label>Nom de l'auteur</label>
             <input type="text" id="author-name" placeholder="Ex: Jean Dupont">
@@ -282,7 +431,12 @@
                 <div id="media-items">
                     <!-- Les médias seront ajoutés ici dynamiquement -->
                 </div>
-                <button type="button" class="add-media-btn" id="add-media-btn">+ Ajouter un média</button>
+                <button type="button" class="add-media-btn" id="add-media-btn-duplicate">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                    Ajouter un média
+                </button>
             </div>
         </div>
         
@@ -292,9 +446,27 @@
         </div>
         
         <div class="action-buttons">
-            <button type="button" class="btn-secondary" id="preview-btn">Apercu</button>
-            <button type="button" class="btn-secondary" id="draft-btn">Sauvegarder brouillon</button>
-            <button type="button" class="btn-primary" id="publish-btn">Publier</button>
+            <button type="button" class="btn-secondary" id="preview-btn">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>
+                Apercu
+            </button>
+            <button type="button" class="btn-secondary" id="draft-btn">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                    <path d="M17 21v-4H7v4M12 7v6M9 10h6"/>
+                </svg>
+                Sauvegarder brouillon
+            </button>
+            <button type="button" class="btn-primary" id="publish-btn">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+                Publier
+            </button>
         </div>
     </form>
 </div>

@@ -44,7 +44,8 @@
             });
         }
     </script>
-        <style>
+    
+    <style>
         .dashboard-container {
             max-width: 1400px;
             margin: 0 auto;
@@ -70,6 +71,9 @@
             padding: 8px 16px;
             cursor: pointer;
             border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
         .stats-grid {
             display: grid;
@@ -101,6 +105,15 @@
             margin-top: 8px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .stat-icon {
+            width: 14px;
+            height: 14px;
+            display: inline-block;
         }
         .actions {
             display: flex;
@@ -116,7 +129,9 @@
             cursor: pointer;
             border-radius: 8px;
             text-decoration: none;
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
             font-weight: 600;
             font-size: 0.8rem;
             transition: background 0.2s;
@@ -129,6 +144,10 @@
         }
         .btn-secondary:hover {
             background: #1a1a1a;
+        }
+        .btn-icon {
+            width: 16px;
+            height: 16px;
         }
         .articles-table-wrapper {
             overflow-x: auto;
@@ -179,6 +198,9 @@
             text-decoration: none;
             font-weight: 600;
             font-size: 0.75rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
         }
         .action-link:hover {
             text-decoration: underline;
@@ -190,6 +212,9 @@
             border-radius: 6px;
             cursor: pointer;
             font-size: 0.7rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
         .last-update {
             font-size: 0.7rem;
@@ -227,52 +252,130 @@
         <div class="dashboard-header">
             <h1 class="dashboard-title">Dashboard MAKMUS</h1>
             <div>
-                <button class="refresh-btn" id="refresh-btn" title="Rafraîchir">↻</button>
-                <button class="logout-btn" id="logout-btn">Déconnexion</button>
+                <button class="refresh-btn" id="refresh-btn" title="Rafraîchir">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M23 4v6h-6M1 20v-6h6"/>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                    </svg>
+                    Rafraîchir
+                </button>
+                <button class="logout-btn" id="logout-btn">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+                    </svg>
+                    Déconnexion
+                </button>
             </div>
         </div>
         
         <div class="stats-grid" id="stats-container">
             <div class="stat-card">
                 <div class="stat-value" id="total-articles">-</div>
-                <div class="stat-label">Total articles</div>
+                <div class="stat-label">
+                    <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 4h16v16H4zM8 8h8M8 12h8M8 16h4"/>
+                    </svg>
+                    Total articles
+                </div>
             </div>
             <div class="stat-card">
                 <div class="stat-value" id="published-articles">-</div>
-                <div class="stat-label">Publiés</div>
+                <div class="stat-label">
+                    <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 6L9 17l-5-5"/>
+                    </svg>
+                    Publiés
+                </div>
             </div>
             <div class="stat-card">
                 <div class="stat-value" id="draft-articles">-</div>
-                <div class="stat-label">Brouillons</div>
+                <div class="stat-label">
+                    <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+                    </svg>
+                    Brouillons
+                </div>
             </div>
             <div class="stat-card">
                 <div class="stat-value" id="total-views">-</div>
-                <div class="stat-label">Vues totales</div>
+                <div class="stat-label">
+                    <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    Vues totales
+                </div>
             </div>
             <div class="stat-card">
                 <div class="stat-value" id="total-likes">-</div>
-                <div class="stat-label">Likes ❤️</div>
+                <div class="stat-label">
+                    <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                    </svg>
+                    Likes
+                </div>
             </div>
             <div class="stat-card">
                 <div class="stat-value" id="total-comments">-</div>
-                <div class="stat-label">Commentaires 💬</div>
+                <div class="stat-label">
+                    <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                    </svg>
+                    Commentaires
+                </div>
             </div>
             <div class="stat-card">
                 <div class="stat-value" id="total-comment-likes">-</div>
-                <div class="stat-label">Likes commentaires</div>
+                <div class="stat-label">
+                    <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                        <circle cx="12" cy="12" r="2"/>
+                    </svg>
+                    Likes commentaires
+                </div>
             </div>
             <div class="stat-card">
                 <div class="stat-value" id="total-favorites">-</div>
-                <div class="stat-label">Favoris ⭐</div>
+                <div class="stat-label">
+                    <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                    Favoris
+                </div>
             </div>
         </div>
         
         <div class="actions">
-    <a href="editor.html" class="btn">+ Nouvel article</a>
-    <a href="studio.html" class="btn btn-secondary">Studio média</a>
-    <a href="studio-audio.html" class="btn btn-secondary">Studio audio</a>
-    <a href="moderation.html" class="btn btn-secondary">🛡️ Modération</a>
-</div>        
+            <a href="editor.html" class="btn">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+                Nouvel article
+            </a>
+            <a href="studio.html" class="btn btn-secondary">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="2" width="20" height="20" rx="2.18"/>
+                    <path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 17h5M17 7h5"/>
+                </svg>
+                Studio média
+            </a>
+            <a href="studio-audio.html" class="btn btn-secondary">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 18V5l12-2v13"/>
+                    <circle cx="6" cy="18" r="3"/>
+                    <circle cx="18" cy="16" r="3"/>
+                </svg>
+                Studio audio
+            </a>
+            <a href="moderation.html" class="btn btn-secondary">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    <path d="M12 8v4M12 16h.01"/>
+                </svg>
+                Modération
+            </a>
+        </div>
+        
         <div class="articles-table-wrapper">
             <table class="articles-table">
                 <thead>

@@ -2,245 +2,625 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Studio — MAKMUS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Studio Média | MAKMUS</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/admin.css">
     
     <style>
+        /* ========================================
+           VARIABLES & RESET
+        ========================================= */
+        :root {
+            --red: #a30000;
+            --red-dark: #7a0000;
+            --black: #121212;
+            --gray-dark: #333;
+            --gray: #555;
+            --gray-light: #888;
+            --gray-bg: #f5f5f5;
+            --border: #e6e6e6;
+            --border-strong: #ccc;
+            --serif: 'Lora', 'Times New Roman', Georgia, serif;
+            --sans: 'Libre Franklin', 'Helvetica Neue', Arial, sans-serif;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.12);
+            --transition: all 0.2s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--sans);
+            background: #f8f8f8;
+            color: var(--black);
+        }
+
+        /* ========================================
+           HEADER ADMIN
+        ========================================= */
+        .admin-header {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .admin-header-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo img {
+            height: 40px;
+            width: auto;
+        }
+
+        .logo span {
+            font-family: var(--serif);
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--black);
+        }
+
+        .admin-nav {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .admin-nav a {
+            text-decoration: none;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--gray);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .admin-nav a:hover {
+            color: var(--red);
+        }
+
+        .admin-nav a.active {
+            color: var(--red);
+            border-bottom: 2px solid var(--red);
+            padding-bottom: 4px;
+        }
+
+        .nav-icon {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* ========================================
+           STUDIO CONTAINER
+        ========================================= */
         .studio-container {
             max-width: 1400px;
             margin: 0 auto;
-            padding: 40px 20px;
+            padding: 32px 24px;
         }
-        
+
         .page-title {
-            font-family: 'Lora', serif;
-            font-size: 28px;
+            font-family: var(--serif);
+            font-size: 1.8rem;
             font-weight: 700;
-            margin-bottom: 30px;
+            margin-bottom: 32px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
-        
+
+        .page-icon {
+            width: 32px;
+            height: 32px;
+            color: var(--red);
+        }
+
+        /* ========================================
+           UPLOAD ZONE
+        ========================================= */
         .upload-area {
-            background: #fafafa;
-            border: 2px dashed #ddd;
-            border-radius: 12px;
-            padding: 50px;
+            background: white;
+            border: 2px dashed var(--border);
+            border-radius: 16px;
+            padding: 48px;
             text-align: center;
             margin-bottom: 40px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: var(--transition);
         }
-        
+
         .upload-area:hover,
         .upload-area.drag-over {
-            border-color: #a30000;
+            border-color: var(--red);
             background: #fef5f5;
+            transform: scale(1.01);
         }
-        
+
         .upload-icon {
-            font-size: 48px;
             margin-bottom: 16px;
         }
-        
+
+        .upload-icon svg {
+            width: 56px;
+            height: 56px;
+            stroke: var(--gray-light);
+        }
+
+        .upload-area p {
+            color: var(--gray);
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
         .upload-btn {
-            background: #a30000;
+            background: var(--red);
             color: white;
             border: none;
-            padding: 12px 24px;
-            font-size: 14px;
+            padding: 12px 28px;
+            font-size: 0.85rem;
             font-weight: 600;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
-        
+
         .upload-btn:hover {
-            background: #7a0000;
+            background: var(--red-dark);
+            transform: translateY(-1px);
         }
-        
+
         .file-input {
             display: none;
         }
-        
+
+        /* ========================================
+           TOOLBAR
+        ========================================= */
         .media-toolbar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 24px;
+            margin-bottom: 28px;
             flex-wrap: wrap;
-            gap: 15px;
+            gap: 16px;
         }
-        
-        .search-input {
-            padding: 10px 16px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            width: 250px;
-            font-size: 14px;
-        }
-        
-        .filter-buttons {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .filter-btn {
-            background: white;
-            border: 1px solid #ddd;
-            padding: 8px 16px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 13px;
-            transition: all 0.2s;
-        }
-        
-        .filter-btn.active {
-            background: #a30000;
-            color: white;
-            border-color: #a30000;
-        }
-        
-        .media-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 20px;
-        }
-        
-        .media-card {
-            background: white;
-            border-radius: 8px;
-            border: 1px solid #e6e6e6;
-            overflow: hidden;
-            cursor: pointer;
-            transition: all 0.2s;
+
+        .search-wrapper {
             position: relative;
         }
-        
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            color: var(--gray-light);
+        }
+
+        .search-input {
+            padding: 12px 16px 12px 40px;
+            border: 1px solid var(--border);
+            border-radius: 40px;
+            width: 280px;
+            font-size: 0.85rem;
+            font-family: var(--sans);
+            transition: var(--transition);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--red);
+            box-shadow: 0 0 0 2px rgba(163,0,0,0.1);
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .filter-btn {
+            background: white;
+            border: 1px solid var(--border);
+            padding: 8px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .filter-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .filter-btn:hover {
+            border-color: var(--red);
+            color: var(--red);
+        }
+
+        .filter-btn.active {
+            background: var(--red);
+            color: white;
+            border-color: var(--red);
+        }
+
+        .filter-btn.active svg {
+            stroke: white;
+        }
+
+        /* ========================================
+           MEDIA GRID
+        ========================================= */
+        .media-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 24px;
+        }
+
+        .media-card {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+        }
+
         .media-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
         }
-        
+
         .media-card.selected {
-            border: 2px solid #a30000;
+            border: 2px solid var(--red);
+            box-shadow: 0 4px 12px rgba(163,0,0,0.2);
         }
-        
+
         .media-preview {
             width: 100%;
             aspect-ratio: 16 / 9;
             object-fit: cover;
-            background: #f0f0f0;
+            background: var(--gray-bg);
         }
-        
+
+        .media-video-preview {
+            position: relative;
+            background: #000;
+        }
+
+        .media-video-preview video {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            object-fit: cover;
+        }
+
+        .video-play-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 48px;
+            height: 48px;
+            background: rgba(0,0,0,0.6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .video-play-icon svg {
+            width: 24px;
+            height: 24px;
+            fill: white;
+        }
+
         .media-info {
             padding: 12px;
         }
-        
+
         .media-filename {
-            font-size: 12px;
+            font-size: 0.75rem;
             font-weight: 600;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
+            color: var(--black);
         }
-        
+
         .media-meta {
-            font-size: 10px;
-            color: #999;
+            font-size: 0.65rem;
+            color: var(--gray-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        
+
+        .media-size {
+            font-size: 0.6rem;
+        }
+
         .media-select-overlay {
             position: absolute;
-            top: 8px;
-            right: 8px;
-            width: 24px;
-            height: 24px;
+            top: 10px;
+            right: 10px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             background: white;
-            border: 2px solid #ddd;
+            border: 2px solid var(--border);
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: var(--transition);
         }
-        
+
         .media-card.selected .media-select-overlay {
-            background: #a30000;
-            border-color: #a30000;
-            color: white;
+            background: var(--red);
+            border-color: var(--red);
         }
-        
+
+        .media-select-overlay svg {
+            width: 14px;
+            height: 14px;
+            stroke: var(--gray);
+        }
+
+        .media-card.selected .media-select-overlay svg {
+            stroke: white;
+        }
+
+        /* ========================================
+           SELECTION BAR
+        ========================================= */
         .selection-bar {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
             background: white;
-            border-top: 1px solid #e6e6e6;
-            padding: 16px 24px;
+            border-top: 1px solid var(--border);
+            padding: 16px 32px;
             display: none;
             justify-content: space-between;
             align-items: center;
-            z-index: 100;
+            z-index: 200;
+            box-shadow: var(--shadow-md);
+            animation: slideUp 0.3s ease;
         }
-        
+
         .selection-bar.show {
             display: flex;
         }
-        
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .selection-info {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--gray-dark);
+        }
+
         .selection-actions {
             display: flex;
             gap: 12px;
         }
-        
+
         .btn-insert {
-            background: #a30000;
+            background: var(--red);
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
+            padding: 10px 24px;
+            border-radius: 8px;
             cursor: pointer;
+            font-weight: 600;
+            font-size: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
         }
-        
+
+        .btn-insert:hover {
+            background: var(--red-dark);
+            transform: translateY(-1px);
+        }
+
         .btn-cancel {
-            background: #f5f5f5;
-            border: 1px solid #ddd;
-            padding: 10px 20px;
-            border-radius: 6px;
+            background: white;
+            border: 1px solid var(--border);
+            padding: 10px 24px;
+            border-radius: 8px;
             cursor: pointer;
+            font-weight: 600;
+            font-size: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
         }
-        
-        .loading {
-            text-align: center;
-            padding: 60px;
-            color: #999;
+
+        .btn-cancel:hover {
+            background: var(--gray-bg);
         }
-        
+
+        /* ========================================
+           PAGINATION
+        ========================================= */
         .pagination {
             display: flex;
             justify-content: center;
-            gap: 10px;
-            margin-top: 40px;
+            gap: 8px;
+            margin-top: 48px;
+            flex-wrap: wrap;
         }
-        
+
         .pagination button {
             background: white;
-            border: 1px solid #ddd;
-            padding: 8px 16px;
+            border: 1px solid var(--border);
+            padding: 8px 14px;
             border-radius: 6px;
             cursor: pointer;
+            font-size: 0.8rem;
+            transition: var(--transition);
         }
-        
+
+        .pagination button:hover {
+            border-color: var(--red);
+            color: var(--red);
+        }
+
         .pagination button.active {
-            background: #a30000;
+            background: var(--red);
             color: white;
-            border-color: #a30000;
+            border-color: var(--red);
         }
-        
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+
+        /* ========================================
+           LOADING & EMPTY STATES
+        ========================================= */
+        .loading, .empty-state {
+            text-align: center;
+            padding: 80px;
+            color: var(--gray-light);
+            font-size: 0.9rem;
+        }
+
+        .loading svg, .empty-state svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 16px;
+            color: var(--gray-light);
+        }
+
+        /* ========================================
+           TOAST NOTIFICATION
+        ========================================= */
+        .studio-toast {
+            position: fixed;
+            bottom: 80px;
+            right: 24px;
+            background: #28a745;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            z-index: 1000;
+            animation: slideInRight 0.3s ease;
+            box-shadow: var(--shadow-md);
+        }
+
+        .studio-toast.error {
+            background: #dc3545;
+        }
+
+        .studio-toast.info {
+            background: #17a2b8;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* ========================================
+           RESPONSIVE
+        ========================================= */
+        @media (max-width: 768px) {
+            .admin-header-inner {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .studio-container {
+                padding: 20px 16px;
+            }
+            
+            .page-title {
+                font-size: 1.4rem;
+            }
+            
+            .media-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .search-input {
+                width: 100%;
+            }
+            
+            .filter-buttons {
+                justify-content: center;
+            }
+            
+            .media-grid {
+                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+                gap: 16px;
+            }
+            
+            .selection-bar {
+                padding: 12px 20px;
+                flex-direction: column;
+                gap: 12px;
+            }
+            
+            .studio-toast {
+                bottom: 100px;
+                right: 16px;
+                left: 16px;
+                text-align: center;
+            }
         }
     </style>
 </head>
@@ -250,52 +630,473 @@
     <div class="admin-header-inner">
         <div class="logo">
             <img src="https://logphtrdkpbfgtejtime.supabase.co/storage/v1/object/public/Photo,%20Image/Untitled%20folder/MAK_MUS__1_-removebg-preview.png" alt="MAKMUS">
-            <span>Studio media</span>
+            <span>Studio Média</span>
         </div>
         <nav class="admin-nav">
-            <a href="index.html">Dashboard</a>
-            <a href="editor.html">Editeur</a>
-            <a href="studio.html" class="active">Studio</a>
-            <a href="#" id="logout-btn">Deconnexion</a>
+            <a href="dashboard.html">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7"/>
+                    <rect x="14" y="3" width="7" height="7"/>
+                    <rect x="14" y="14" width="7" height="7"/>
+                    <rect x="3" y="14" width="7" height="7"/>
+                </svg>
+                Dashboard
+            </a>
+            <a href="editor.html">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+                </svg>
+                Éditeur
+            </a>
+            <a href="studio.html" class="active">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="2" width="20" height="20" rx="2.18"/>
+                    <path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 17h5M17 7h5"/>
+                </svg>
+                Studio
+            </a>
+            <a href="#" id="logout-btn">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+                </svg>
+                Déconnexion
+            </a>
         </nav>
     </div>
 </div>
 
 <div class="studio-container">
-    <h1 class="page-title">Galerie media</h1>
+    <h1 class="page-title">
+        <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="2" width="20" height="20" rx="2.18"/>
+            <path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 17h5M17 7h5"/>
+        </svg>
+        Galerie média
+    </h1>
     
     <div class="upload-area" id="upload-area">
-        <div class="upload-icon">[Upload]</div>
-        <p>Glissez-deposez vos images ici ou cliquez pour selectionner</p>
-        <button class="upload-btn" id="upload-btn">Selectionner des fichiers</button>
+        <div class="upload-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 3v12m0 0-3-3m3 3 3-3M5 21h14"/>
+                <rect x="3" y="15" width="18" height="4" rx="1"/>
+            </svg>
+        </div>
+        <p>Glissez-déposez vos images ou vidéos ici, ou cliquez pour sélectionner</p>
+        <button class="upload-btn" id="upload-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14M5 12h14"/>
+            </svg>
+            Sélectionner des fichiers
+        </button>
         <input type="file" id="file-input" class="file-input" accept="image/*,video/*" multiple>
     </div>
     
     <div class="media-toolbar">
-        <input type="text" id="search-input" class="search-input" placeholder="Rechercher...">
+        <div class="search-wrapper">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input type="text" id="search-input" class="search-input" placeholder="Rechercher un média...">
+        </div>
         <div class="filter-buttons">
-            <button class="filter-btn active" data-filter="all">Tous</button>
-            <button class="filter-btn" data-filter="image">Images</button>
-            <button class="filter-btn" data-filter="video">Videos</button>
+            <button class="filter-btn active" data-filter="all">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7"/>
+                    <rect x="14" y="3" width="7" height="7"/>
+                    <rect x="14" y="14" width="7" height="7"/>
+                    <rect x="3" y="14" width="7" height="7"/>
+                </svg>
+                Tous
+            </button>
+            <button class="filter-btn" data-filter="image">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="2" width="20" height="20" rx="2"/>
+                    <circle cx="8.5" cy="8.5" r="2.5"/>
+                    <path d="M21 15l-5-5L6 21"/>
+                </svg>
+                Images
+            </button>
+            <button class="filter-btn" data-filter="video">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="4" width="20" height="16" rx="2"/>
+                    <path d="m9 8 6 4-6 4V8z"/>
+                </svg>
+                Vidéos
+            </button>
         </div>
     </div>
     
     <div id="media-grid" class="media-grid">
-        <div class="loading">Chargement...</div>
+        <div class="loading">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+            </svg>
+            <p>Chargement des médias...</p>
+        </div>
     </div>
     
     <div id="pagination" class="pagination"></div>
 </div>
 
 <div id="selection-bar" class="selection-bar">
-    <div id="selection-info" class="selection-info">0 media selectionne</div>
+    <div class="selection-info">
+        <span id="selection-count">0</span> média(s) sélectionné(s)
+    </div>
     <div class="selection-actions">
-        <button class="btn-cancel" id="cancel-selection">Annuler</button>
-        <button class="btn-insert" id="insert-media">Insérer dans l'article</button>
+        <button class="btn-cancel" id="cancel-selection">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+            Annuler
+        </button>
+        <button class="btn-insert" id="insert-media">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 10l-7-7-7 7"/>
+                <path d="M12 3v14"/>
+                <path d="M5 21h14"/>
+            </svg>
+            Insérer dans l'article
+        </button>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/studio.js"></script>
+<script>
+    (function() {
+        const SUPABASE_URL = 'https://logphtrdkpbfgtejtime.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxvZ3BodHJka3BiZmd0ZWp0aW1lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNzY4MDYsImV4cCI6MjA4NTc1MjgwNn0.Uoxiax-whIdbB5oI3bof-hN0m5O9PDi96zmaUZ6BBio';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        let currentUser = null;
+        let allMedia = [];
+        let currentFilter = 'all';
+        let currentSearch = '';
+        let currentPage = 1;
+        let itemsPerPage = 24;
+        let selectedMedia = new Set();
+        
+        const mediaGrid = document.getElementById('media-grid');
+        const searchInput = document.getElementById('search-input');
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        const paginationDiv = document.getElementById('pagination');
+        const selectionBar = document.getElementById('selection-bar');
+        const selectionCount = document.getElementById('selection-count');
+        const uploadArea = document.getElementById('upload-area');
+        const fileInput = document.getElementById('file-input');
+        const uploadBtn = document.getElementById('upload-btn');
+        
+        async function checkAuth() {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+            currentUser = user;
+            loadMedia();
+        }
+        
+        // ✅ CORRECTION: Utilisation de la table 'media' au lieu de 'studio_media'
+        async function loadMedia() {
+            mediaGrid.innerHTML = '<div class="loading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg><p>Chargement des médias...</p></div>';
+            
+            let query = supabase
+                .from('media')
+                .select('*')
+                .order('created_at', { ascending: false });
+            
+            if (currentFilter !== 'all') {
+                query = query.eq('type', currentFilter);
+            }
+            
+            if (currentSearch) {
+                query = query.ilike('filename', `%${currentSearch}%`);
+            }
+            
+            const { data, error } = await query;
+            
+            if (error) {
+                console.error('Erreur chargement:', error);
+                mediaGrid.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><p>Erreur de chargement: ' + error.message + '</p></div>';
+                return;
+            }
+            
+            allMedia = data || [];
+            renderCurrentPage();
+        }
+        
+        function renderCurrentPage() {
+            const filtered = getFilteredMedia();
+            const totalPages = Math.ceil(filtered.length / itemsPerPage);
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const pageMedia = filtered.slice(start, end);
+            
+            if (pageMedia.length === 0) {
+                mediaGrid.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><circle cx="8.5" cy="8.5" r="2.5"/><path d="M21 15l-5-5L6 21"/></svg><p>Aucun média trouvé</p></div>';
+                paginationDiv.innerHTML = '';
+                return;
+            }
+            
+            mediaGrid.innerHTML = pageMedia.map(media => `
+                <div class="media-card ${selectedMedia.has(media.id) ? 'selected' : ''}" data-id="${media.id}">
+                    ${media.type === 'video' ? `
+                        <div class="media-preview media-video-preview">
+                            <video src="${media.url}" muted preload="metadata"></video>
+                            <div class="video-play-icon">
+                                <svg viewBox="0 0 24 24" fill="white">
+                                    <polygon points="5 3 19 12 5 21 5 3"/>
+                                </svg>
+                            </div>
+                        </div>
+                    ` : `
+                        <img class="media-preview" src="${media.url}" alt="${escapeHtml(media.filename)}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'150\' viewBox=\'0 0 200 150\'%3E%3Crect width=\'200\' height=\'150\' fill=\'%23f0f0f0\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%23999\' font-size=\'14\'%3EImage%3C/text%3E%3C/svg%3E'">
+                    `}
+                    <div class="media-info">
+                        <div class="media-filename" title="${escapeHtml(media.filename)}">${escapeHtml(media.filename)}</div>
+                        <div class="media-meta">
+                            <span>${formatFileSize(media.size)}</span>
+                            <span>${new Date(media.created_at).toLocaleDateString('fr-FR')}</span>
+                        </div>
+                    </div>
+                    <div class="media-select-overlay">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                    </div>
+                </div>
+            `).join('');
+            
+            attachCardEvents();
+            renderPagination(totalPages);
+        }
+        
+        function getFilteredMedia() {
+            let filtered = [...allMedia];
+            
+            if (currentFilter !== 'all') {
+                filtered = filtered.filter(m => m.type === currentFilter);
+            }
+            
+            if (currentSearch) {
+                const searchLower = currentSearch.toLowerCase();
+                filtered = filtered.filter(m => m.filename.toLowerCase().includes(searchLower));
+            }
+            
+            return filtered;
+        }
+        
+        function renderPagination(totalPages) {
+            if (totalPages <= 1) {
+                paginationDiv.innerHTML = '';
+                return;
+            }
+            
+            let html = '';
+            for (let i = 1; i <= Math.min(totalPages, 10); i++) {
+                html += `<button class="${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+            }
+            paginationDiv.innerHTML = html;
+            
+            document.querySelectorAll('.pagination button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    currentPage = parseInt(btn.dataset.page);
+                    renderCurrentPage();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+            });
+        }
+        
+        function attachCardEvents() {
+            document.querySelectorAll('.media-card').forEach(card => {
+                card.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = card.dataset.id;
+                    if (selectedMedia.has(id)) {
+                        selectedMedia.delete(id);
+                        card.classList.remove('selected');
+                    } else {
+                        selectedMedia.add(id);
+                        card.classList.add('selected');
+                    }
+                    updateSelectionBar();
+                });
+            });
+        }
+        
+        function updateSelectionBar() {
+            const count = selectedMedia.size;
+            selectionCount.textContent = count;
+            
+            if (count > 0) {
+                selectionBar.classList.add('show');
+            } else {
+                selectionBar.classList.remove('show');
+            }
+        }
+        
+        function formatFileSize(bytes) {
+            if (!bytes) return '0 B';
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(1024));
+            return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+        }
+        
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function showToast(message, type = 'success') {
+            const existing = document.querySelector('.studio-toast');
+            if (existing) existing.remove();
+            
+            const toast = document.createElement('div');
+            toast.className = `studio-toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.remove(), 3000);
+        }
+        
+        // Upload
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            fileInput.click();
+        });
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('drag-over');
+        });
+        
+        uploadArea.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            const files = Array.from(e.dataTransfer.files);
+            await uploadFiles(files);
+        });
+        
+        fileInput.addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files);
+            await uploadFiles(files);
+            fileInput.value = '';
+        });
+        
+        async function uploadFiles(files) {
+            if (!files.length) return;
+            
+            showToast(`Upload de ${files.length} fichier(s)...`, 'info');
+            
+            for (const file of files) {
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+                const filePath = `studio/${currentUser.id}/${fileName}`;
+                
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('studio-media')
+                    .upload(filePath, file);
+                
+                if (uploadError) {
+                    console.error('Upload error:', uploadError);
+                    showToast(`Erreur: ${file.name}`, 'error');
+                    continue;
+                }
+                
+                const { data: publicUrl } = supabase.storage
+                    .from('studio-media')
+                    .getPublicUrl(filePath);
+                
+                const mediaType = file.type.startsWith('image/') ? 'image' : 'video';
+                
+                // ✅ CORRECTION: Insertion dans la table 'media'
+                const { error: dbError } = await supabase
+                    .from('media')
+                    .insert({
+                        filename: file.name,
+                        url: publicUrl.publicUrl,
+                        type: mediaType,
+                        size: file.size,
+                        mime_type: file.type,
+                        user_id: currentUser.id
+                    });
+                
+                if (dbError) {
+                    console.error('DB error:', dbError);
+                    showToast(`Erreur base: ${file.name}`, 'error');
+                } else {
+                    showToast(`✓ ${file.name} uploadé`, 'success');
+                }
+            }
+            
+            await loadMedia();
+        }
+        
+        // Filtres
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                currentPage = 1;
+                renderCurrentPage();
+            });
+        });
+        
+        // Recherche
+        let searchTimeout;
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentSearch = e.target.value;
+                currentPage = 1;
+                renderCurrentPage();
+            }, 300);
+        });
+        
+        // Sélection
+        document.getElementById('cancel-selection')?.addEventListener('click', () => {
+            selectedMedia.clear();
+            updateSelectionBar();
+            renderCurrentPage();
+        });
+        
+        document.getElementById('insert-media')?.addEventListener('click', () => {
+            const selected = allMedia.filter(m => selectedMedia.has(m.id));
+            if (selected.length === 0) return;
+            
+            const mediaData = selected.map(m => ({
+                url: m.url,
+                type: m.type,
+                filename: m.filename
+            }));
+            
+            localStorage.setItem('studio_selected_media', JSON.stringify(mediaData));
+            showToast(`${selected.length} média(s) prêt(s) à être insérés`, 'success');
+            
+            setTimeout(() => {
+                window.location.href = 'editor.html';
+            }, 1000);
+        });
+        
+        // Déconnexion
+        document.getElementById('logout-btn')?.addEventListener('click', async () => {
+            await supabase.auth.signOut();
+            window.location.href = 'login.html';
+        });
+        
+        checkAuth();
+    })();
+</script>
 </body>
 </html>

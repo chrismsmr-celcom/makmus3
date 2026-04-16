@@ -2,267 +2,626 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Studio Audio | MAKMUS Admin</title>
     <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <style>
-        /* Vos styles existants... */
+        /* ========================================
+           VARIABLES & RESET
+        ========================================= */
+        :root {
+            --red: #a30000;
+            --red-dark: #7a0000;
+            --black: #121212;
+            --gray-dark: #333;
+            --gray: #555;
+            --gray-light: #888;
+            --gray-bg: #f5f5f5;
+            --border: #e6e6e6;
+            --border-strong: #ccc;
+            --serif: 'Lora', 'Times New Roman', Georgia, serif;
+            --sans: 'Libre Franklin', 'Helvetica Neue', Arial, sans-serif;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.12);
+            --transition: all 0.2s ease;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
-            font-family: 'Lora', serif;
-            background: #f5f5f5;
-            color: #121212;
+            font-family: var(--sans);
+            background: #f8f8f8;
+            color: var(--black);
         }
-        
+
+        /* ========================================
+           HEADER ADMIN
+        ========================================= */
+        .admin-header {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .admin-header-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo img {
+            height: 40px;
+            width: auto;
+        }
+
+        .logo span {
+            font-family: var(--serif);
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--black);
+        }
+
+        .admin-nav {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .admin-nav a {
+            text-decoration: none;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--gray);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .admin-nav a:hover {
+            color: var(--red);
+        }
+
+        .admin-nav a.active {
+            color: var(--red);
+            border-bottom: 2px solid var(--red);
+            padding-bottom: 4px;
+        }
+
+        .nav-icon {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* ========================================
+           MAIN CONTAINER
+        ========================================= */
         .admin-container {
             max-width: 900px;
             margin: 0 auto;
-            padding: 40px 20px;
+            padding: 40px 24px;
         }
-        
-        .admin-nav {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #e6e6e6;
-        }
-        
-        .admin-nav a {
-            font-family: 'Libre Franklin', sans-serif;
-            text-decoration: none;
-            color: #666;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
-        .admin-nav a.active {
-            color: #a30000;
+
+        .page-title {
+            font-family: var(--serif);
+            font-size: 1.8rem;
             font-weight: 700;
+            margin-bottom: 32px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
-        
+
+        .page-icon {
+            width: 32px;
+            height: 32px;
+            color: var(--red);
+        }
+
+        /* ========================================
+           FORMULAIRES
+        ========================================= */
+        .form-card {
+            background: white;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            padding: 28px;
+            margin-bottom: 40px;
+        }
+
         .form-group {
-            margin-bottom: 25px;
+            margin-bottom: 24px;
         }
-        
+
         .form-group label {
             display: block;
-            font-family: 'Libre Franklin', sans-serif;
-            font-weight: 600;
-            font-size: 12px;
+            font-family: var(--sans);
+            font-weight: 700;
+            font-size: 0.7rem;
             text-transform: uppercase;
             letter-spacing: 1px;
             margin-bottom: 8px;
-            color: #666;
+            color: var(--gray);
         }
-        
+
         .form-group input,
         .form-group select,
         .form-group textarea {
             width: 100%;
-            padding: 12px;
-            border: 1px solid #e6e6e6;
-            border-radius: 4px;
-            font-family: 'Lora', serif;
-            font-size: 16px;
+            padding: 12px 14px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-family: var(--serif);
+            font-size: 0.95rem;
+            transition: var(--transition);
         }
-        
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--red);
+            box-shadow: 0 0 0 2px rgba(163,0,0,0.1);
+        }
+
         .form-group textarea {
             resize: vertical;
             min-height: 80px;
         }
-        
+
+        /* ========================================
+           UPLOAD ZONES
+        ========================================= */
         .upload-area {
-            border: 2px dashed #e6e6e6;
-            border-radius: 8px;
-            padding: 30px;
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 32px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.3s ease;
-            background: #fafafa;
+            transition: var(--transition);
+            background: var(--gray-bg);
         }
-        
+
         .upload-area:hover {
-            border-color: #a30000;
-            background: #fff;
+            border-color: var(--red);
+            background: #fef5f5;
         }
-        
+
         .upload-area.dragover {
-            border-color: #a30000;
+            border-color: var(--red);
             background: #fef0f0;
         }
-        
+
         .upload-icon {
-            font-size: 48px;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
-        
+
+        .upload-icon svg {
+            width: 48px;
+            height: 48px;
+            stroke: var(--gray-light);
+        }
+
         .upload-text {
-            font-family: 'Libre Franklin', sans-serif;
-            font-size: 14px;
-            color: #888;
+            font-family: var(--sans);
+            font-size: 0.85rem;
+            color: var(--gray-light);
         }
-        
+
         .file-info {
-            margin-top: 10px;
-            font-size: 12px;
+            margin-top: 12px;
+            font-size: 0.75rem;
             color: #28a745;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        
+
         .image-preview {
-            margin-top: 15px;
-            width: 120px;
-            height: 120px;
-            border-radius: 8px;
+            margin-top: 16px;
+            width: 100px;
+            height: 100px;
+            border-radius: 12px;
             overflow: hidden;
-            background: #f0f0f0;
+            background: var(--gray-bg);
+            border: 1px solid var(--border);
         }
-        
+
         .image-preview img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
-        
+
+        /* ========================================
+           CHECKBOX STYLE
+        ========================================= */
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+
+        .checkbox-group input {
+            width: 18px;
+            height: 18px;
+            margin: 0;
+        }
+
+        .checkbox-group span {
+            text-transform: none;
+            letter-spacing: normal;
+            font-weight: 500;
+        }
+
+        /* ========================================
+           BOUTONS
+        ========================================= */
         .action-buttons {
             display: flex;
             gap: 15px;
             margin-top: 30px;
             justify-content: flex-end;
         }
-        
+
         .btn-primary {
-            background: #a30000;
+            background: var(--red);
             color: white;
             border: none;
-            padding: 12px 24px;
+            padding: 12px 28px;
             cursor: pointer;
-            border-radius: 4px;
-            font-family: 'Libre Franklin', sans-serif;
+            border-radius: 10px;
+            font-family: var(--sans);
             font-weight: 700;
+            font-size: 0.85rem;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
-        
+
+        .btn-primary:hover {
+            background: var(--red-dark);
+            transform: translateY(-1px);
+        }
+
         .btn-secondary {
-            background: #f5f5f5;
-            color: #333;
-            border: 1px solid #ddd;
-            padding: 12px 24px;
+            background: white;
+            color: var(--gray-dark);
+            border: 1px solid var(--border);
+            padding: 12px 28px;
             cursor: pointer;
-            border-radius: 4px;
-            font-family: 'Libre Franklin', sans-serif;
+            border-radius: 10px;
+            font-family: var(--sans);
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
-        
-        .status {
-            padding: 10px;
-            margin-bottom: 20px;
-            border-radius: 4px;
-            display: none;
+
+        .btn-secondary:hover {
+            background: var(--gray-bg);
         }
-        
-        .status.success {
-            background: #d4edda;
-            color: #155724;
-            display: block;
+
+        /* ========================================
+           AUDIO LIST
+        ========================================= */
+        .audio-list-section {
+            margin-top: 48px;
+            border-top: 2px solid var(--border);
+            padding-top: 32px;
         }
-        
-        .status.error {
-            background: #f8d7da;
-            color: #721c24;
-            display: block;
+
+        .audio-list-title {
+            font-family: var(--serif);
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
-        
-        .audio-list {
-            margin-top: 40px;
-            border-top: 1px solid #e6e6e6;
-            padding-top: 30px;
+
+        .audio-list-title svg {
+            width: 24px;
+            height: 24px;
+            color: var(--red);
         }
-        
-        .audio-list h3 {
-            font-family: 'Libre Franklin', sans-serif;
-            margin-bottom: 20px;
+
+        .audio-items {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
-        
+
         .audio-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 15px;
-            border: 1px solid #e6e6e6;
-            border-radius: 8px;
-            margin-bottom: 10px;
+            padding: 16px 20px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
             background: white;
+            transition: var(--transition);
         }
-        
+
+        .audio-item:hover {
+            box-shadow: var(--shadow-sm);
+            transform: translateX(4px);
+        }
+
         .audio-item-info {
             flex: 1;
         }
-        
+
         .audio-item-title {
+            font-family: var(--serif);
             font-weight: 700;
-            margin-bottom: 5px;
+            font-size: 1rem;
+            margin-bottom: 6px;
+            color: var(--black);
         }
-        
+
         .audio-item-meta {
-            font-size: 12px;
-            color: #888;
+            font-size: 0.7rem;
+            color: var(--gray-light);
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
         }
-        
-        .audio-item-actions button {
+
+        .audio-item-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .edit-btn, .delete-btn {
             background: none;
             border: none;
             cursor: pointer;
-            font-size: 18px;
-            margin-left: 10px;
-            padding: 5px;
+            padding: 8px;
+            border-radius: 8px;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
         }
-        
-        .edit-btn { color: #007bff; }
-        .delete-btn { color: #dc3545; }
-        
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(100px); }
-            to { opacity: 1; transform: translateX(0); }
+
+        .edit-btn {
+            color: #007bff;
         }
-        
-        .toast {
+
+        .edit-btn:hover {
+            background: #e3f2fd;
+        }
+
+        .delete-btn {
+            color: #dc3545;
+        }
+
+        .delete-btn:hover {
+            background: #fee;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .status-published {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-draft {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        /* ========================================
+           STATUS MESSAGE
+        ========================================= */
+        .status {
+            padding: 14px 18px;
+            margin-bottom: 24px;
+            border-radius: 10px;
+            display: none;
+            font-size: 0.85rem;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* ========================================
+           TOAST NOTIFICATION
+        ========================================= */
+        .studio-toast {
             position: fixed;
             bottom: 30px;
             right: 30px;
             background: #28a745;
             color: white;
             padding: 12px 24px;
-            border-radius: 8px;
-            font-family: 'Libre Franklin', sans-serif;
-            font-size: 14px;
-            animation: slideIn 0.3s ease;
+            border-radius: 10px;
+            font-family: var(--sans);
+            font-size: 0.85rem;
+            font-weight: 500;
+            animation: slideInRight 0.3s ease;
             z-index: 1000;
+            box-shadow: var(--shadow-md);
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
-        
-        /* Ajout pour le champ durée caché */
+
+        .studio-toast.error {
+            background: #dc3545;
+        }
+
+        .studio-toast.info {
+            background: #17a2b8;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* ========================================
+           RESPONSIVE
+        ========================================= */
+        @media (max-width: 768px) {
+            .admin-header-inner {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .admin-container {
+                padding: 20px 16px;
+            }
+            
+            .page-title {
+                font-size: 1.4rem;
+            }
+            
+            .form-card {
+                padding: 20px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .btn-primary, .btn-secondary {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .audio-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+            
+            .audio-item-actions {
+                align-self: flex-end;
+            }
+            
+            .studio-toast {
+                bottom: 20px;
+                right: 20px;
+                left: 20px;
+                text-align: center;
+            }
+        }
+
         input[type="hidden"] {
             display: none;
         }
     </style>
 </head>
 <body>
-    <div class="admin-container">
-        <div class="admin-nav">
-            <a href="dashboard.html">Dashboard</a>
-            <a href="editor.html">Editeur</a>
-            <a href="studio-audio.html" class="active">Studio Audio</a>
-            <a href="#" id="logout-nav">Deconnexion</a>
+
+<div class="admin-header">
+    <div class="admin-header-inner">
+        <div class="logo">
+            <img src="https://logphtrdkpbfgtejtime.supabase.co/storage/v1/object/public/Photo,%20Image/Untitled%20folder/MAK_MUS__1_-removebg-preview.png" alt="MAKMUS">
+            <span>Studio Audio</span>
         </div>
-        
-        <div id="status-message" class="status"></div>
-        
-        <h1 style="margin-bottom: 30px;">Gestion des Audios</h1>
-        
+        <nav class="admin-nav">
+            <a href="dashboard.html">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7"/>
+                    <rect x="14" y="3" width="7" height="7"/>
+                    <rect x="14" y="14" width="7" height="7"/>
+                    <rect x="3" y="14" width="7" height="7"/>
+                </svg>
+                Dashboard
+            </a>
+            <a href="editor.html">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+                </svg>
+                Éditeur
+            </a>
+            <a href="studio-audio.html" class="active">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 18V5l12-2v13"/>
+                    <circle cx="6" cy="18" r="3"/>
+                    <circle cx="18" cy="16" r="3"/>
+                </svg>
+                Studio Audio
+            </a>
+            <a href="#" id="logout-nav">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+                </svg>
+                Déconnexion
+            </a>
+        </nav>
+    </div>
+</div>
+
+<div class="admin-container">
+    <h1 class="page-title">
+        <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 18V5l12-2v13"/>
+            <circle cx="6" cy="18" r="3"/>
+            <circle cx="18" cy="16" r="3"/>
+        </svg>
+        Gestion des Audios
+    </h1>
+    
+    <div id="status-message" class="status"></div>
+    
+    <div class="form-card">
         <form id="audio-form">
             <div class="form-group">
                 <label>Titre de l'audio</label>
@@ -280,6 +639,7 @@
                     <option value="podcast">Podcast</option>
                     <option value="resume">Résumé</option>
                     <option value="interview">Interview</option>
+                    <option value="emission">Émission</option>
                 </select>
             </div>
             
@@ -296,7 +656,13 @@
             <div class="form-group">
                 <label>Image de couverture</label>
                 <div class="upload-area" id="image-upload-area">
-                    <div class="upload-icon">📷</div>
+                    <div class="upload-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="2" width="20" height="20" rx="2"/>
+                            <circle cx="8.5" cy="8.5" r="2.5"/>
+                            <path d="M21 15l-5-5L6 21"/>
+                        </svg>
+                    </div>
                     <div class="upload-text">Cliquez ou déposez une image</div>
                     <input type="file" id="image-file" accept="image/*" style="display: none;">
                 </div>
@@ -309,36 +675,430 @@
             <div class="form-group">
                 <label>Fichier audio (MP3)</label>
                 <div class="upload-area" id="audio-upload-area">
-                    <div class="upload-icon">🎵</div>
+                    <div class="upload-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 18V5l12-2v13"/>
+                            <circle cx="6" cy="18" r="3"/>
+                            <circle cx="18" cy="16" r="3"/>
+                        </svg>
+                    </div>
                     <div class="upload-text">Cliquez ou déposez un fichier audio (MP3)</div>
                     <input type="file" id="audio-file" accept="audio/*" style="display: none;">
                 </div>
                 <div id="audio-info" class="file-info" style="display: none;"></div>
                 <input type="hidden" id="audio-url">
-                <!-- ✅ AJOUT DU CHAMP CACHÉ POUR LA DURÉE -->
                 <input type="hidden" id="audio-duration-data" value="0">
             </div>
             
             <div class="form-group">
-                <label>
-                    <input type="checkbox" id="audio-published"> Publié
+                <label class="checkbox-group">
+                    <input type="checkbox" id="audio-published">
+                    <span>Publié</span>
                 </label>
             </div>
             
             <div class="action-buttons">
-                <button type="button" class="btn-secondary" id="cancel-btn">Annuler</button>
-                <button type="submit" class="btn-primary" id="save-btn">Sauvegarder</button>
+                <button type="button" class="btn-secondary" id="cancel-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                    Annuler
+                </button>
+                <button type="submit" class="btn-primary" id="save-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                        <path d="M17 21v-4H7v4M12 7v6M9 10h6"/>
+                    </svg>
+                    Sauvegarder
+                </button>
             </div>
         </form>
-        
-        <div class="audio-list">
-            <h3>Audios existants</h3>
-            <div id="audios-list"></div>
-        </div>
     </div>
     
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/audio-editor.js"></script>
+    <div class="audio-list-section">
+        <div class="audio-list-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 18V5l12-2v13"/>
+                <circle cx="6" cy="18" r="3"/>
+                <circle cx="18" cy="16" r="3"/>
+            </svg>
+            Audios existants
+        </div>
+        <div id="audios-list" class="audio-items">
+            <div class="audio-item" style="justify-content: center; color: #888;">
+                Chargement...
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+    (function() {
+        const SUPABASE_URL = 'https://logphtrdkpbfgtejtime.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxvZ3BodHJka3BiZmd0ZWp0aW1lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNzY4MDYsImV4cCI6MjA4NTc1MjgwNn0.Uoxiax-whIdbB5oI3bof-hN0m5O9PDi96zmaUZ6BBio';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        let currentUser = null;
+        let editingId = null;
+        let currentAudioUrl = null;
+        let currentImageUrl = null;
+        
+        // Éléments DOM
+        const form = document.getElementById('audio-form');
+        const titleInput = document.getElementById('audio-title');
+        const descriptionInput = document.getElementById('audio-description');
+        const typeSelect = document.getElementById('audio-type');
+        const sourceInput = document.getElementById('audio-source');
+        const categoryInput = document.getElementById('audio-category');
+        const publishedCheckbox = document.getElementById('audio-published');
+        const statusDiv = document.getElementById('status-message');
+        const audiosListDiv = document.getElementById('audios-list');
+        const cancelBtn = document.getElementById('cancel-btn');
+        
+        // Upload éléments
+        const imageUploadArea = document.getElementById('image-upload-area');
+        const imageFileInput = document.getElementById('image-file');
+        const imagePreview = document.getElementById('image-preview');
+        const previewImg = document.getElementById('preview-img');
+        const imageUrlInput = document.getElementById('image-url');
+        
+        const audioUploadArea = document.getElementById('audio-upload-area');
+        const audioFileInput = document.getElementById('audio-file');
+        const audioInfo = document.getElementById('audio-info');
+        const audioUrlInput = document.getElementById('audio-url');
+        const durationInput = document.getElementById('audio-duration-data');
+        
+        async function checkAuth() {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+            currentUser = user;
+            loadAudios();
+        }
+        
+        async function loadAudios() {
+            const { data, error } = await supabase
+                .from('audios')
+                .select('*')
+                .order('created_at', { ascending: false });
+            
+            if (error) {
+                console.error('Erreur:', error);
+                audiosListDiv.innerHTML = '<div class="audio-item" style="justify-content: center; color: #dc3545;">Erreur de chargement</div>';
+                return;
+            }
+            
+            if (!data || data.length === 0) {
+                audiosListDiv.innerHTML = '<div class="audio-item" style="justify-content: center; color: #888;">Aucun audio disponible</div>';
+                return;
+            }
+            
+            audiosListDiv.innerHTML = data.map(audio => `
+                <div class="audio-item" data-id="${audio.id}">
+                    <div class="audio-item-info">
+                        <div class="audio-item-title">${escapeHtml(audio.titre)}</div>
+                        <div class="audio-item-meta">
+                            <span>${escapeHtml(audio.type || 'podcast')}</span>
+                            <span>${audio.source ? escapeHtml(audio.source) : 'MAKMUS'}</span>
+                            <span>${formatDuration(audio.duree)}</span>
+                            <span class="status-badge ${audio.is_published ? 'status-published' : 'status-draft'}">
+                                ${audio.is_published ? 'Publié' : 'Brouillon'}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="audio-item-actions">
+                        <button class="edit-btn" onclick="editAudio('${audio.id}')">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+                            </svg>
+                            Modifier
+                        </button>
+                        <button class="delete-btn" onclick="deleteAudio('${audio.id}')">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                <line x1="10" y1="11" x2="10" y2="17"/>
+                                <line x1="14" y1="11" x2="14" y2="17"/>
+                            </svg>
+                            Supprimer
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function formatDuration(seconds) {
+            if (!seconds) return '0:00';
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs < 10 ? '0' + secs : secs}`;
+        }
+        
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function showToast(message, type = 'success') {
+            const existing = document.querySelector('.studio-toast');
+            if (existing) existing.remove();
+            
+            const toast = document.createElement('div');
+            toast.className = `studio-toast ${type}`;
+            toast.innerHTML = `
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    ${type === 'success' ? '<path d="M20 6L9 17l-5-5"/>' : type === 'error' ? '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>' : '<circle cx="12" cy="12" r="10"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="12" y1="8" x2="12.01" y2="8"/>'}
+                </svg>
+                ${message}
+            `;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+        
+        function showStatus(message, type) {
+            statusDiv.className = `status ${type}`;
+            statusDiv.innerHTML = `
+                ${type === 'success' ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'}
+                ${message}
+            `;
+            setTimeout(() => {
+                statusDiv.className = 'status';
+                statusDiv.style.display = 'none';
+            }, 4000);
+        }
+        
+        function resetForm() {
+            editingId = null;
+            currentAudioUrl = null;
+            currentImageUrl = null;
+            form.reset();
+            titleInput.value = '';
+            descriptionInput.value = '';
+            sourceInput.value = '';
+            categoryInput.value = '';
+            typeSelect.value = 'podcast';
+            publishedCheckbox.checked = false;
+            audioUrlInput.value = '';
+            imageUrlInput.value = '';
+            durationInput.value = '0';
+            imagePreview.style.display = 'none';
+            audioInfo.style.display = 'none';
+            document.getElementById('save-btn').innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-4H7v4M12 7v6M9 10h6"/></svg> Sauvegarder';
+        }
+        
+        window.editAudio = async function(id) {
+            const { data, error } = await supabase
+                .from('audios')
+                .select('*')
+                .eq('id', id)
+                .single();
+            
+            if (error) {
+                showToast('Erreur chargement', 'error');
+                return;
+            }
+            
+            editingId = data.id;
+            titleInput.value = data.titre || '';
+            descriptionInput.value = data.description || '';
+            typeSelect.value = data.type || 'podcast';
+            sourceInput.value = data.source || '';
+            categoryInput.value = data.category || '';
+            publishedCheckbox.checked = data.is_published || false;
+            currentAudioUrl = data.audio_url;
+            currentImageUrl = data.image_url;
+            audioUrlInput.value = data.audio_url;
+            imageUrlInput.value = data.image_url;
+            durationInput.value = data.duree || 0;
+            
+            if (data.image_url) {
+                previewImg.src = data.image_url;
+                imagePreview.style.display = 'block';
+            }
+            
+            if (data.audio_url) {
+                audioInfo.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg> Fichier: ${data.audio_url.split('/').pop()}`;
+                audioInfo.style.display = 'flex';
+            }
+            
+            document.getElementById('save-btn').innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-4H7v4M12 7v6M9 10h6"/></svg> Mettre à jour';
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            showToast('Mode édition activé', 'info');
+        };
+        
+        window.deleteAudio = async function(id) {
+            if (!confirm('Supprimer définitivement cet audio ?')) return;
+            
+            const { error } = await supabase
+                .from('audios')
+                .delete()
+                .eq('id', id);
+            
+            if (error) {
+                showToast('Erreur suppression', 'error');
+            } else {
+                showToast('Audio supprimé', 'success');
+                loadAudios();
+                if (editingId === id) resetForm();
+            }
+        };
+        
+        // Upload image
+        imageUploadArea.addEventListener('click', () => imageFileInput.click());
+        imageFileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const fileExt = file.name.split('.').pop();
+            const fileName = `audio_images/${Date.now()}.${fileExt}`;
+            
+            const { error: uploadError } = await supabase.storage
+                .from('studio-media')
+                .upload(fileName, file);
+            
+            if (uploadError) {
+                showToast('Erreur upload image', 'error');
+                return;
+            }
+            
+            const { data: publicUrl } = supabase.storage
+                .from('studio-media')
+                .getPublicUrl(fileName);
+            
+            currentImageUrl = publicUrl.publicUrl;
+            imageUrlInput.value = currentImageUrl;
+            previewImg.src = currentImageUrl;
+            imagePreview.style.display = 'block';
+            showToast('Image uploadée', 'success');
+        });
+        
+        // Upload audio
+        audioUploadArea.addEventListener('click', () => audioFileInput.click());
+        audioFileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            if (!file.type.includes('audio')) {
+                showToast('Format non supporté', 'error');
+                return;
+            }
+            
+            const fileExt = file.name.split('.').pop();
+            const fileName = `audio_files/${Date.now()}.${fileExt}`;
+            
+            const { error: uploadError } = await supabase.storage
+                .from('studio-media')
+                .upload(fileName, file);
+            
+            if (uploadError) {
+                showToast('Erreur upload audio', 'error');
+                return;
+            }
+            
+            const { data: publicUrl } = supabase.storage
+                .from('studio-media')
+                .getPublicUrl(fileName);
+            
+            currentAudioUrl = publicUrl.publicUrl;
+            audioUrlInput.value = currentAudioUrl;
+            
+            const audio = new Audio(currentAudioUrl);
+            audio.addEventListener('loadedmetadata', () => {
+                durationInput.value = Math.round(audio.duration);
+                audioInfo.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg> ${file.name} (${Math.round(audio.duration)}s)`;
+                audioInfo.style.display = 'flex';
+            });
+            
+            showToast('Audio uploadé', 'success');
+        });
+        
+        // Drag & drop
+        [imageUploadArea, audioUploadArea].forEach(area => {
+            area.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                area.classList.add('dragover');
+            });
+            area.addEventListener('dragleave', () => area.classList.remove('dragover'));
+            area.addEventListener('drop', (e) => {
+                e.preventDefault();
+                area.classList.remove('dragover');
+                const file = e.dataTransfer.files[0];
+                if (area.id === 'image-upload-area' && file.type.startsWith('image/')) {
+                    imageFileInput.files = e.dataTransfer.files;
+                    imageFileInput.dispatchEvent(new Event('change'));
+                } else if (area.id === 'audio-upload-area' && file.type.includes('audio')) {
+                    audioFileInput.files = e.dataTransfer.files;
+                    audioFileInput.dispatchEvent(new Event('change'));
+                } else {
+                    showToast('Format non supporté', 'error');
+                }
+            });
+        });
+        
+        cancelBtn.addEventListener('click', resetForm);
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!titleInput.value.trim()) {
+                showStatus('Le titre est requis', 'error');
+                return;
+            }
+            
+            if (!currentAudioUrl && !audioUrlInput.value) {
+                showStatus('Un fichier audio est requis', 'error');
+                return;
+            }
+            
+            const audioData = {
+                titre: titleInput.value.trim(),
+                description: descriptionInput.value.trim(),
+                type: typeSelect.value,
+                source: sourceInput.value.trim() || 'MAKMUS',
+                category: categoryInput.value.trim(),
+                image_url: currentImageUrl || imageUrlInput.value,
+                audio_url: currentAudioUrl || audioUrlInput.value,
+                duree: parseInt(durationInput.value) || 0,
+                is_published: publishedCheckbox.checked,
+                updated_at: new Date().toISOString()
+            };
+            
+            let result;
+            if (editingId) {
+                result = await supabase
+                    .from('audios')
+                    .update(audioData)
+                    .eq('id', editingId);
+            } else {
+                audioData.created_at = new Date().toISOString();
+                result = await supabase
+                    .from('audios')
+                    .insert([audioData]);
+            }
+            
+            if (result.error) {
+                showStatus('Erreur: ' + result.error.message, 'error');
+            } else {
+                showStatus(editingId ? 'Audio mis à jour' : 'Audio créé', 'success');
+                resetForm();
+                loadAudios();
+            }
+        });
+        
+        document.getElementById('logout-nav')?.addEventListener('click', async () => {
+            await supabase.auth.signOut();
+            window.location.href = 'login.html';
+        });
+        
+        checkAuth();
+    })();
+</script>
 </body>
 </html>

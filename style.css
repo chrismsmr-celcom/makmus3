@@ -4,7 +4,7 @@
    ========================================================================== */
 
 /* --------------------------------------
-   1. VARIABABLES & RESET
+   1. VARIABLES & RESET
    -------------------------------------- */
 :root {
     --red: #a30000;
@@ -155,6 +155,7 @@ h4 { font-size: 1.2rem; }
     margin-left: auto;
     margin-right: auto;
 }
+
 /* --------------------------------------
    4. TOP BAR
    -------------------------------------- */
@@ -510,6 +511,13 @@ h4 { font-size: 1.2rem; }
 .hero-video-wrapper {
     position: relative;
     overflow: hidden;
+    background: #000;
+}
+
+.hero-video-wrapper video {
+    width: 100%;
+    height: auto;
+    display: block;
 }
 
 .hero-video-controls-vertical {
@@ -519,7 +527,7 @@ h4 { font-size: 1.2rem; }
     display: flex;
     flex-direction: column;
     gap: 12px;
-    z-index: 10;
+    z-index: 20;
     opacity: 0;
     transition: opacity 0.3s ease;
 }
@@ -628,19 +636,21 @@ h4 { font-size: 1.2rem; }
     overflow: hidden;
     border-radius: 0px;
 }
+
 /* Supprimer la barre de défilement sur toutes les galeries */
 .hero-gallery-slides {
     display: flex;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     scroll-behavior: smooth;
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE et Edge */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
 }
 
 .hero-gallery-slides::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, Opera */
+    display: none;
 }
+
 .hero-gallery-slides {
     display: flex;
     transition: transform 0.5s ease;
@@ -786,9 +796,13 @@ h4 { font-size: 1.2rem; }
     opacity: 0.85;
 }
 
-/* Image miniature - SANS border-radius */
-.sub-article-image {
+.sub-article-image-wrapper {
+    position: relative;
     flex-shrink: 0;
+}
+
+/* Image miniature */
+.sub-article-image {
     width: 100px;
     height: 100px;
     object-fit: cover;
@@ -864,7 +878,6 @@ h4 { font-size: 1.2rem; }
         font-size: 2rem;
     }
     
-    /* Sur mobile, les cartes restent en colonne mais l'image reste à gauche */
     .sub-article-card {
         gap: 15px;
         padding: 12px 0;
@@ -926,6 +939,7 @@ body.dark-mode .sub-article-text-only {
 body.dark-mode .sub-article-title {
     color: #e0e0e0;
 }
+
 /* ==========================================================================
    10. NEWS GRID
    ========================================================================== */
@@ -947,6 +961,7 @@ body.dark-mode .sub-article-title {
 
 .card-img-wrapper {
     margin-bottom: 12px;
+    position: relative;
 }
 
 .article-image {
@@ -1094,7 +1109,7 @@ body.dark-mode .sub-article-title {
     justify-content: flex-end;
     gap: 10px;
     margin-top: 15px;
-    }
+}
 
 .nav-btn {
     width: 32px;
@@ -1250,6 +1265,7 @@ body.dark-mode .sub-article-title {
 .ls-main-img {
     flex: 1;
     max-width: 50%;
+    position: relative;
 }
 
 .ls-main-img img {
@@ -1376,6 +1392,7 @@ body.dark-mode .sub-article-title {
         font-size: 1.5rem;
     }
 }
+
 /* ==========================================================================
    SPORT ZONE - STYLE IDENTIQUE AUX AUTRES SECTIONS
    ========================================================================== */
@@ -1955,6 +1972,7 @@ body.dark-mode .sport-sub-card {
         background: rgba(0, 0, 0, 0.2);
     }
 }
+
 /* ==========================================================================
    16. AUDIO
    ========================================================================== */
@@ -2114,6 +2132,7 @@ body.dark-mode .sport-sub-card {
 @media (max-width: 768px) {
     .audio-grid { grid-template-columns: 1fr; }
 }
+
 .audio-widget {
     position: fixed;
     bottom: 20px;
@@ -2343,6 +2362,19 @@ body.dark-mode .sport-sub-card {
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 15px;
+    border-top: 1px solid var(--black, #121212);
+    padding-top: 12px;
+    margin-bottom: 30px;
+}
+
+#economy-section .section-title {
+    font-family: var(--sans, 'Libre Franklin', sans-serif);
+    font-size: 0.85rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--black, #121212);
+    margin: 0;
 }
 
 .subsection-nav {
@@ -2352,23 +2384,24 @@ body.dark-mode .sport-sub-card {
 }
 
 .subsection-nav span {
-    font-family: var(--sans);
+    font-family: var(--sans, 'Libre Franklin', sans-serif);
     font-size: 0.7rem;
-    color: var(--gray-light);
+    color: var(--gray-light, #888);
     cursor: pointer;
     font-weight: 600;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
     transition: color 0.2s ease;
     padding-bottom: 2px;
 }
 
 .subsection-nav span:hover {
-    color: var(--red);
+    color: var(--red, #a30000);
 }
 
 .subsection-nav span.active {
-    color: var(--black);
-    border-bottom: 2px solid var(--black);
+    color: var(--black, #121212);
+    border-bottom: 2px solid var(--black, #121212);
 }
 
 .economy-hero-wrapper {
@@ -2576,11 +2609,21 @@ body.dark-mode .sport-sub-card {
 @media (max-width: 768px) {
     #economy-section .section-header {
         flex-direction: column;
-        gap: 10px;
+        align-items: center;
+        text-align: center;
+        gap: 12px;
+    }
+    
+    #economy-section .section-title {
+        text-align: center;
+        width: 100%;
     }
     
     .subsection-nav {
+        justify-content: center;
+        width: 100%;
         gap: 12px;
+        flex-wrap: wrap;
     }
     
     .subsection-nav span {
@@ -2956,6 +2999,7 @@ body.dark-mode .sport-sub-card {
 .side-panel-body::-webkit-scrollbar-thumb:hover {
     background: var(--red, #a30000);
 }
+
 /* ========================================
    SIDE PANEL COMPTE (AUTHENTIFICATION)
    ======================================== */
@@ -3074,7 +3118,7 @@ body.dark-mode .sport-sub-card {
     gap: 16px;
     padding-bottom: 24px;
     margin-bottom: 24px;
-    border-bottom: 1px solid var(--border, #e6e6e6); /* solid classique */
+    border-bottom: 1px solid var(--border, #e6e6e6);
 }
 
 .user-avatar {
@@ -3144,7 +3188,7 @@ body.dark-mode .sport-sub-card {
     padding: 10px 0;
     transition: color 0.2s ease;
     display: block;
-    border-bottom: none; /* Pas de bordure */
+    border-bottom: none;
 }
 
 .nav-item:hover {
@@ -3163,12 +3207,13 @@ body.dark-mode .sport-sub-card {
     padding: 14px 0;
     margin-top: 20px;
     transition: color 0.2s ease;
-    border-top: 1px solid var(--border, #e6e6e6); /* solid classique */
+    border-top: 1px solid var(--border, #e6e6e6);
 }
 
 .btn-logout-link:hover {
     color: var(--red, #a30000);
 }
+
 /* Mode simplifié - retirer la complexité visuelle */
 .auth-form {
     display: flex;
@@ -3264,8 +3309,9 @@ body.dark-mode .sport-sub-card {
     font-size: 0.7rem;
     color: var(--gray-light);
 }
+
 /* ========================================
-   VOS FAVORIS RÉCENTS - BORDURE DOTTED
+   VOS FAVORIS RÉCENTS
    ======================================== */
 
 /* Conteneur de la section des favoris */
@@ -3296,8 +3342,8 @@ body.dark-mode .sport-sub-card {
     font-size: 0.85rem;
     line-height: 1.4;
     padding: 12px 10px;
-    border-top: 1px solid var(--border);    /* solid pour séparer du contenu au-dessus */
-    border-bottom: 1px dotted var(--gray-light, #888); /* dotted pour l'effet visuel */
+    border-top: 1px solid var(--border);
+    border-bottom: 1px dotted var(--gray-light, #888);
     cursor: pointer;
     transition: all 0.2s ease;
 }
@@ -3340,6 +3386,7 @@ body.dark-mode .sport-sub-card {
     margin: 8px 0;
     background: var(--gray-bg, #f5f5f5);
 }
+
 /* ========================================
    MODE SOMBRE POUR TOUS LES PANELS
    ======================================== */
@@ -3353,48 +3400,6 @@ body.dark-mode .side-panel-header {
 
 body.dark-mode .logo-small {
     color: #e0e0e0;
-}
-
-body.dark-mode .comment-item {
-    border-color: #333;
-}
-
-body.dark-mode .comment-author {
-    color: #e0e0e0;
-}
-
-body.dark-mode .comment-message {
-    color: #ccc;
-}
-
-body.dark-mode .comment-like-btn,
-body.dark-mode .comment-reply-btn {
-    color: #aaa;
-}
-
-body.dark-mode .comment-like-btn:hover,
-body.dark-mode .comment-reply-btn:hover {
-    background: #2a2a2a;
-}
-
-body.dark-mode .reply-input,
-body.dark-mode .comment-textarea {
-    background: #2a2a2a;
-    border-color: #444;
-    color: #e0e0e0;
-}
-
-body.dark-mode .comment-replies {
-    border-left-color: #444;
-}
-
-body.dark-mode .share-option {
-    background: #2a2a2a;
-    color: #e0e0e0;
-}
-
-body.dark-mode .share-option:hover {
-    background: #333;
 }
 
 body.dark-mode .premium-title {
@@ -3439,15 +3444,6 @@ body.dark-mode .btn-logout-link {
     color: #aaa;
 }
 
-body.dark-mode .favorite-item {
-    border-bottom-color: #444;
-    color: #ccc;
-}
-
-body.dark-mode .favorite-item:hover {
-    color: var(--red, #a30000);
-}
-
 /* ========================================
    RESPONSIVE POUR TOUS LES PANELS
    ======================================== */
@@ -3472,33 +3468,6 @@ body.dark-mode .favorite-item:hover {
         font-size: 26px;
     }
     
-    .comment-item {
-        padding: 16px 0;
-    }
-    
-    .comment-author {
-        font-size: 0.85rem;
-    }
-    
-    .comment-message {
-        font-size: 0.85rem;
-    }
-    
-    .comment-replies {
-        margin-left: 20px;
-        padding-left: 12px;
-    }
-    
-    .share-option {
-        padding: 12px 16px;
-        gap: 12px;
-    }
-    
-    .share-option svg {
-        width: 24px;
-        height: 24px;
-    }
-    
     .premium-title {
         font-size: 1.5rem;
     }
@@ -3508,15 +3477,6 @@ body.dark-mode .favorite-item:hover {
 @media (max-height: 600px) {
     .side-panel-body {
         padding: 16px;
-    }
-    
-    .comment-item {
-        padding: 12px 0;
-    }
-    
-    .comments-list {
-        max-height: 250px;
-        overflow-y: auto;
     }
 }
 
@@ -3640,6 +3600,7 @@ body.dark-mode .favorite-item:hover {
     display: block;
     margin-bottom: 8px;
 }
+
 /* ==========================================================================
    MEDIA OBJECT GRID - FLEXBOX ROW / LIST ITEM WITH THUMBNAIL
    ========================================================================== */
@@ -3670,6 +3631,7 @@ body.dark-mode .favorite-item:hover {
     width: 100px;
     height: 100px;
     overflow: hidden;
+    position: relative;
 }
 
 .media-object-thumbnail img {
@@ -3710,55 +3672,6 @@ body.dark-mode .favorite-item:hover {
     text-transform: uppercase;
 }
 
-/* Version Row Pattern alternative */
-.row-pattern-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.row-pattern-item {
-    display: flex;
-    flex-direction: row;
-    gap: 15px;
-    align-items: center;
-    cursor: pointer;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--border, #e6e6e6);
-}
-
-.row-pattern-thumb {
-    flex-shrink: 0;
-    width: 60px;
-    height: 60px;
-    overflow: hidden;
-    border-radius: 6px;
-}
-
-.row-pattern-thumb img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.row-pattern-text {
-    flex: 1;
-}
-
-.row-pattern-text h4 {
-    font-family: var(--serif, 'Lora', Georgia, serif);
-    font-size: 0.9rem;
-    font-weight: 700;
-    margin: 0 0 4px 0;
-}
-
-.row-pattern-text .read-time {
-    font-family: var(--sans);
-    font-size: 0.55rem;
-    color: var(--gray-light, #888);
-    text-transform: uppercase;
-}
-
 /* Responsive */
 @media (max-width: 768px) {
     .media-object-card {
@@ -3780,8 +3693,9 @@ body.dark-mode .favorite-item:hover {
         -webkit-line-clamp: 2;
     }
 }
+
 /* ==========================================================================
-   24. INTERNATIONAL ZONE - STYLE IDENTIQUE À ECONOMY ZONE
+   24. INTERNATIONAL ZONE
    ========================================================================== */
 
 /* Section principale International */
@@ -3848,7 +3762,7 @@ body.dark-mode .favorite-item:hover {
 .international-hero-wrapper {
     margin-bottom: 40px;
     padding-bottom: 40px;
-    }
+}
 
 .international-hero-flexible {
     display: grid;
@@ -4062,11 +3976,21 @@ body.dark-mode .favorite-item:hover {
 @media (max-width: 768px) {
     #international-section .section-header {
         flex-direction: column;
-        gap: 10px;
+        align-items: center;
+        text-align: center;
+        gap: 12px;
+    }
+    
+    #international-section .section-title {
+        text-align: center;
+        width: 100%;
     }
     
     .international-nav {
+        justify-content: center;
+        width: 100%;
         gap: 12px;
+        flex-wrap: wrap;
     }
     
     .international-nav span {
@@ -4121,8 +4045,9 @@ body.dark-mode .international-sub-line {
 body.dark-mode .international-sub-card {
     border-bottom-color: #333;
 }
+
 /* ==========================================================================
-   25.ENVIRONNEMENT ZONE - STYLE IDENTIQUE À ECONOMY & INTERNATIONAL
+   25. ENVIRONNEMENT ZONE
    ========================================================================== */
 
 /* Section principale Environnement */
@@ -4473,28 +4398,41 @@ body.dark-mode .environnement-sub-line {
 body.dark-mode .environnement-sub-card {
     border-bottom-color: #333;
 }
+
 /* ==========================================================================
    26. RESPONSIVE GLOBAL
    ========================================================================== */
 @media (max-width: 968px) {
     .hero-two-columns,
-    .economy-hero-flexible {
+    .economy-hero-flexible,
+    .sport-hero-flexible,
+    .international-hero-flexible,
+    .environnement-hero-flexible {
         grid-template-columns: 1fr;
         gap: 30px;
     }
     
     .hero-left,
-    .economy-hero-left {
+    .economy-hero-left,
+    .sport-hero-left,
+    .international-hero-left,
+    .environnement-hero-left {
         padding-right: 0;
     }
     
     .hero-left::after,
-    .economy-hero-left::after {
+    .economy-hero-left::after,
+    .sport-hero-left::after,
+    .international-hero-left::after,
+    .environnement-hero-left::after {
         display: none;
     }
     
     .hero-title,
-    .economy-hero-title {
+    .economy-hero-title,
+    .sport-hero-title,
+    .international-hero-title,
+    .environnement-hero-title {
         font-size: 2rem;
     }
 }
@@ -4502,7 +4440,10 @@ body.dark-mode .environnement-sub-card {
 @media (max-width: 768px) {
     .hero-sub-grid,
     .lifestyle-sub-grid,
-    .economy-sub-grid {
+    .economy-sub-grid,
+    .sport-sub-grid,
+    .international-sub-grid,
+    .environnement-sub-grid {
         grid-template-columns: 1fr;
         gap: 20px;
     }
@@ -4528,7 +4469,10 @@ body.dark-mode .environnement-sub-card {
 
 @media (max-width: 480px) {
     .hero-title,
-    .economy-hero-title {
+    .economy-hero-title,
+    .sport-hero-title,
+    .international-hero-title,
+    .environnement-hero-title {
         font-size: 1.5rem;
     }
     
@@ -4540,239 +4484,9 @@ body.dark-mode .environnement-sub-card {
         max-width: 100%;
     }
 }
+
 /* ==========================================================================
-   ECONOMY ZONE & INTERNATIONAL ZONE - ALIGNEMENT MOBILE
-   ========================================================================== */
-
-/* ============================================
-   SECTION ÉCONOMIE
-   ============================================ */
-
-#economy-section .section-header {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 15px;
-    border-top: 1px solid var(--black, #121212);
-    padding-top: 12px;
-    margin-bottom: 30px;
-}
-
-#economy-section .section-title {
-    font-family: var(--sans, 'Libre Franklin', sans-serif);
-    font-size: 0.85rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: var(--black, #121212);
-    margin: 0;
-}
-
-.subsection-nav {
-    display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
-}
-
-.subsection-nav span {
-    font-family: var(--sans, 'Libre Franklin', sans-serif);
-    font-size: 0.7rem;
-    color: var(--gray-light, #888);
-    cursor: pointer;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    transition: color 0.2s ease;
-    padding-bottom: 2px;
-}
-
-.subsection-nav span:hover {
-    color: var(--red, #a30000);
-}
-
-.subsection-nav span.active {
-    color: var(--black, #121212);
-    border-bottom: 2px solid var(--black, #121212);
-}
-
-/* ============================================
-   SECTION INTERNATIONAL
-   ============================================ */
-
-#international-section .section-header {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 15px;
-    border-top: 1px solid var(--black, #121212);
-    padding-top: 12px;
-    margin-bottom: 30px;
-}
-
-#international-section .section-title {
-    font-family: var(--sans, 'Libre Franklin', sans-serif);
-    font-size: 0.85rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: var(--black, #121212);
-    margin: 0;
-}
-
-.international-nav {
-    display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
-}
-
-.international-nav span {
-    font-family: var(--sans, 'Libre Franklin', sans-serif);
-    font-size: 0.7rem;
-    color: var(--gray-light, #888);
-    cursor: pointer;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    transition: color 0.2s ease;
-    padding-bottom: 2px;
-}
-
-.international-nav span:hover {
-    color: var(--red, #a30000);
-}
-
-.international-nav span.active {
-    color: var(--black, #121212);
-    border-bottom: 2px solid var(--black, #121212);
-}
-
-/* ============================================
-   RESPONSIVE MOBILE - TITRE CENTRÉ, NAV EN DESSOUS
-   ============================================ */
-
-@media (max-width: 768px) {
-    /* Économie */
-    #economy-section .section-header {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        gap: 12px;
-    }
-    
-    #economy-section .section-title {
-        text-align: center;
-        width: 100%;
-    }
-    
-    .subsection-nav {
-        justify-content: center;
-        width: 100%;
-        gap: 12px;
-        flex-wrap: wrap;
-    }
-    
-    .subsection-nav span {
-        font-size: 0.6rem;
-    }
-    
-    /* International */
-    #international-section .section-header {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        gap: 12px;
-    }
-    
-    #international-section .section-title {
-        text-align: center;
-        width: 100%;
-    }
-    
-    .international-nav {
-        justify-content: center;
-        width: 100%;
-        gap: 12px;
-        flex-wrap: wrap;
-    }
-    
-    .international-nav span {
-        font-size: 0.6rem;
-    }
-}
-
-/* Pour les très petits écrans */
-@media (max-width: 480px) {
-    #economy-section .section-header,
-    #international-section .section-header {
-        gap: 10px;
-    }
-    
-    .subsection-nav,
-    .international-nav {
-        gap: 10px;
-    }
-    
-    .subsection-nav span,
-    .international-nav span {
-        font-size: 0.55rem;
-    }
-}
-/* ==========================================================================
-   CONTRÔLES VIDÉO - VERSION MOBILE RÉDUITE
-   ========================================================================== */
-
-/* Mobile : boutons plus petits */
-@media (max-width: 768px) {
-    .hero-video-controls-vertical,
-    .video-controls-vertical {
-        bottom: 10px !important;
-        right: 10px !important;
-        gap: 6px !important;
-    }
-    
-    .video-control-btn {
-        width: 28px !important;
-        height: 28px !important;
-        background: rgba(0, 0, 0, 0.6) !important;
-    }
-    
-    .video-control-btn svg {
-        width: 12px !important;
-        height: 12px !important;
-    }
-    
-    /* Réduire aussi la légende si présente */
-    .hero-video-caption {
-        font-size: 0.6rem !important;
-        padding: 20px 12px 8px !important;
-        bottom: 5px !important;
-        left: 5px !important;
-        right: 5px !important;
-    }
-}
-
-/* Très petits écrans (moins de 480px) */
-@media (max-width: 480px) {
-    .video-control-btn {
-        width: 24px !important;
-        height: 24px !important;
-    }
-    
-    .video-control-btn svg {
-        width: 10px !important;
-        height: 10px !important;
-    }
-    
-    .hero-video-controls-vertical {
-        gap: 4px !important;
-        bottom: 8px !important;
-        right: 8px !important;
-    }
-}
-/* ==========================================================================
-   CONTRÔLES VIDÉO - VISIBLES SUR MOBILE
+   CONTRÔLES VIDÉO
    ========================================================================== */
 
 /* Desktop : visible au survol */
@@ -4784,7 +4498,7 @@ body.dark-mode .environnement-sub-card {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    z-index: 10;
+    z-index: 20;
     opacity: 0;
     transition: opacity 0.3s ease;
 }
@@ -4815,7 +4529,35 @@ body.dark-mode .environnement-sub-card {
         width: 16px !important;
         height: 16px !important;
     }
+    
+    .hero-video-caption {
+        font-size: 0.6rem !important;
+        padding: 20px 12px 8px !important;
+        bottom: 5px !important;
+        left: 5px !important;
+        right: 5px !important;
+    }
 }
+
+/* Très petits écrans (moins de 480px) */
+@media (max-width: 480px) {
+    .video-control-btn {
+        width: 28px !important;
+        height: 28px !important;
+    }
+    
+    .video-control-btn svg {
+        width: 12px !important;
+        height: 12px !important;
+    }
+    
+    .hero-video-controls-vertical {
+        gap: 6px !important;
+        bottom: 10px !important;
+        right: 10px !important;
+    }
+}
+
 /* ==========================================================================
    PUBLICITÉ UNIQUEMENT SUR DESKTOP
    ========================================================================== */
@@ -4837,6 +4579,7 @@ body.dark-mode .environnement-sub-card {
         display: block;
     }
 }
+
 /* ==========================================================================
    27. MODE SOMBRE
    ========================================================================== */
@@ -4848,8 +4591,14 @@ body.dark-mode {
 body.dark-mode .section-title,
 body.dark-mode .hero-title,
 body.dark-mode .economy-hero-title,
+body.dark-mode .sport-hero-title,
+body.dark-mode .international-hero-title,
+body.dark-mode .environnement-hero-title,
 body.dark-mode .sub-article-title,
 body.dark-mode .economy-sub-title,
+body.dark-mode .sport-sub-title,
+body.dark-mode .international-sub-title,
+body.dark-mode .environnement-sub-title,
 body.dark-mode .article-title,
 body.dark-mode .main-headline,
 body.dark-mode .grid-headline,
@@ -4861,19 +4610,34 @@ body.dark-mode .ls-main-title {
 body.dark-mode .section-header,
 body.dark-mode .hero-left::after,
 body.dark-mode .economy-hero-left::after,
+body.dark-mode .sport-hero-left::after,
+body.dark-mode .international-hero-left::after,
+body.dark-mode .environnement-hero-left::after,
 body.dark-mode .sub-section-line,
-body.dark-mode .economy-sub-line {
+body.dark-mode .economy-sub-line,
+body.dark-mode .sport-sub-line,
+body.dark-mode .international-sub-line,
+body.dark-mode .environnement-sub-line {
     border-color: #444;
 }
 
-body.dark-mode .subsection-nav span.active {
+body.dark-mode .subsection-nav span.active,
+body.dark-mode .sport-nav-categories span.active,
+body.dark-mode .international-nav span.active,
+body.dark-mode .environnement-nav span.active {
     color: #fff;
     border-bottom-color: #fff;
 }
 
 body.dark-mode .hero-description,
 body.dark-mode .economy-hero-description,
+body.dark-mode .sport-hero-description,
+body.dark-mode .international-hero-description,
+body.dark-mode .environnement-hero-description,
 body.dark-mode .economy-sub-excerpt,
+body.dark-mode .sport-sub-excerpt,
+body.dark-mode .international-sub-excerpt,
+body.dark-mode .environnement-sub-excerpt,
 body.dark-mode .article-excerpt,
 body.dark-mode .summary-text {
     color: #aaa;
@@ -4898,8 +4662,194 @@ body.dark-mode .premium-input {
     color: #e0e0e0;
     border-bottom-color: #444;
 }
+
+body.dark-mode .hero-empty,
+body.dark-mode .economy-empty,
+body.dark-mode .sport-empty,
+body.dark-mode .international-empty,
+body.dark-mode .environnement-empty,
+body.dark-mode .audio-empty,
+body.dark-mode .news-empty {
+    background: #2a2a2a;
+    border-color: #444;
+    color: #aaa;
+}
+
 /* ==========================================================================
-   28. JEUX
+   28. BADGES VIDÉO
+   ========================================================================== */
+.video-play-badge {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 48px;
+    height: 48px;
+    background: rgba(163, 0, 0, 0.85);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: white;
+    backdrop-filter: blur(4px);
+    z-index: 10;
+    transition: transform 0.2s ease, background 0.2s ease;
+    pointer-events: none;
+}
+
+.video-play-badge-small {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 32px;
+    height: 32px;
+    background: rgba(163, 0, 0, 0.85);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: white;
+    backdrop-filter: blur(4px);
+    z-index: 10;
+    pointer-events: none;
+}
+
+.media-video-badge {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 28px;
+    height: 28px;
+    background: rgba(163, 0, 0, 0.85);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: white;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.sub-article-image-wrapper:hover .video-play-badge,
+.media-object-thumbnail:hover .media-video-badge {
+    transform: translate(-50%, -50%) scale(1.1);
+    background: rgba(163, 0, 0, 1);
+}
+
+@media (max-width: 768px) {
+    .video-play-badge {
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
+    }
+    
+    .video-play-badge-small {
+        width: 24px;
+        height: 24px;
+        font-size: 10px;
+    }
+    
+    .media-video-badge {
+        width: 22px;
+        height: 22px;
+        font-size: 10px;
+    }
+}
+
+/* ==========================================================================
+   29. TOAST NOTIFICATIONS
+   ========================================================================== */
+.makmus-toast {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: #28a745;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-family: var(--sans, 'Libre Franklin', sans-serif);
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 10000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    animation: slideInToast 0.3s ease;
+}
+
+.makmus-toast.error {
+    background: #dc3545;
+}
+
+@keyframes slideInToast {
+    from {
+        transform: translateX(100px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .makmus-toast {
+        bottom: 20px;
+        right: 20px;
+        left: 20px;
+        text-align: center;
+        font-size: 12px;
+        padding: 10px 16px;
+    }
+}
+
+body.dark-mode .makmus-toast {
+    background: #2ecc71;
+}
+
+body.dark-mode .makmus-toast.error {
+    background: #e74c3c;
+}
+
+/* ==========================================================================
+   30. ÉTATS VIDES
+   ========================================================================== */
+.hero-empty,
+.economy-empty,
+.sport-empty,
+.international-empty,
+.environnement-empty,
+.audio-empty,
+.news-empty {
+    text-align: center;
+    padding: 60px 20px;
+    font-family: var(--sans, 'Libre Franklin', sans-serif);
+    font-size: 0.85rem;
+    color: var(--gray-light, #888);
+    border: 1px solid var(--border, #e6e6e6);
+    background: var(--gray-bg, #f5f5f5);
+}
+
+/* ==========================================================================
+   31. ANIMATIONS SUPPLÉMENTAIRES
+   ========================================================================== */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.article-card,
+.sub-article-card,
+.media-object-card,
+.ls-sub-card {
+    animation: fadeIn 0.4s ease forwards;
+}
+
+/* ==========================================================================
+   32. JEUX
    ========================================================================== */
 .games-promo {
     margin-top: 30px;
@@ -4957,4 +4907,17 @@ body.dark-mode .premium-input {
     padding: 3px 8px;
     border-radius: 20px;
     font-weight: 600;
+}
+
+body.dark-mode .games-promo {
+    border-top-color: #444;
+}
+
+body.dark-mode .game-link {
+    color: #e0e0e0;
+    border-bottom-color: #444;
+}
+
+body.dark-mode .game-link:hover {
+    color: var(--red);
 }

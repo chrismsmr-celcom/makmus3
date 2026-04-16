@@ -6,6 +6,25 @@
     <title>Modération | MAKMUS Admin</title>
     <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <style>
+        /* ========================================
+           VARIABLES & RESET
+        ========================================= */
+        :root {
+            --red: #a30000;
+            --red-dark: #7a0000;
+            --black: #121212;
+            --gray-dark: #333;
+            --gray: #555;
+            --gray-light: #888;
+            --gray-bg: #f5f5f5;
+            --border: #e6e6e6;
+            --serif: 'Lora', 'Times New Roman', Georgia, serif;
+            --sans: 'Libre Franklin', 'Helvetica Neue', Arial, sans-serif;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.12);
+            --transition: all 0.2s ease;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -13,61 +32,179 @@
         }
 
         body {
-            font-family: 'Libre Franklin', sans-serif;
-            background: #f5f5f5;
-            color: #121212;
+            font-family: var(--sans);
+            background: #f8f8f8;
+            color: var(--black);
         }
 
-        .moderation-container {
-            max-width: 1200px;
+        /* ========================================
+           HEADER ADMIN
+        ========================================= */
+        .admin-header {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .admin-header-inner {
+            max-width: 1400px;
             margin: 0 auto;
-            padding: 40px 20px;
-        }
-
-        .header {
+            padding: 16px 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #e6e6e6;
             flex-wrap: wrap;
-            gap: 15px;
+            gap: 20px;
         }
 
-        h1 {
-            font-family: 'Lora', serif;
-            font-size: 1.8rem;
+        .logo {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
         }
 
-        .logout-btn {
-            background: none;
-            border: 1px solid #e6e6e6;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.2s;
+        .logo img {
+            height: 40px;
+            width: auto;
         }
 
-        .logout-btn:hover {
-            background: #f0f0f0;
+        .logo span {
+            font-family: var(--serif);
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--black);
         }
 
+        .admin-nav {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .admin-nav a {
+            text-decoration: none;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--gray);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .admin-nav a:hover {
+            color: var(--red);
+        }
+
+        .admin-nav a.active {
+            color: var(--red);
+            border-bottom: 2px solid var(--red);
+            padding-bottom: 4px;
+        }
+
+        .nav-icon {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* ========================================
+           MODERATION CONTAINER
+        ========================================= */
+        .moderation-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 32px 24px;
+        }
+
+        .page-title {
+            font-family: var(--serif);
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 32px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .page-icon {
+            width: 32px;
+            height: 32px;
+            color: var(--red);
+        }
+
+        .stats-badge {
+            display: inline-block;
+            background: var(--red);
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 10px;
+            border-radius: 20px;
+            margin-left: 8px;
+        }
+
+        /* ========================================
+           STATS GRID
+        ========================================= */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            padding: 20px;
+            text-align: center;
+            transition: var(--transition);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--red);
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--gray-light);
+            margin-top: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* ========================================
+           NOTIFICATIONS PANEL
+        ========================================= */
         .notifications-panel {
             background: white;
-            border-radius: 12px;
-            border: 1px solid #e6e6e6;
-            margin-bottom: 30px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            margin-bottom: 32px;
             overflow: hidden;
         }
 
         .notifications-header {
-            padding: 15px 20px;
-            background: #fafafa;
-            border-bottom: 1px solid #e6e6e6;
+            padding: 16px 20px;
+            background: var(--gray-bg);
+            border-bottom: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -76,15 +213,19 @@
         }
 
         .notifications-list {
-            max-height: 250px;
+            max-height: 300px;
             overflow-y: auto;
         }
 
         .notification-item {
-            padding: 15px 20px;
-            border-bottom: 1px solid #f0f0f0;
-            transition: background 0.2s;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            transition: var(--transition);
             cursor: pointer;
+        }
+
+        .notification-item:hover {
+            background: var(--gray-bg);
         }
 
         .notification-item.unread {
@@ -95,108 +236,236 @@
         .notification-title {
             font-weight: 700;
             margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
         }
 
         .notification-message {
             font-size: 0.85rem;
-            color: #666;
+            color: var(--gray);
         }
 
         .notification-date {
             font-size: 0.7rem;
-            color: #999;
+            color: var(--gray-light);
             margin-top: 5px;
         }
 
+        /* ========================================
+           TABS
+        ========================================= */
         .tabs {
             display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
+            gap: 12px;
+            margin-bottom: 24px;
             flex-wrap: wrap;
         }
 
         .tab-btn {
             background: white;
-            border: 1px solid #e6e6e6;
-            padding: 10px 20px;
+            border: 1px solid var(--border);
+            padding: 10px 24px;
             cursor: pointer;
-            border-radius: 8px;
+            border-radius: 40px;
             font-weight: 600;
-            transition: all 0.2s;
+            font-size: 0.85rem;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-btn:hover {
+            border-color: var(--red);
+            color: var(--red);
         }
 
         .tab-btn.active {
-            background: #a30000;
+            background: var(--red);
             color: white;
-            border-color: #a30000;
+            border-color: var(--red);
         }
 
+        .tab-btn.active svg {
+            stroke: white;
+        }
+
+        /* ========================================
+           SEARCH & FILTERS
+        ========================================= */
+        .search-filters {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .search-wrapper {
+            position: relative;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            color: var(--gray-light);
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 16px 10px 40px;
+            border: 1px solid var(--border);
+            border-radius: 40px;
+            font-size: 0.85rem;
+            transition: var(--transition);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--red);
+            box-shadow: 0 0 0 2px rgba(163,0,0,0.1);
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-select {
+            padding: 10px 16px;
+            border: 1px solid var(--border);
+            border-radius: 40px;
+            background: white;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        /* ========================================
+           COMMENTS LIST
+        ========================================= */
         .comments-list {
             background: white;
-            border-radius: 12px;
-            border: 1px solid #e6e6e6;
+            border-radius: 16px;
+            border: 1px solid var(--border);
             overflow: hidden;
         }
 
         .comment-item {
-            padding: 20px;
-            border-bottom: 1px solid #f0f0f0;
+            padding: 24px;
+            border-bottom: 1px solid var(--border);
+            transition: var(--transition);
+        }
+
+        .comment-item:last-child {
+            border-bottom: none;
         }
 
         .comment-item.hidden {
             background: #fff8e1;
-            opacity: 0.8;
         }
 
         .comment-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
+            align-items: flex-start;
+            margin-bottom: 12px;
             flex-wrap: wrap;
             gap: 10px;
+        }
+
+        .comment-author-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .comment-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--red);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            text-transform: uppercase;
         }
 
         .comment-author {
             font-weight: 700;
-            color: #a30000;
+            color: var(--red);
+        }
+
+        .comment-email {
+            font-size: 0.7rem;
+            color: var(--gray-light);
         }
 
         .comment-date {
             font-size: 0.7rem;
-            color: #999;
+            color: var(--gray-light);
         }
 
         .comment-article {
             font-size: 0.8rem;
-            color: #666;
-            margin-bottom: 10px;
+            color: var(--gray);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .article-link {
+            color: var(--red);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .article-link:hover {
+            text-decoration: underline;
         }
 
         .comment-message {
-            font-family: 'Lora', serif;
-            font-size: 0.9rem;
-            line-height: 1.5;
-            margin-bottom: 15px;
-            padding: 12px;
-            background: #f9f9f9;
-            border-radius: 8px;
+            font-family: var(--serif);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 16px;
+            padding: 16px;
+            background: var(--gray-bg);
+            border-radius: 12px;
+            word-break: break-word;
         }
 
         .comment-actions {
             display: flex;
-            gap: 10px;
+            gap: 12px;
             flex-wrap: wrap;
         }
 
-        .btn-delete, .btn-hide, .btn-unhide {
-            padding: 6px 12px;
+        .btn-action {
+            padding: 6px 14px;
             border: none;
             border-radius: 6px;
             cursor: pointer;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: 600;
-            transition: all 0.2s;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .btn-delete {
@@ -227,393 +496,825 @@
         }
 
         .moderation-note {
-            margin-top: 10px;
-            padding: 8px;
+            margin-top: 12px;
+            padding: 10px 12px;
             background: #e9ecef;
-            border-radius: 6px;
+            border-radius: 8px;
             font-size: 0.75rem;
-            color: #666;
+            color: var(--gray);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
         }
 
-        .empty-state {
+        /* ========================================
+           MODAL
+        ========================================= */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            max-width: 500px;
+            width: 90%;
+            padding: 24px;
+            margin: 20px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .modal-title {
+            font-family: var(--serif);
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            margin-bottom: 20px;
+        }
+
+        .modal-body textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-family: var(--serif);
+            resize: vertical;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        /* ========================================
+           EMPTY STATE & LOADING
+        ========================================= */
+        .empty-state, .loading-state {
             text-align: center;
             padding: 60px;
-            color: #999;
+            color: var(--gray-light);
         }
 
-        .stats-badge {
-            display: inline-block;
-            background: #a30000;
+        .empty-state svg, .loading-state svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 16px;
+        }
+
+        /* ========================================
+           TOAST
+        ========================================= */
+        .mod-toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #28a745;
             color: white;
-            font-size: 0.6rem;
-            padding: 2px 8px;
-            border-radius: 20px;
-            margin-left: 8px;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            z-index: 1100;
+            animation: slideInRight 0.3s ease;
+            box-shadow: var(--shadow-md);
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        @keyframes slideIn {
-            from { transform: translateX(100px); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+        .mod-toast.error {
+            background: #dc3545;
+        }
+
+        .mod-toast.info {
+            background: #17a2b8;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* ========================================
+           RESPONSIVE BREAKPOINTS
+        ========================================= */
+        @media (max-width: 1024px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
 
         @media (max-width: 768px) {
-            .moderation-container {
-                padding: 20px 15px;
-            }
-            h1 {
-                font-size: 1.4rem;
-            }
-            .comment-header {
+            .admin-header-inner {
                 flex-direction: column;
                 align-items: flex-start;
+            }
+            
+            .admin-nav {
+                width: 100%;
+                justify-content: flex-start;
+                gap: 16px;
+            }
+            
+            .moderation-container {
+                padding: 20px 16px;
+            }
+            
+            .page-title {
+                font-size: 1.4rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+            
+            .stat-value {
+                font-size: 1.5rem;
+            }
+            
+            .stat-label {
+                font-size: 0.6rem;
+            }
+            
+            .search-filters {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .search-wrapper {
+                width: 100%;
+            }
+            
+            .filter-group {
+                justify-content: space-between;
+            }
+            
+            .filter-select {
+                flex: 1;
+            }
+            
+            .comment-header {
+                flex-direction: column;
+            }
+            
+            .comment-actions {
+                justify-content: flex-start;
+            }
+            
+            .btn-action {
+                padding: 6px 12px;
+                font-size: 0.65rem;
+            }
+            
+            .tabs {
+                gap: 8px;
+            }
+            
+            .tab-btn {
+                padding: 8px 16px;
+                font-size: 0.75rem;
+            }
+            
+            .mod-toast {
+                bottom: 20px;
+                right: 20px;
+                left: 20px;
+                text-align: center;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .admin-nav a {
+                font-size: 0.65rem;
+            }
+            
+            .nav-icon {
+                width: 14px;
+                height: 14px;
+            }
+            
+            .comment-item {
+                padding: 16px;
+            }
+            
+            .comment-message {
+                font-size: 0.85rem;
+                padding: 12px;
+            }
+            
+            .comment-avatar {
+                width: 32px;
+                height: 32px;
+                font-size: 0.8rem;
+            }
+            
+            .modal-content {
+                padding: 20px;
+                margin: 16px;
+            }
+            
+            .modal-title {
+                font-size: 1.1rem;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .filter-group {
+                flex-direction: column;
+            }
+            
+            .filter-select {
+                width: 100%;
+            }
+            
+            .comment-actions {
+                flex-direction: column;
+                width: 100%;
+            }
+            
+            .btn-action {
+                justify-content: center;
+                width: 100%;
             }
         }
     </style>
 </head>
 <body>
-    <div class="moderation-container">
-        <div class="header">
-            <h1>
-                🛡️ Modération MAKMUS
-                <span id="pending-badge" class="stats-badge" style="display:none;">0</span>
-            </h1>
-            <button class="logout-btn" id="logout-btn">Déconnexion</button>
-        </div>
 
-        <div class="notifications-panel">
-            <div class="notifications-header">
-                <span><strong>🔔 Notifications</strong></span>
-                <button id="mark-all-read" style="background:none; border:none; color:#a30000; cursor:pointer;">Tout marquer comme lu</button>
+<div class="admin-header">
+    <div class="admin-header-inner">
+        <div class="logo">
+            <img src="https://logphtrdkpbfgtejtime.supabase.co/storage/v1/object/public/Photo,%20Image/Untitled%20folder/MAK_MUS__1_-removebg-preview.png" alt="MAKMUS">
+            <span>Modération</span>
+        </div>
+        <nav class="admin-nav">
+            <a href="dashboard.html">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7"/>
+                    <rect x="14" y="3" width="7" height="7"/>
+                    <rect x="14" y="14" width="7" height="7"/>
+                    <rect x="3" y="14" width="7" height="7"/>
+                </svg>
+                Dashboard
+            </a>
+            <a href="editor.html">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+                </svg>
+                Éditeur
+            </a>
+            <a href="studio.html">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="2" width="20" height="20" rx="2.18"/>
+                    <path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 17h5M17 7h5"/>
+                </svg>
+                Studio
+            </a>
+            <a href="studio-audio.html">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 18V5l12-2v13"/>
+                    <circle cx="6" cy="18" r="3"/>
+                    <circle cx="18" cy="16" r="3"/>
+                </svg>
+                Audio
+            </a>
+            <a href="moderation.html" class="active">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    <path d="M12 8v4M12 16h.01"/>
+                </svg>
+                Modération
+            </a>
+            <a href="#" id="logout-btn">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+                </svg>
+                Déconnexion
+            </a>
+        </nav>
+    </div>
+</div>
+
+<div class="moderation-container">
+    <h1 class="page-title">
+        <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="M12 8v4M12 16h.01"/>
+        </svg>
+        Centre de Modération
+        <span id="pending-badge" class="stats-badge" style="display:none;">0</span>
+    </h1>
+
+    <!-- Statistiques -->
+    <div class="stats-grid" id="stats-container">
+        <div class="stat-card">
+            <div class="stat-value" id="total-comments">-</div>
+            <div class="stat-label">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                </svg>
+                Total
             </div>
-            <div id="notifications-list" class="notifications-list">
-                <div class="empty-state">Chargement...</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="active-comments">-</div>
+            <div class="stat-label">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 12v8H4v-8M12 2v12M8 10l4 4 4-4"/>
+                </svg>
+                Actifs
             </div>
         </div>
-
-        <div class="tabs">
-            <button class="tab-btn active" data-tab="active">📝 Commentaires actifs</button>
-            <button class="tab-btn" data-tab="hidden">🚫 Commentaires masqués</button>
-        </div>
-
-        <div id="active-tab" class="comments-list">
-            <div class="empty-state">Chargement...</div>
-        </div>
-
-        <div id="hidden-tab" class="comments-list" style="display: none;">
-            <div class="empty-state">Chargement...</div>
+        <div class="stat-card">
+            <div class="stat-value" id="hidden-comments">-</div>
+            <div class="stat-label">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+                Masqués
+            </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        (function() {
-            const SUPABASE_URL = 'https://logphtrdkpbfgtejtime.supabase.co';
-            const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxvZ3BodHJka3BiZmd0ZWp0aW1lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNzY4MDYsImV4cCI6MjA4NTc1MjgwNn0.Uoxiax-whIdbB5oI3bof-hN0m5O9PDi96zmaUZ6BBio';
-            
-            let supabaseClient;
-            if (typeof window.supabaseClient !== 'undefined') {
-                supabaseClient = window.supabaseClient;
-            } else {
-                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-                window.supabaseClient = supabaseClient;
+    <!-- Notifications -->
+    <div class="notifications-panel">
+        <div class="notifications-header">
+            <span class="notification-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                </svg>
+                Notifications
+            </span>
+            <button id="mark-all-read" class="btn-action" style="background:#f0f0f0; color:#333;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>
+                Tout lire
+            </button>
+        </div>
+        <div id="notifications-list" class="notifications-list">
+            <div class="loading-state">Chargement...</div>
+        </div>
+    </div>
+
+    <!-- Filtres de recherche -->
+    <div class="search-filters">
+        <div class="search-wrapper">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input type="text" id="search-input" class="search-input" placeholder="Rechercher un commentaire...">
+        </div>
+        <div class="filter-group">
+            <select id="article-filter" class="filter-select">
+                <option value="">Tous les articles</option>
+            </select>
+            <select id="sort-filter" class="filter-select">
+                <option value="newest">Plus récents</option>
+                <option value="oldest">Plus anciens</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Onglets -->
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="active">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 12v8H4v-8M12 2v12M8 10l4 4 4-4"/>
+            </svg>
+            Actifs (<span id="active-count">0</span>)
+        </button>
+        <button class="tab-btn" data-tab="hidden">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+            </svg>
+            Masqués (<span id="hidden-count">0</span>)
+        </button>
+    </div>
+
+    <!-- Liste des commentaires -->
+    <div id="active-tab" class="comments-list"></div>
+    <div id="hidden-tab" class="comments-list" style="display: none;"></div>
+</div>
+
+<!-- Modal d'avertissement -->
+<div id="warning-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Envoyer un avertissement</h3>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <textarea id="warning-message" rows="4" placeholder="Message d'avertissement pour l'utilisateur..."></textarea>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-action btn-cancel" onclick="closeModal()" style="background:#f0f0f0;">Annuler</button>
+            <button class="btn-action" id="send-warning-btn" style="background:#fd7e14; color:white;">Envoyer</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+    (function() {
+        const SUPABASE_URL = 'https://logphtrdkpbfgtejtime.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxvZ3BodHJka3BiZmd0ZWp0aW1lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNzY4MDYsImV4cCI6MjA4NTc1MjgwNn0.Uoxiax-whIdbB5oI3bof-hN0m5O9PDi96zmaUZ6BBio';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        let currentUser = null;
+        let currentCommentId = null;
+        let allComments = [];
+        let articlesMap = {};
+        
+        // Éléments DOM
+        const searchInput = document.getElementById('search-input');
+        const articleFilter = document.getElementById('article-filter');
+        const sortFilter = document.getElementById('sort-filter');
+        const activeTab = document.getElementById('active-tab');
+        const hiddenTab = document.getElementById('hidden-tab');
+        
+        async function checkAuth() {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
             }
-
-            let currentUser = null;
-            let notificationInterval = null;
-
-            async function checkAuth() {
-                const { data: { user } } = await supabaseClient.auth.getUser();
-                if (!user) {
-                    window.location.href = 'login.html';
+            currentUser = user;
+            await loadArticles();
+            await loadAllComments();
+            await loadStats();
+            startRealtime();
+        }
+        
+        async function loadArticles() {
+            const { data } = await supabase.from('articles').select('id, titre').limit(100);
+            if (data && data.length > 0) {
+                articlesMap = {};
+                data.forEach(art => { articlesMap[art.id] = art.titre; });
+                
+                articleFilter.innerHTML = '<option value="">Tous les articles</option>' +
+                    data.map(art => `<option value="${art.id}">${escapeHtml(art.titre.substring(0, 50))}${art.titre.length > 50 ? '...' : ''}</option>`).join('');
+            }
+        }
+        
+        async function loadAllComments() {
+            try {
+                // Requête sans filtre problématique
+                const { data, error } = await supabase
+                    .from('article_comments')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) {
+                    console.error('Erreur chargement commentaires:', error);
+                    showToast('Erreur de chargement', 'error');
                     return;
                 }
-                currentUser = user;
-                loadNotifications();
-                loadActiveComments();
-                loadHiddenComments();
-                startRealtimeNotifications();
-            }
-
-            function startRealtimeNotifications() {
-                supabaseClient
-                    .channel('comments-channel')
-                    .on('postgres_changes', 
-                        { event: 'INSERT', schema: 'public', table: 'article_comments' },
-                        function() {
-                            loadNotifications();
-                            loadActiveComments();
-                            updatePendingBadge();
-                            showToast('📝 Nouveau commentaire !', 'info');
-                        }
-                    )
-                    .subscribe();
-
-                notificationInterval = setInterval(function() {
-                    loadNotifications();
-                    loadActiveComments();
-                }, 30000);
-            }
-
-            async function updatePendingBadge() {
-                const { count } = await supabaseClient
-                    .from('admin_notifications')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('is_read', false);
                 
-                const badge = document.getElementById('pending-badge');
-                if (badge && count > 0) {
-                    badge.style.display = 'inline-block';
-                    badge.textContent = count;
-                    document.title = '(' + count + ') Modération MAKMUS';
-                } else if (badge) {
-                    badge.style.display = 'none';
-                    document.title = 'Modération MAKMUS';
-                }
+                allComments = data || [];
+                applyFilters();
+            } catch (err) {
+                console.error('Exception:', err);
+                showToast('Erreur de connexion', 'error');
             }
-
-            async function loadNotifications() {
-                const { data, error } = await supabaseClient
+        }
+        
+        function applyFilters() {
+            let filtered = [...allComments];
+            
+            // Filtre recherche
+            const searchTerm = searchInput.value.toLowerCase();
+            if (searchTerm) {
+                filtered = filtered.filter(c => 
+                    (c.message && c.message.toLowerCase().includes(searchTerm)) ||
+                    (c.nom && c.nom.toLowerCase().includes(searchTerm))
+                );
+            }
+            
+            // Filtre article
+            const articleId = articleFilter.value;
+            if (articleId) {
+                filtered = filtered.filter(c => c.article_id == articleId);
+            }
+            
+            // Tri
+            const sort = sortFilter.value;
+            if (sort === 'newest') {
+                filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            } else if (sort === 'oldest') {
+                filtered.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+            }
+            
+            renderTabs(filtered);
+        }
+        
+        function renderTabs(comments) {
+            const active = comments.filter(c => !c.is_hidden);
+            const hidden = comments.filter(c => c.is_hidden === true);
+            
+            document.getElementById('active-count').textContent = active.length;
+            document.getElementById('hidden-count').textContent = hidden.length;
+            
+            renderComments(activeTab, active, false);
+            renderComments(hiddenTab, hidden, true);
+        }
+        
+        function renderComments(container, comments, isHidden = false) {
+            if (!comments || comments.length === 0) {
+                container.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><p>Aucun commentaire</p></div>';
+                return;
+            }
+            
+            container.innerHTML = comments.map(comment => `
+                <div class="comment-item ${isHidden ? 'hidden' : ''}" data-id="${comment.id}">
+                    <div class="comment-header">
+                        <div class="comment-author-info">
+                            <div class="comment-avatar">${(comment.nom && comment.nom.charAt(0)) || 'U'}</div>
+                            <div>
+                                <div class="comment-author">${escapeHtml(comment.nom || 'Anonyme')}</div>
+                                ${comment.email ? `<div class="comment-email">${escapeHtml(comment.email)}</div>` : ''}
+                            </div>
+                        </div>
+                        <div class="comment-date">${formatDate(comment.created_at)}</div>
+                    </div>
+                    <div class="comment-article">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 4h16v16H4zM8 8h8M8 12h8M8 16h4"/>
+                        </svg>
+                        Article: <a href="redaction.html?id=${comment.article_id}" target="_blank" class="article-link">${escapeHtml(articlesMap[comment.article_id] || 'Article inconnu')}</a>
+                    </div>
+                    <div class="comment-message">${escapeHtml(comment.message || '')}</div>
+                    <div class="comment-actions">
+                        ${!isHidden ? `
+                            <button class="btn-action btn-hide" onclick="hideComment('${comment.id}')">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                                Masquer
+                            </button>
+                        ` : `
+                            <button class="btn-action btn-unhide" onclick="unhideComment('${comment.id}')">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12v8H4v-8M12 2v12M8 10l4 4 4-4"/></svg>
+                                Restaurer
+                            </button>
+                        `}
+                        <button class="btn-action btn-delete" onclick="deleteComment('${comment.id}')">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                            Supprimer
+                        </button>
+                    </div>
+                    ${comment.moderation_note ? `
+                        <div class="moderation-note">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+                            ${escapeHtml(comment.moderation_note)}
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+        
+        async function loadStats() {
+            try {
+                const { count: total } = await supabase.from('article_comments').select('*', { count: 'exact', head: true });
+                const { count: hidden } = await supabase.from('article_comments').select('*', { count: 'exact', head: true }).eq('is_hidden', true);
+                
+                document.getElementById('total-comments').textContent = total || 0;
+                document.getElementById('hidden-comments').textContent = hidden || 0;
+                document.getElementById('active-comments').textContent = (total - hidden) || 0;
+            } catch (err) {
+                console.error('Stats error:', err);
+            }
+        }
+        
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            return date.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+        
+        // Actions globales
+        window.deleteComment = async function(id) {
+            if (!confirm('Supprimer définitivement ce commentaire ?')) return;
+            try {
+                const { error } = await supabase.from('article_comments').delete().eq('id', id);
+                if (error) throw error;
+                showToast('Commentaire supprimé');
+                await loadAllComments();
+                await loadStats();
+            } catch (err) {
+                showToast('Erreur lors de la suppression', 'error');
+            }
+        };
+        
+        window.hideComment = async function(id) {
+            const note = prompt('Raison du masquage :');
+            try {
+                const { error } = await supabase.from('article_comments').update({ 
+                    is_hidden: true, 
+                    moderation_note: note || 'Masqué par modérateur', 
+                    moderated_at: new Date().toISOString(), 
+                    moderated_by: currentUser?.id 
+                }).eq('id', id);
+                if (error) throw error;
+                showToast('Commentaire masqué');
+                await loadAllComments();
+                await loadStats();
+            } catch (err) {
+                showToast('Erreur', 'error');
+            }
+        };
+        
+        window.unhideComment = async function(id) {
+            try {
+                const { error } = await supabase.from('article_comments').update({ 
+                    is_hidden: false, 
+                    moderation_note: null 
+                }).eq('id', id);
+                if (error) throw error;
+                showToast('Commentaire restauré');
+                await loadAllComments();
+                await loadStats();
+            } catch (err) {
+                showToast('Erreur', 'error');
+            }
+        };
+        
+        function closeModal() {
+            document.getElementById('warning-modal').classList.remove('active');
+            currentCommentId = null;
+            document.getElementById('warning-message').value = '';
+        }
+        
+        document.getElementById('send-warning-btn')?.addEventListener('click', async () => {
+            const message = document.getElementById('warning-message').value;
+            if (!message) {
+                showToast('Veuillez saisir un message', 'error');
+                return;
+            }
+            showToast('Avertissement envoyé');
+            closeModal();
+        });
+        
+        // Événements
+        searchInput.addEventListener('input', () => applyFilters());
+        articleFilter.addEventListener('change', () => applyFilters());
+        sortFilter.addEventListener('change', () => applyFilters());
+        
+        document.getElementById('mark-all-read')?.addEventListener('click', async () => {
+            try {
+                await supabase.from('admin_notifications').update({ is_read: true }).eq('is_read', false);
+                showToast('Notifications marquées comme lues');
+                loadNotifications();
+            } catch (err) {
+                console.error('Error:', err);
+            }
+        });
+        
+        document.getElementById('logout-btn')?.addEventListener('click', async () => {
+            await supabase.auth.signOut();
+            window.location.href = 'login.html';
+        });
+        
+        // Onglets
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const tab = btn.dataset.tab;
+                activeTab.style.display = tab === 'active' ? 'block' : 'none';
+                hiddenTab.style.display = tab === 'hidden' ? 'block' : 'none';
+            });
+        });
+        
+        // Notifications
+        async function loadNotifications() {
+            try {
+                const { data, error } = await supabase
                     .from('admin_notifications')
                     .select('*')
                     .order('created_at', { ascending: false })
-                    .limit(30);
-
+                    .limit(20);
+                
                 const container = document.getElementById('notifications-list');
                 if (error || !data || data.length === 0) {
                     container.innerHTML = '<div class="empty-state">Aucune notification</div>';
                     return;
                 }
-
-                container.innerHTML = data.map(function(notif) {
-                    return '<div class="notification-item ' + (!notif.is_read ? 'unread' : '') + '" data-id="' + notif.id + '">' +
-                        '<div class="notification-title">' + escapeHtml(notif.title) + '</div>' +
-                        '<div class="notification-message">' + escapeHtml(notif.message) + '</div>' +
-                        '<div class="notification-date">' + new Date(notif.created_at).toLocaleString('fr-FR') + '</div>' +
-                    '</div>';
-                }).join('');
-
-                var items = document.querySelectorAll('.notification-item');
-                for (var i = 0; i < items.length; i++) {
-                    items[i].addEventListener('click', function() {
-                        var id = this.dataset.id;
-                        supabaseClient.from('admin_notifications').update({ is_read: true }).eq('id', id);
-                        this.classList.remove('unread');
-                        updatePendingBadge();
+                
+                const unreadCount = data.filter(n => !n.is_read).length;
+                const badge = document.getElementById('pending-badge');
+                if (badge && unreadCount > 0) {
+                    badge.style.display = 'inline-block';
+                    badge.textContent = unreadCount;
+                } else if (badge) {
+                    badge.style.display = 'none';
+                }
+                
+                container.innerHTML = data.map(notif => `
+                    <div class="notification-item ${!notif.is_read ? 'unread' : ''}" data-id="${notif.id}">
+                        <div class="notification-title">${escapeHtml(notif.title || 'Notification')}</div>
+                        <div class="notification-message">${escapeHtml(notif.message || '')}</div>
+                        <div class="notification-date">${formatDate(notif.created_at)}</div>
+                    </div>
+                `).join('');
+                
+                document.querySelectorAll('.notification-item').forEach(item => {
+                    item.addEventListener('click', async () => {
+                        const id = item.dataset.id;
+                        await supabase.from('admin_notifications').update({ is_read: true }).eq('id', id);
+                        item.classList.remove('unread');
+                        loadNotifications();
                     });
-                }
-
-                updatePendingBadge();
-            }
-
-            document.getElementById('mark-all-read')?.addEventListener('click', async function() {
-                await supabaseClient.from('admin_notifications').update({ is_read: true }).eq('is_read', false);
-                loadNotifications();
-                showToast('Toutes les notifications ont été marquées comme lues');
-            });
-
-            // ✅ CORRECTION : Requêtes sans jointure directe
-            async function loadActiveComments() {
-                // Récupérer d'abord les commentaires
-                const { data: comments, error } = await supabaseClient
-                    .from('article_comments')
-                    .select('*')
-                    .eq('is_hidden', false)
-                    .order('created_at', { ascending: false });
-
-                const container = document.getElementById('active-tab');
-                if (error || !comments || comments.length === 0) {
-                    container.innerHTML = '<div class="empty-state">Aucun commentaire actif</div>';
-                    return;
-                }
-
-                // Récupérer les titres des articles séparément
-                var articleIds = [];
-                for (var i = 0; i < comments.length; i++) {
-                    if (comments[i].article_id && articleIds.indexOf(comments[i].article_id) === -1) {
-                        articleIds.push(comments[i].article_id);
-                    }
-                }
-
-                var articlesMap = {};
-                if (articleIds.length > 0) {
-                    const { data: articles } = await supabaseClient
-                        .from('articles')
-                        .select('id, titre')
-                        .in('id', articleIds);
-                    
-                    if (articles) {
-                        for (var j = 0; j < articles.length; j++) {
-                            articlesMap[articles[j].id] = articles[j].titre;
-                        }
-                    }
-                }
-
-                container.innerHTML = comments.map(function(comment) {
-                    var articleTitle = articlesMap[comment.article_id] || 'Article inconnu';
-                    return '<div class="comment-item" data-id="' + comment.id + '">' +
-                        '<div class="comment-header">' +
-                            '<span class="comment-author">' + escapeHtml(comment.nom) + '</span>' +
-                            '<span class="comment-date">' + new Date(comment.created_at).toLocaleString('fr-FR') + '</span>' +
-                        '</div>' +
-                        '<div class="comment-article">Article: <strong>' + escapeHtml(articleTitle) + '</strong></div>' +
-                        '<div class="comment-message">' + escapeHtml(comment.message) + '</div>' +
-                        '<div class="comment-actions">' +
-                            '<button class="btn-delete" onclick="window.deleteComment(\'' + comment.id + '\')">🗑️ Supprimer</button>' +
-                            '<button class="btn-hide" onclick="window.hideComment(\'' + comment.id + '\')">🙈 Masquer</button>' +
-                        '</div>' +
-                        (comment.moderation_note ? '<div class="moderation-note">📝 Note: ' + escapeHtml(comment.moderation_note) + '</div>' : '') +
-                    '</div>';
-                }).join('');
-            }
-
-            async function loadHiddenComments() {
-                const { data: comments, error } = await supabaseClient
-                    .from('article_comments')
-                    .select('*')
-                    .eq('is_hidden', true)
-                    .order('created_at', { ascending: false });
-
-                const container = document.getElementById('hidden-tab');
-                if (error || !comments || comments.length === 0) {
-                    container.innerHTML = '<div class="empty-state">Aucun commentaire masqué</div>';
-                    return;
-                }
-
-                var articleIds = [];
-                for (var i = 0; i < comments.length; i++) {
-                    if (comments[i].article_id && articleIds.indexOf(comments[i].article_id) === -1) {
-                        articleIds.push(comments[i].article_id);
-                    }
-                }
-
-                var articlesMap = {};
-                if (articleIds.length > 0) {
-                    const { data: articles } = await supabaseClient
-                        .from('articles')
-                        .select('id, titre')
-                        .in('id', articleIds);
-                    
-                    if (articles) {
-                        for (var j = 0; j < articles.length; j++) {
-                            articlesMap[articles[j].id] = articles[j].titre;
-                        }
-                    }
-                }
-
-                container.innerHTML = comments.map(function(comment) {
-                    var articleTitle = articlesMap[comment.article_id] || 'Article inconnu';
-                    return '<div class="comment-item hidden" data-id="' + comment.id + '">' +
-                        '<div class="comment-header">' +
-                            '<span class="comment-author">' + escapeHtml(comment.nom) + '</span>' +
-                            '<span class="comment-date">' + new Date(comment.created_at).toLocaleString('fr-FR') + '</span>' +
-                        '</div>' +
-                        '<div class="comment-article">Article: <strong>' + escapeHtml(articleTitle) + '</strong></div>' +
-                        '<div class="comment-message">' + escapeHtml(comment.message) + '</div>' +
-                        '<div class="comment-actions">' +
-                            '<button class="btn-delete" onclick="window.deleteComment(\'' + comment.id + '\')">🗑️ Supprimer définitivement</button>' +
-                            '<button class="btn-unhide" onclick="window.unhideComment(\'' + comment.id + '\')">✓ Restaurer</button>' +
-                        '</div>' +
-                        (comment.moderation_note ? '<div class="moderation-note">📝 Note: ' + escapeHtml(comment.moderation_note) + '</div>' : '') +
-                    '</div>';
-                }).join('');
-            }
-
-            window.deleteComment = async function(commentId) {
-                if (!confirm('Supprimer définitivement ce commentaire ?')) return;
-                
-                const { error } = await supabaseClient
-                    .from('article_comments')
-                    .delete()
-                    .eq('id', commentId);
-                
-                if (error) {
-                    showToast('Erreur lors de la suppression', 'error');
-                } else {
-                    showToast('Commentaire supprimé', 'success');
-                    loadActiveComments();
-                    loadHiddenComments();
-                }
-            };
-
-            window.hideComment = async function(commentId) {
-                var note = prompt('Raison du masquage (injurieux, haineux, etc.) :');
-                
-                const { error } = await supabaseClient
-                    .from('article_comments')
-                    .update({ 
-                        is_hidden: true,
-                        moderation_note: note || 'Commentaire problématique',
-                        moderated_at: new Date().toISOString(),
-                        moderated_by: currentUser?.id
-                    })
-                    .eq('id', commentId);
-                
-                if (error) {
-                    showToast('Erreur', 'error');
-                } else {
-                    showToast('Commentaire masqué', 'success');
-                    loadActiveComments();
-                    loadHiddenComments();
-                }
-            };
-
-            window.unhideComment = async function(commentId) {
-                const { error } = await supabaseClient
-                    .from('article_comments')
-                    .update({ 
-                        is_hidden: false,
-                        moderation_note: null
-                    })
-                    .eq('id', commentId);
-                
-                if (error) {
-                    showToast('Erreur', 'error');
-                } else {
-                    showToast('Commentaire restauré', 'success');
-                    loadActiveComments();
-                    loadHiddenComments();
-                }
-            };
-
-            var tabs = document.querySelectorAll('.tab-btn');
-            for (var i = 0; i < tabs.length; i++) {
-                tabs[i].addEventListener('click', function() {
-                    var btns = document.querySelectorAll('.tab-btn');
-                    for (var j = 0; j < btns.length; j++) {
-                        btns[j].classList.remove('active');
-                    }
-                    this.classList.add('active');
-                    
-                    var tab = this.dataset.tab;
-                    document.getElementById('active-tab').style.display = tab === 'active' ? 'block' : 'none';
-                    document.getElementById('hidden-tab').style.display = tab === 'hidden' ? 'block' : 'none';
                 });
+            } catch (err) {
+                console.error('Notifications error:', err);
             }
-
-            function escapeHtml(text) {
-                if (!text) return '';
-                var div = document.createElement('div');
-                div.textContent = text;
-                return div.innerHTML;
-            }
-
-            function showToast(message, type) {
-                type = type || 'success';
-                var toast = document.createElement('div');
-                toast.textContent = message;
-                toast.style.cssText = 'position: fixed; bottom: 20px; right: 20px; background: ' + (type === 'error' ? '#dc3545' : type === 'info' ? '#17a2b8' : '#28a745') + '; color: white; padding: 12px 20px; border-radius: 8px; z-index: 1000; animation: slideIn 0.3s ease;';
-                document.body.appendChild(toast);
-                setTimeout(function() { toast.remove(); }, 3000);
-            }
-
-            document.getElementById('logout-btn')?.addEventListener('click', async function() {
-                if (notificationInterval) clearInterval(notificationInterval);
-                await supabaseClient.auth.signOut();
-                window.location.href = 'login.html';
-            });
-
-            checkAuth();
-        })();
-    </script>
+        }
+        
+        function showToast(message, type = 'success') {
+            const existing = document.querySelector('.mod-toast');
+            if (existing) existing.remove();
+            const toast = document.createElement('div');
+            toast.className = `mod-toast ${type}`;
+            toast.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> ${message}`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+        
+        function startRealtime() {
+            supabase.channel('comments-moderation')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'article_comments' }, () => {
+                    loadAllComments();
+                    loadStats();
+                })
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'admin_notifications' }, () => {
+                    loadNotifications();
+                })
+                .subscribe();
+        }
+        
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        window.closeModal = closeModal;
+        
+        // Initialisation
+        checkAuth();
+        loadNotifications();
+    })();
+</script>
 </body>
 </html>
