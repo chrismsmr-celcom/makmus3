@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MAKMUS MEDIA — SCRIPT PRINCIPAL COMPLET
+   MAKMUS MEDIA — SCRIPT PRINCIPAL COMPLET (CORRIGÉ)
    ========================================================================== */
 
 /* --------------------------------------
@@ -147,7 +147,6 @@ window.checkUserStatus = async function() {
             if (emailDisplay) emailDisplay.textContent = user.email;
             if (avatar) avatar.textContent = user.email.charAt(0).toUpperCase();
             
-            // Vérifier que loadUserActivity existe avant de l'appeler
             if (typeof window.loadUserActivity === 'function') {
                 window.loadUserActivity().catch(function(err) {
                     console.warn('loadUserActivity error:', err);
@@ -474,6 +473,7 @@ window.toggleBookmark = async function() {
         showToast('Erreur lors de la sauvegarde', 'error');
     }
 };
+
 /* --------------------------------------
    DECONNEXION
    -------------------------------------- */
@@ -483,28 +483,24 @@ window.handleLogout = async function() {
         await supabaseClient.auth.signOut();
         currentUser = null;
         
-        // Mettre à jour l'interface utilisateur
         const loggedOut = document.getElementById('logged-out-view');
         const loggedIn = document.getElementById('logged-in-view');
         
         if (loggedOut) loggedOut.style.display = 'block';
         if (loggedIn) loggedIn.style.display = 'none';
         
-        // Vider les favoris affichés
         const favoritesContainer = document.getElementById('user-favorites-list');
         if (favoritesContainer) {
             favoritesContainer.innerHTML = '<div class="no-favs">Connectez-vous pour voir vos favoris</div>';
         }
         
         showToast('Déconnexion réussie', 'success');
-        
-        // Optionnel : recharger la page pour rafraîchir tout l'état
-        // window.location.reload();
     } catch (error) {
         console.error("Erreur déconnexion:", error);
         showToast('Erreur lors de la déconnexion', 'error');
     }
 };
+
 /* --------------------------------------
    6. TICKER BOURSIER
    -------------------------------------- */
@@ -643,7 +639,7 @@ async function fetchMakmusNews(querySearch) {
         renderAudios(audios || []);
         renderGamesPromo();
         
-        console.log('🔍 Vérification doublons: IDs uniques:', usedIds.size, '/ Total:', articles.length);
+        console.log('Vérification doublons: IDs uniques:', usedIds.size, '/ Total:', articles.length);
         
         if (status) status.textContent = "EDITION DU JOUR";
         
@@ -827,11 +823,9 @@ function renderUI(heroArticle, gridArticles) {
         subArticles.forEach(sub => {
             if (!sub) return;
             
-            // ✅ Priorité à l'image, sinon utiliser l'image de la vidéo comme poster
             let displayImage = sub.image_url;
             let hasVideo = sub.video_url && sub.video_url !== '';
             
-            // Si c'est une vidéo mais pas d'image, on utilise un placeholder
             if (!displayImage && hasVideo) {
                 displayImage = sub.video_thumbnail || getPlaceholderImage(100, 100, 'Vidéo');
             }
@@ -899,7 +893,6 @@ function renderUI(heroArticle, gridArticles) {
             const excerpt = (art.description || "").replace(/<[^>]*>/g, '').substring(0, 120);
             const articleUrl = getArticleUrl(art);
             
-            // ✅ Gérer l'image ou la vignette vidéo
             let displayImage = art.image_url;
             const hasVideo = art.video_url && art.video_url !== '';
             
@@ -1168,7 +1161,7 @@ function nextGallerySectionById(galleryId) {
 }
 
 /* ==========================================================================
-   14. SOUS-ARTICLES EN MEDIA OBJECT (VERSION ULTRA SIMPLE)
+   14. SOUS-ARTICLES EN MEDIA OBJECT (VERSION SIMPLIFIÉE)
    ========================================================================== */
 function renderSubArticlesAsMediaObject(subArticles) {
     if (!subArticles.length) return '';
@@ -1183,9 +1176,6 @@ function renderSubArticlesAsMediaObject(subArticles) {
                 ${subArticles.map(art => {
                     const articleUrl = getArticleUrl(art);
                     const hasVideo = art.video_url && art.video_url !== '';
-                    
-                    // ✅ La miniature d'une vidéo = son image_url
-                    // Si pas d'image, rien ne s'affiche (pas de placeholder)
                     const displayImage = art.image_url || '';
                     
                     return `
@@ -1209,6 +1199,7 @@ function renderSubArticlesAsMediaObject(subArticles) {
         </div>
     `;
 }
+
 /* ==========================================================================
    15. RENDER ECONOMY, INTERNATIONAL, ENVIRONNEMENT, SPORT
    ========================================================================== */
@@ -1450,6 +1441,7 @@ function renderMoreNews(articles) {
             }).join('')}</div></div>`;
     }).join('');
 }
+
 /* ==========================================================================
    17. SYNC SIDEBAR CONTENT
    ========================================================================== */
@@ -1491,10 +1483,13 @@ function renderAudios(audios) {
         const seconds = audio.duree % 60;
         const tag = audio.type === 'resume' ? 'RÉSUMÉ' : audio.type === 'podcast' ? 'PODCAST' : 'INFO';
         
+        // ✅ Correction : utiliser getPlaceholderImage() au lieu d'une chaîne SVG brute
+        const coverImage = audio.image_url || getPlaceholderImage(80, 80, 'Audio');
+        
         return `
             <div class="audio-card" data-audio-id="${audio.id}">
                 <div class="audio-image-wrapper">
-                    <img src="${audio.image_url || 'https://picsum.photos/80/80'}" onerror="this.src='https://picsum.photos/80/80'">
+                    <img src="${coverImage}" onerror="this.src='${getPlaceholderImage(80, 80, 'Audio')}'">
                 </div>
                 <div class="audio-info">
                     <div class="audio-label-group">
@@ -1522,7 +1517,6 @@ function renderAudios(audios) {
         btn.addEventListener('click', handleAudioPlay);
     });
 }
-
 function handleAudioPlay(e) {
     e.stopPropagation();
     const btn = e.currentTarget;
@@ -1647,7 +1641,7 @@ function displayNextAd() {
     } else {
         const imageUrl = ad.media_url && ad.media_url !== '' 
             ? ad.media_url 
-            : 'https://via.placeholder.com/728x90?text=Publicite';
+            : getPlaceholderImage(728, 90, 'Publicité');
         
         adHtml = `
             <div class="ad-container ad-image">
@@ -1655,7 +1649,7 @@ function displayNextAd() {
                 <img class="ad-raw-media" 
                      src="${imageUrl}" 
                      onclick="window.open('${clickUrl}', '_blank')" 
-                     onerror="this.src='https://via.placeholder.com/728x90?text=Image+non+disponible'">
+                     onerror="this.src='${getPlaceholderImage(728, 90, 'Image non disponible')}'">
             </div>
         `;
     }
@@ -1680,9 +1674,8 @@ function displayFallbackAd() {
 }
 
 /* ==========================================================================
-   20. VIDEOS - VERSION CORRIGÉE POUR MOBILE
+   20. VIDEOS
    ========================================================================== */
-
 async function fetchVideos() {
     const { data } = await supabaseClient.from('videos_du_jour').select('*').eq('is_published', true);
     const slider = document.getElementById('video-slider');
@@ -1736,7 +1729,6 @@ async function fetchVideos() {
         </div>
     `).join('');
     
-    // Initialiser les sources vidéo après le rendu
     setTimeout(() => {
         const videos = document.querySelectorAll('.video-card video');
         data.forEach((vid, index) => {
@@ -1745,7 +1737,6 @@ async function fetchVideos() {
                 videoElement.src = vid.video_url;
                 videoElement.load();
                 
-                // Pour la première vidéo, essayer de la jouer silencieusement
                 if (index === 0) {
                     videoElement.play().catch(e => console.log('Autoplay bloqué:', e));
                 }
@@ -1754,7 +1745,6 @@ async function fetchVideos() {
     }, 100);
 }
 
-// Fonction de partage pour les vidéos
 window.shareVideoItem = function(videoId, videoTitle) {
     const videoUrl = `${window.location.origin}/video.html?id=${videoId}`;
     if (navigator.share) {
@@ -1815,18 +1805,16 @@ window.toggleVideoFullscreen = function(btn) {
     const video = videoCard.querySelector('video');
     if (!video) return;
     
-    // Pour mobile et desktop
     if (video.requestFullscreen) {
         video.requestFullscreen();
-    } else if (video.webkitRequestFullscreen) { // Safari
+    } else if (video.webkitRequestFullscreen) {
         video.webkitRequestFullscreen();
-    } else if (video.msRequestFullscreen) { // IE/Edge
+    } else if (video.msRequestFullscreen) {
         video.msRequestFullscreen();
     } else if (videoCard.requestFullscreen) {
         videoCard.requestFullscreen();
     }
     
-    // Afficher un message si le plein écran n'est pas supporté
     if (!video.requestFullscreen && !video.webkitRequestFullscreen) {
         showToast('Plein écran non supporté sur ce navigateur', 'info');
     }
@@ -1844,7 +1832,6 @@ window.playVideo = function(overlay) {
         showToast('Lecture impossible, vérifiez votre connexion', 'error');
     });
     
-    // Mettre à jour l'icône play/pause
     const playPauseBtn = videoCard.querySelector('.play-pause-btn');
     if (playPauseBtn) {
         const playIcon = playPauseBtn.querySelector('.play-icon-section');
@@ -1859,7 +1846,6 @@ window.scrollVideoSlider = function(distance) {
     if (slider) slider.scrollBy({ left: distance, behavior: 'smooth' });
 };
 
-// Initialiser les vidéos avec lazy loading et gestion mobile
 function initVideoLazyLoading() {
     const videos = document.querySelectorAll('.video-card video');
     
@@ -1867,7 +1853,6 @@ function initVideoLazyLoading() {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 const video = entry.target;
-                // Ne charger que si la vidéo n'a pas de source
                 if (!video.src || video.src === '') {
                     const source = video.querySelector('source');
                     if (source && source.src) {
@@ -1882,7 +1867,6 @@ function initVideoLazyLoading() {
     videos.forEach(video => observer.observe(video));
 }
 
-// Gestion du plein écran au niveau du document
 document.addEventListener('fullscreenchange', exitHandler);
 document.addEventListener('webkitfullscreenchange', exitHandler);
 document.addEventListener('mozfullscreenchange', exitHandler);
@@ -1934,7 +1918,7 @@ function updateSlideDisplay() {
     const mainUrl = getArticleUrl(mainArt);
     
     let html = `<article class="main-trending-card" onclick="window.location.href='${mainUrl}'">
-        <img src="${mainArt.image_url || 'https://via.placeholder.com/600x400'}" class="slide-cover" onerror="this.src='https://via.placeholder.com/600x400'">
+        <img src="${mainArt.image_url || getPlaceholderImage(600, 400, 'Image')}" class="slide-cover" onerror="this.src='${getPlaceholderImage(600, 400, 'Image')}'">
         <div class="card-content"><span class="photo-credit">${escapeHtml(mainArt.author_name || 'MakMus')}</span>
         <h2 class="main-headline">${escapeHtml(mainArt.titre)}</h2>
         <p class="summary-text">${escapeHtml((mainArt.description || "").replace(/<[^>]*>/g, '').substring(0, 100))}...</p>
@@ -1944,7 +1928,7 @@ function updateSlideDisplay() {
         html += `<div class="secondary-grid">${secondaryArticles.map(art => {
             const subUrl = getArticleUrl(art);
             return `<article class="grid-card" onclick="window.location.href='${subUrl}'">
-                <img src="${art.image_url || 'https://via.placeholder.com/300x300'}" class="grid-cover" onerror="this.src='https://via.placeholder.com/300x300'">
+                <img src="${art.image_url || getPlaceholderImage(300, 300, 'Image')}" class="grid-cover" onerror="this.src='${getPlaceholderImage(300, 300, 'Image')}'">
                 <h4 class="grid-headline">${escapeHtml(art.titre)}</h4>
                 <span class="grid-read-time">${calculerTempsLecture(art.description)}</span>
             </article>`;
@@ -2045,7 +2029,6 @@ window.shareToThreads = function() {
     showToast("Partagez le lien sur Threads", 'info');
 };
 
-// Générer un slug à partir d'un titre
 function generateSlug(title) {
     if (!title) return '';
     return title
@@ -2061,8 +2044,6 @@ function generateSlug(title) {
 /* ==========================================================================
    24. JEUX
    ========================================================================== */
-  
-// Ajouter la section jeux dans la sidebar
 function renderGamesPromo() {
     const sidebar = document.querySelector('.sidebar-column .sidebar-section');
     if (!sidebar) return;
