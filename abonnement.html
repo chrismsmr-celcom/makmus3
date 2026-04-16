@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Soutenir MAKMUS | Abonnements & Dons</title>
+    
+    <meta name="description" content="Soutenez le journalisme indépendant en RDC. Abonnez-vous à MAKMUS pour accéder à une information de qualité.">
+    <meta name="theme-color" content="#a30000">
+    
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="MAKMUS">
+    <meta property="og:title" content="Soutenir MAKMUS - Abonnements">
+    <meta property="og:description" content="Abonnez-vous à MAKMUS pour soutenir le journalisme indépendant en République Démocratique du Congo.">
+    <meta property="og:image" content="https://i.postimg.cc/x88LbhZp/2-20251224-213424-0001.png">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <style>
+        /* ========================================
+           VARIABLES & RESET
+        ========================================= */
+        :root {
+            --red: #a30000;
+            --red-dark: #7a0000;
+            --black: #121212;
+            --gray-dark: #333;
+            --gray: #555;
+            --gray-light: #888;
+            --gray-bg: #f5f5f5;
+            --border: #e6e6e6;
+            --serif: 'Lora', 'Times New Roman', Georgia, serif;
+            --sans: 'Libre Franklin', 'Helvetica Neue', Arial, sans-serif;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.12);
+            --transition: all 0.2s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--sans);
+            background: linear-gradient(135deg, #f8f8f8 0%, #f0f0f0 100%);
+            color: var(--black);
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .donation-header {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            padding: 20px;
+            text-align: center;
+        }
+
+        .donation-header img {
+            height: 50px;
+            width: auto;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 15px;
+            color: var(--gray);
+            text-decoration: none;
+            font-size: 0.8rem;
+        }
+
+        .back-link:hover {
+            color: var(--red);
+        }
+
+        /* Container principal */
+        .donation-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 60px 24px;
+        }
+
+        /* Hero section */
+        .donation-hero {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .donation-hero h1 {
+            font-family: var(--serif);
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--black);
+        }
+
+        .donation-hero p {
+            font-size: 1.1rem;
+            color: var(--gray);
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* Grille des abonnements */
+        .subscription-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+
+        .subscription-card {
+            background: white;
+            border-radius: 24px;
+            padding: 40px 32px;
+            text-align: center;
+            transition: var(--transition);
+            border: 1px solid var(--border);
+            position: relative;
+        }
+
+        .subscription-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--red);
+        }
+
+        .subscription-card.popular {
+            border: 2px solid var(--red);
+            transform: scale(1.02);
+        }
+
+        .subscription-card.popular:hover {
+            transform: translateY(-8px) scale(1.02);
+        }
+
+        .popular-badge {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--red);
+            color: white;
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .subscription-icon {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .subscription-icon svg {
+            width: 48px;
+            height: 48px;
+            stroke: var(--red);
+            stroke-width: 1.5;
+            fill: none;
+        }
+
+        .subscription-card h3 {
+            font-family: var(--serif);
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .subscription-price {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--red);
+            margin: 20px 0 8px;
+        }
+
+        .subscription-price small {
+            font-size: 0.8rem;
+            font-weight: 400;
+            color: var(--gray-light);
+        }
+
+        .subscription-period {
+            font-size: 0.85rem;
+            color: var(--gray);
+            margin-bottom: 20px;
+        }
+
+        .subscription-features {
+            list-style: none;
+            margin: 25px 0;
+            text-align: left;
+        }
+
+        .subscription-features li {
+            padding: 8px 0;
+            font-size: 0.85rem;
+            color: var(--gray);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .subscription-features li svg {
+            width: 16px;
+            height: 16px;
+            stroke: var(--red);
+            stroke-width: 2;
+            flex-shrink: 0;
+        }
+
+        .btn-subscribe {
+            background: var(--red);
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            font-size: 1rem;
+            font-weight: 700;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: var(--transition);
+            width: 100%;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-subscribe:hover {
+            background: var(--red-dark);
+            transform: scale(1.02);
+        }
+
+        /* Section don libre */
+        .donation-section {
+            background: white;
+            border-radius: 24px;
+            padding: 48px;
+            margin-top: 40px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .donation-section h2 {
+            font-family: var(--serif);
+            font-size: 1.8rem;
+            margin-bottom: 16px;
+        }
+
+        .donation-section p {
+            color: var(--gray);
+            margin-bottom: 30px;
+        }
+
+        .donation-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .donation-buttons a {
+            background: var(--gray-bg);
+            color: var(--black);
+            border: 1px solid var(--border);
+            padding: 12px 28px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+
+        .donation-buttons a:hover {
+            background: var(--red);
+            color: white;
+            border-color: var(--red);
+        }
+
+        /* Impact section */
+        .impact-section {
+            margin: 60px 0;
+            padding: 40px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 24px;
+            color: white;
+            text-align: center;
+        }
+
+        .impact-section h2 {
+            font-family: var(--serif);
+            font-size: 1.8rem;
+            margin-bottom: 30px;
+        }
+
+        .impact-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+        }
+
+        .impact-item {
+            text-align: center;
+        }
+
+        .impact-number {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--red);
+        }
+
+        .impact-label {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        /* Footer */
+        .donation-footer {
+            text-align: center;
+            padding: 40px;
+            border-top: 1px solid var(--border);
+            margin-top: 40px;
+            font-size: 0.8rem;
+            color: var(--gray-light);
+        }
+
+        .secure-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+            font-size: 0.8rem;
+            color: var(--gray-light);
+        }
+
+        .secure-badge svg {
+            width: 16px;
+            height: 16px;
+            stroke: var(--gray-light);
+            stroke-width: 2;
+        }
+
+        @media (max-width: 768px) {
+            .donation-container {
+                padding: 40px 20px;
+            }
+            
+            .donation-hero h1 {
+                font-size: 1.8rem;
+            }
+            
+            .subscription-grid {
+                grid-template-columns: 1fr;
+                gap: 25px;
+            }
+            
+            .subscription-card.popular {
+                transform: scale(1);
+            }
+            
+            .subscription-card.popular:hover {
+                transform: translateY(-8px);
+            }
+            
+            .donation-section {
+                padding: 32px 20px;
+            }
+            
+            .donation-buttons {
+                gap: 12px;
+            }
+            
+            .donation-buttons a {
+                padding: 10px 20px;
+                font-size: 0.9rem;
+            }
+            
+            .subscription-icon svg {
+                width: 40px;
+                height: 40px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .donation-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .donation-buttons a {
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header class="donation-header">
+    <img src="https://logphtrdkpbfgtejtime.supabase.co/storage/v1/object/public/Photo,%20Image/Untitled%20folder/MAK_MUS__1_-removebg-preview.png" alt="MAKMUS">
+    <div>
+        <a href="index.html" class="back-link">← Retour à l'accueil</a>
+    </div>
+</header>
+
+<main class="donation-container">
+    <div class="donation-hero">
+        <h1>Soutenez le journalisme indépendant</h1>
+        <p>Votre abonnement permet à MAKMUS de continuer à produire une information de qualité, libre et accessible à tous en République Démocratique du Congo.</p>
+    </div>
+
+    <!-- Grille des abonnements -->
+    <div class="subscription-grid">
+        <!-- Offre Mensuelle -->
+        <div class="subscription-card">
+            <div class="subscription-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M4 4h16v16H4zM8 8h8M8 12h8M8 16h4"/>
+                </svg>
+            </div>
+            <h3>Mensuel</h3>
+            <div class="subscription-price">5 $US</div>
+            <div class="subscription-period">/ mois</div>
+            <ul class="subscription-features">
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Accès illimité à tous les articles</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Newsletter quotidienne</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Soutien à la rédaction</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Résiliable à tout moment</li>
+            </ul>
+            <a href="https://buy.stripe.com/test_dRm28rcgsdtucQGgWebbG02" target="_blank" class="btn-subscribe">
+                S'abonner
+            </a>
+        </div>
+
+        <!-- Offre Semestrielle (Populaire) -->
+        <div class="subscription-card popular">
+            <div class="popular-badge">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                </svg>
+                POPULAIRE
+            </div>
+            <div class="subscription-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="12" cy="12" r="10"/>
+                    <circle cx="12" cy="12" r="4"/>
+                    <line x1="12" y1="2" x2="12" y2="4"/>
+                    <line x1="12" y1="20" x2="12" y2="22"/>
+                    <line x1="2" y1="12" x2="4" y2="12"/>
+                    <line x1="20" y1="12" x2="22" y2="12"/>
+                </svg>
+            </div>
+            <h3>Semestriel</h3>
+            <div class="subscription-price">25 $US</div>
+            <div class="subscription-period">/ 6 mois</div>
+            <ul class="subscription-features">
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>2 mois offerts (vs mensuel)</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Accès illimité à tous les articles</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Newsletter quotidienne</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Accès aux archives complètes</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Soutien prioritaire</li>
+            </ul>
+            <a href="https://buy.stripe.com/test_4gM8wPbco6126si49sbbG03" target="_blank" class="btn-subscribe">
+                S'abonner
+            </a>
+        </div>
+
+        <!-- Offre Annuelle -->
+        <div class="subscription-card">
+            <div class="subscription-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>
+            </div>
+            <h3>Annuel</h3>
+            <div class="subscription-price">50 $US</div>
+            <div class="subscription-period">/ 1 an</div>
+            <ul class="subscription-features">
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Économie de 10$ (2 mois offerts)</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Accès illimité à tous les articles</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Newsletter quotidienne</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Accès aux archives complètes</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Invitation aux événements MAKMUS</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Badge "Mécène" sur votre profil</li>
+            </ul>
+            <a href="https://buy.stripe.com/test_8x228r80cexy8Aq49sbbG04" target="_blank" class="btn-subscribe">
+                S'abonner
+            </a>
+        </div>
+    </div>
+
+    <!-- Section don libre -->
+    <div class="donation-section">
+        <h2>Faire un don ponctuel</h2>
+        <p>Vous préférez faire un don unique plutôt qu'un abonnement ? Chaque contribution compte.</p>
+        <div class="donation-buttons">
+            <a href="https://buy.stripe.com/test_dRm28rcgsdtucQGgWebbG02">5 $US</a>
+            <a href="https://buy.stripe.com/test_4gM8wPbco6126si49sbbG03">10 $US</a>
+            <a href="https://buy.stripe.com/test_8x228r80cexy8Aq49sbbG04">20 $US</a>
+            <a href="https://buy.stripe.com/test_8x228r80cexy8Aq49sbbG04">50 $US</a>
+        </div>
+        <div class="secure-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            Paiement 100% sécurisé par Stripe
+        </div>
+    </div>
+
+    <!-- Section impact -->
+    <div class="impact-section">
+        <h2>L'impact de votre soutien</h2>
+        <div class="impact-grid">
+            <div class="impact-item">
+                <div class="impact-number">5 $US</div>
+                <div class="impact-label">= 1 reportage local</div>
+            </div>
+            <div class="impact-item">
+                <div class="impact-number">25 $US</div>
+                <div class="impact-label">= 1 enquête terrain</div>
+            </div>
+            <div class="impact-item">
+                <div class="impact-number">50 $US</div>
+                <div class="impact-label">= 1 journaliste formé</div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer class="donation-footer">
+    <p>MAKMUS Media Group — Journalisme indépendant en RDC</p>
+    <p style="margin-top: 8px;">© 2026 Tous droits réservés</p>
+    <div class="secure-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        Paiement sécurisé - Don déductible des impôts (selon législation locale)
+    </div>
+</footer>
+
+<script>
+    // Analytics pour suivre les clics sur les boutons (optionnel)
+    document.querySelectorAll('.btn-subscribe, .donation-buttons a').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const text = this.textContent.trim();
+            console.log(`Clic sur: ${text}`);
+        });
+    });
+</script>
+</body>
+</html>
