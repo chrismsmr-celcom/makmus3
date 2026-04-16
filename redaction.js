@@ -187,7 +187,18 @@ document.addEventListener('click', function(e) {
 /* --------------------------------------
    AUTHENTIFICATION - FONCTIONS
    -------------------------------------- */
-
+// Fonction pour afficher/masquer le mot de passe
+function togglePasswordVisibility() {
+    var passwordInput = document.getElementById('auth-password');
+    var toggleBtn = event.currentTarget;
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleBtn.textContent = '🙈';
+    } else {
+        passwordInput.type = 'password';
+        toggleBtn.textContent = '👁️';
+    }
+}
 // 1. D'abord définir loadUserActivity
 window.loadUserActivity = async function() {
     try {

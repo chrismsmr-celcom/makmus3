@@ -2125,7 +2125,29 @@ body.dark-mode .comment-replies {
 /* ========================================
    SIDE PANEL COMPTE (AUTHENTIFICATION)
    ======================================== */
+/* Style pour le wrapper du mot de passe */
+.password-wrapper {
+    position: relative;
+    width: 100%;
+}
 
+.toggle-password-btn {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #888;
+    font-size: 1.1rem;
+    padding: 5px;
+    transition: color 0.2s;
+}
+
+.toggle-password-btn:hover {
+    color: var(--red, #a30000);
+}
 /* Titres */
 .premium-title {
     font-family: var(--serif, 'Lora', Georgia, serif);

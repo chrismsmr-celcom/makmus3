@@ -807,7 +807,10 @@ function getArticleUrl(article) {
     }
     return `redaction.html?id=${article.id}`;
 }
-
+function getPlaceholderImage(width, height, text) {
+    text = text || 'Image';
+    return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${width}' height='${height}' viewBox='0 0 ${width} ${height}'%3E%3Crect width='${width}' height='${height}' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23999' font-size='${Math.min(width, height) * 0.1}'%3E${text}%3C/text%3E%3C/svg%3E`;
+}
 /* ==========================================================================
    10. RENDER UI
    ========================================================================== */
@@ -828,7 +831,7 @@ function renderUI(heroArticle, gridArticles) {
             if (hasImage) {
                 subHtml += `
                     <div class="sub-article-card" onclick="window.location.href='${articleUrl}'">
-                        <img src="${sub.image_url}" class="sub-article-image" onerror="this.src='https://via.placeholder.com/100x100'">
+                        <img src="${sub.image_url}" class="sub-article-image" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 100 100\'%3E%3Crect width=\'100\' height=\'100\' fill=\'%23f0f0f0\'/%3E%3Ctext x=\'50\' y=\'50\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%23999\' font-size=\'10\'%3EImage%3C/text%3E%3C/svg%3E'">
                         <div class="sub-article-content">
                             <h4 class="sub-article-title">${escapeHtml(sub.titre)}</h4>
                             <span class="sub-article-read-time">${readTime}</span>
@@ -1157,7 +1160,7 @@ function renderSubArticlesAsMediaObject(subArticles) {
                     return `
                     <div class="media-object-card" onclick="window.location.href='${articleUrl}'">
                         <div class="media-object-thumbnail">
-                            <img src="${art.image_url || 'https://via.placeholder.com/100x100'}" alt="${escapeHtml(art.titre)}" onerror="this.src='https://via.placeholder.com/100x100'">
+                            <img src="${art.image_url || 'https://via.placeholder.com/100x100'}" alt="${escapeHtml(art.titre)}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 100 100\'%3E%3Crect width=\'100\' height=\'100\' fill=\'%23f0f0f0\'/%3E%3Ctext x=\'50\' y=\'50\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%23999\' font-size=\'10\'%3EImage%3C/text%3E%3C/svg%3E'">
                         </div>
                         <div class="media-object-content">
                             <h3 class="media-object-title">${escapeHtml(art.titre)}</h3>

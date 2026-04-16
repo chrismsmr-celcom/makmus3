@@ -347,17 +347,22 @@
             <div id="logged-out-view">
                 <h2 class="premium-title">Bonjour.</h2>
                 <p class="premium-subtitle">Connectez-vous pour sauvegarder des articles.</p>
-               <!-- Version ultra-simplifiée -->
-<div class="auth-form">
-    <input type="email" id="auth-email" placeholder="Email" class="premium-input" autocomplete="email">
-    <input type="password" id="auth-password" placeholder="Mot de passe" class="premium-input" autocomplete="current-password">
-    <button class="btn-black-full" id="auth-submit-btn">CONTINUER</button>
-    <p class="auth-divider"><span>OU</span></p>
-    <button class="btn-outline-full" id="auth-toggle-btn">CREER UN COMPTE</button>
-</div>
-
-<!-- Zone d'info pour le mode (connexion/inscription) -->
-<p id="auth-mode-text" style="text-align: center; margin-top: 15px; font-size: 0.7rem; color: #888;"></p>            </div>
+                
+                <!-- Formulaire avec balise <form> pour éviter l'erreur -->
+                <form id="auth-form" class="auth-form" onsubmit="event.preventDefault(); window.handleSimplifiedAuth();">
+                    <input type="email" id="auth-email" name="email" placeholder="Email" class="premium-input" autocomplete="email" required>
+                    <div class="password-wrapper" style="position: relative;">
+                        <input type="password" id="auth-password" name="password" placeholder="Mot de passe" class="premium-input" autocomplete="current-password" required style="padding-right: 45px;">
+                        <button type="button" class="toggle-password-btn" onclick="togglePasswordVisibility()" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #888;">👁️</button>
+                    </div>
+                    <button type="submit" class="btn-black-full" id="auth-submit-btn">CONTINUER</button>
+                    <p class="auth-divider"><span>OU</span></p>
+                    <button type="button" class="btn-outline-full" id="auth-toggle-btn">CREER UN COMPTE</button>
+                </form>
+                
+                <!-- Zone d'info pour le mode (connexion/inscription) -->
+                <p id="auth-mode-text" style="text-align: center; margin-top: 15px; font-size: 0.7rem; color: #888;"></p>
+            </div>
             <div id="logged-in-view" style="display: none;">
                 <div class="user-profile-header">
                     <div class="user-avatar">M</div>
@@ -370,18 +375,17 @@
                     <div class="nav-group-label">VOTRE ACTIVITE</div>
                     <a href="javascript:void(0)" class="nav-item" onclick="window.navigateToAccountOption('favoris')">Articles favoris</a>
                     <a href="javascript:void(0)" class="nav-item" onclick="window.navigateToAccountOption('commentaires')">Vos commentaires</a>
-                    <!-- Dans ton side-panel-body -->
+                    
                     <div class="favorites-recent-wrapper">
-                    <div class="nav-group-label">VOS FAVORIS RÉCENTS</div>
-                    <div id="user-favorites-list"></div>
+                        <div class="nav-group-label">VOS FAVORIS RÉCENTS</div>
+                        <div id="user-favorites-list"></div>
                     </div>                    
-                    <button class="btn-logout-link" onclick="window.handleLogout()">Se deconnecter</button>
+                    <button class="btn-logout-link" onclick="window.handleLogout()">Se déconnecter</button>
                 </nav>
             </div>
         </div>
     </div>
 </div>
-
 <!-- LECTEUR AUDIO -->
 <div id="audio-player-container" class="audio-player-container" style="display: none;">
     <div class="audio-player">
