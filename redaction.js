@@ -1,5 +1,5 @@
 /* ==========================================================================
-   PAGE ARTICLE — MAKMUS (VERSION CORRIGÉE - SLUG FIX + LIKES/FAVORIS + SIDE PANELS)
+   PAGE ARTICLE — MAKMUS (VERSION CORRIGÉE - SLUG FIX + LIKES/FAVORIS + SIDE PANELS + VUES)
    ========================================================================== */
 
 const SUPABASE_URL = 'https://logphtrdkpbfgtejtime.supabase.co';
@@ -187,19 +187,6 @@ document.addEventListener('click', function(e) {
 /* --------------------------------------
    AUTHENTIFICATION - FONCTIONS
    -------------------------------------- */
-// Fonction pour afficher/masquer le mot de passe
-function togglePasswordVisibility() {
-    var passwordInput = document.getElementById('auth-password');
-    var toggleBtn = event.currentTarget;
-    if (passwordInput.type === 'password') {
-        passwordInput.type = 'text';
-        toggleBtn.textContent = '🙈';
-    } else {
-        passwordInput.type = 'password';
-        toggleBtn.textContent = '👁️';
-    }
-}
-// 1. D'abord définir loadUserActivity
 window.loadUserActivity = async function() {
     try {
         var { data: { user } } = await supabaseClient.auth.getUser();
@@ -232,7 +219,6 @@ window.loadUserActivity = async function() {
     }
 };
 
-// 2. Ensuite checkUserStatus
 window.checkUserStatus = async function() {
     try {
         var { data: { user } } = await supabaseClient.auth.getUser();
@@ -248,7 +234,6 @@ window.checkUserStatus = async function() {
             if (emailDisplay) emailDisplay.textContent = user.email;
             if (avatar) avatar.textContent = user.email.charAt(0).toUpperCase();
             
-            // Vérifier que loadUserActivity existe avant de l'appeler
             if (typeof window.loadUserActivity === 'function') {
                 window.loadUserActivity().catch(function(err) {
                     console.warn('loadUserActivity error:', err);
@@ -269,7 +254,7 @@ window.checkUserStatus = async function() {
 };
 
 /* --------------------------------------
-   AUTHENTIFICATION SIMPLIFIÉE (sans vérification email)
+   AUTHENTIFICATION SIMPLIFIÉE
    -------------------------------------- */
 
 let isLoginMode = true;
@@ -575,6 +560,7 @@ window.toggleBookmark = async function() {
         showToast('Erreur lors de la sauvegarde', 'error');
     }
 };
+
 /* --------------------------------------
    DECONNEXION
    -------------------------------------- */
@@ -584,30 +570,26 @@ window.handleLogout = async function() {
         await supabaseClient.auth.signOut();
         currentUser = null;
         
-        // Mettre à jour l'interface utilisateur
         const loggedOut = document.getElementById('logged-out-view');
         const loggedIn = document.getElementById('logged-in-view');
         
         if (loggedOut) loggedOut.style.display = 'block';
         if (loggedIn) loggedIn.style.display = 'none';
         
-        // Vider les favoris affichés
         const favoritesContainer = document.getElementById('user-favorites-list');
         if (favoritesContainer) {
             favoritesContainer.innerHTML = '<div class="no-favs">Connectez-vous pour voir vos favoris</div>';
         }
         
         showToast('Déconnexion réussie', 'success');
-        
-        // Optionnel : recharger la page pour rafraîchir tout l'état
-        // window.location.reload();
     } catch (error) {
         console.error("Erreur déconnexion:", error);
         showToast('Erreur lors de la déconnexion', 'error');
     }
 };
+
 /* --------------------------------------
-   COMMENTAIRES - SIDE PANEL (VERSION UNIQUE AVEC LIKES)
+   COMMENTAIRES - SIDE PANEL
    -------------------------------------- */
 window.openComments = function() {
     var panel = document.getElementById('commentPanel');
@@ -632,7 +614,6 @@ window.closeCommentsPanel = function() {
 
 window.closeComments = window.closeCommentsPanel;
 
-// Vérifier si l'utilisateur a liké un commentaire
 async function fetchCommentLikeStatus(commentId) {
     if (!currentUser) return false;
     
@@ -651,7 +632,6 @@ async function fetchCommentLikeStatus(commentId) {
     }
 }
 
-// Fonction pour afficher les réponses
 function renderReplies(replies) {
     if (!replies || replies.length === 0) return '';
     
@@ -685,7 +665,6 @@ function renderReplies(replies) {
     }).join('');
 }
 
-// Version améliorée de fetchComments avec likes et réponses
 async function fetchComments() {
     if (!currentArticle) return;
     
@@ -782,7 +761,6 @@ async function fetchComments() {
     }
 }
 
-// Basculer le like d'un commentaire
 window.toggleCommentLike = async function(commentId, buttonElement) {
     if (!currentUser) {
         showToast('Connectez-vous pour aimer un commentaire', 'info');
@@ -834,7 +812,6 @@ window.toggleCommentLike = async function(commentId, buttonElement) {
     }
 };
 
-// Afficher le formulaire de réponse
 window.showReplyForm = function(commentId) {
     var form = document.getElementById(`reply-form-${commentId}`);
     if (form) {
@@ -846,7 +823,6 @@ window.showReplyForm = function(commentId) {
     }
 };
 
-// Poster une réponse (version unique)
 window.postReply = async function(parentId) {
     var textInput = document.getElementById(`reply-text-${parentId}`);
     var msg = textInput?.value.trim();
@@ -891,7 +867,6 @@ window.postReply = async function(parentId) {
     }
 };
 
-// Poster un commentaire principal
 window.postComment = async function() {
     var msgInput = document.getElementById('comm-text');
     var msg = msgInput?.value.trim();
@@ -1063,7 +1038,6 @@ function updateOpenGraphTags(article) {
     console.log('✅ Meta tags mis à jour pour:', article.titre);
 }
 
-// Générer un slug à partir d'un titre
 function generateSlug(title) {
     if (!title) return '';
     return title
@@ -1076,7 +1050,6 @@ function generateSlug(title) {
         .replace(/^-|-$/g, '');
 }
 
-// ✅ AJOUTER ICI
 function getArticleUrl(article) {
     if (!article) return '#';
     if (article.slug && article.slug !== '') {
@@ -1084,6 +1057,7 @@ function getArticleUrl(article) {
     }
     return `redaction.html?id=${article.id}`;
 }
+
 /* --------------------------------------
    TTS & LECTEUR AUDIO
    -------------------------------------- */
@@ -1791,6 +1765,84 @@ window.closeAuthorBio = function() {
 };
 
 /* --------------------------------------
+   INCRÉMENTATION DES VUES (VERSION DURABLE)
+   -------------------------------------- */
+async function incrementArticleViews(articleId) {
+    if (!articleId) {
+        console.warn('❌ Aucun ID article fourni');
+        return;
+    }
+    
+    // Protection contre les doublons (session)
+    const sessionKey = `viewed_${articleId}`;
+    if (sessionStorage.getItem(sessionKey)) {
+        console.log('📊 Vue déjà comptée dans cette session');
+        return;
+    }
+    
+    console.log('📊 Incrémentation des vues pour article:', articleId);
+    
+    try {
+        // Essayer d'abord la méthode RPC (si la fonction SQL existe)
+        const { data, error } = await supabaseClient.rpc('increment_article_views', {
+            article_id_param: articleId
+        });
+        
+        if (error) {
+            console.warn('⚠️ RPC échoué, fallback vers méthode manuelle:', error.message);
+            await manualIncrementViews(articleId);
+        } else {
+            console.log(`✅ Vue comptée (RPC): ${data}`);
+            sessionStorage.setItem(sessionKey, 'true');
+            
+            const viewsSpan = document.getElementById('nb-views');
+            if (viewsSpan) viewsSpan.textContent = data;
+            if (currentArticle) currentArticle.views_count = data;
+        }
+    } catch (error) {
+        console.error('❌ Erreur RPC:', error);
+        await manualIncrementViews(articleId);
+    }
+}
+
+// Méthode manuelle de secours (fonctionne toujours)
+async function manualIncrementViews(articleId) {
+    try {
+        const { data: article, error: fetchError } = await supabaseClient
+            .from('articles')
+            .select('views_count')
+            .eq('id', articleId)
+            .single();
+        
+        if (fetchError) {
+            console.error('❌ Erreur récupération vues:', fetchError);
+            return;
+        }
+        
+        const currentViews = article?.views_count || 0;
+        const newCount = currentViews + 1;
+        
+        const { error: updateError } = await supabaseClient
+            .from('articles')
+            .update({ views_count: newCount })
+            .eq('id', articleId);
+        
+        if (updateError) {
+            console.error('❌ Erreur mise à jour:', updateError);
+        } else {
+            console.log(`✅ Vue comptée (manuel): ${currentViews} → ${newCount}`);
+            sessionStorage.setItem(`viewed_${articleId}`, 'true');
+            
+            const viewsSpan = document.getElementById('nb-views');
+            if (viewsSpan) viewsSpan.textContent = newCount;
+            if (currentArticle) currentArticle.views_count = newCount;
+        }
+    } catch (err) {
+        console.error('❌ Erreur manuelle:', err);
+    }
+}
+
+/* --------------------------------------
    LOAD ARTICLE
    -------------------------------------- */
 async function loadArticle() {
@@ -1798,52 +1850,84 @@ async function loadArticle() {
     console.log('articleSlug:', articleSlug);
     console.log('articleId:', articleId);
     
-    let query;
-    
-    if (articleSlug) {
-        console.log('RECHERCHE PAR SLUG:', articleSlug);
-        query = supabaseClient
-            .from('articles')
-            .select('*')
-            .eq('slug', articleSlug)
-            .single();
-    } else if (articleId) {
-        console.log('RECHERCHE PAR ID:', articleId);
-        query = supabaseClient
-            .from('articles')
-            .select('*')
-            .eq('id', articleId)
-            .single();
-    } else {
-        document.getElementById('full-article').innerHTML = "<p class='error-msg'>Article non trouvé.</p>";
-        return;
+    const loadingContainer = document.getElementById('full-article');
+    if (loadingContainer) {
+        loadingContainer.innerHTML = '<div class="loading-spinner">Chargement en cours...</div>';
     }
     
-    const { data: art, error } = await query;
-    
-    if (error || !art) {
-        console.error('ERREUR:', error);
-        document.getElementById('full-article').innerHTML = "<p class='error-msg'>Article introuvable.</p>";
-        return;
+    try {
+        let query;
+        
+        if (articleSlug) {
+            console.log('RECHERCHE PAR SLUG:', articleSlug);
+            query = supabaseClient
+                .from('articles')
+                .select('*')
+                .eq('slug', articleSlug);
+        } else if (articleId) {
+            console.log('RECHERCHE PAR ID:', articleId);
+            query = supabaseClient
+                .from('articles')
+                .select('*')
+                .eq('id', articleId);
+        } else {
+            document.getElementById('full-article').innerHTML = "<p class='error-msg'>Article non trouvé.</p>";
+            return;
+        }
+        
+        const { data, error } = await query;
+        
+        if (error) {
+            console.error('ERREUR SQL:', error);
+            document.getElementById('full-article').innerHTML = "<p class='error-msg'>Erreur lors du chargement de l'article.</p>";
+            return;
+        }
+        
+        if (!data || data.length === 0) {
+            console.error('AUCUN ARTICLE TROUVÉ');
+            document.getElementById('full-article').innerHTML = "<p class='error-msg'>Article introuvable.</p>";
+            return;
+        }
+        
+        // Gérer les doublons
+        let art = data[0];
+        if (data.length > 1) {
+            console.warn(`⚠️ ${data.length} articles trouvés. Prise du plus récent.`);
+            art = data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+        }
+        
+        console.log('ARTICLE TROUVÉ:', art.titre);
+        console.log('ID:', art.id);
+        console.log('Vues actuelles:', art.views_count || 0);
+        
+        currentArticle = art;
+        document.title = art.titre + ' | MAKMUS';
+        
+        // Mise à jour de l'URL
+        if (art.slug && !window.location.search.includes('slug=')) {
+            const newUrl = `${window.location.origin}/redaction.html?slug=${encodeURIComponent(art.slug)}`;
+            console.log('🔄 Mise à jour URL:', newUrl);
+            window.history.replaceState({}, '', newUrl);
+        }
+        
+        updateOpenGraphTags(art);
+        renderArticle(art);
+        
+        // ✅ Incrémenter les vues APRÈS l'affichage
+        await incrementArticleViews(art.id);
+        
+        restoreReadingPosition();
+        window.addEventListener('beforeunload', saveReadingPosition);
+        
+    } catch (err) {
+        console.error('ERREUR GLOBALE:', err);
+        document.getElementById('full-article').innerHTML = "<p class='error-msg'>Une erreur est survenue. Veuillez réessayer.</p>";
     }
-    
-    console.log('ARTICLE TROUVÉ:', art.titre);
-    
-    currentArticle = art;
-    document.title = art.titre + ' | MAKMUS';
-    
-    if (art.slug && !window.location.search.includes('slug=') && !window.location.pathname.includes(art.slug)) {
-        const newUrl = `${window.location.origin}/redaction.html?slug=${art.slug}`;
-        console.log('🔄 Mise à jour URL avec slug:', newUrl);
-        window.history.replaceState({}, '', newUrl);
-    }
-    
-    updateOpenGraphTags(art);
-    renderArticle(art);
-    restoreReadingPosition();
-    window.addEventListener('beforeunload', saveReadingPosition);
 }
 
+/* --------------------------------------
+   FILL INLINE GRID
+   -------------------------------------- */
 async function fillInlineGrid(category, currentId) {
     var { data: related } = await supabaseClient
         .from('articles')
@@ -1856,7 +1940,6 @@ async function fillInlineGrid(category, currentId) {
             var item = related[i];
             var titleEl = document.getElementById('inline-title-' + (i+1));
             if (titleEl) {
-                // ✅ getArticleUrl est maintenant définie
                 titleEl.innerHTML = '<a href="' + getArticleUrl(item) + '" style="text-decoration:none; color:#121212; font-weight:bold; font-size:0.9rem;">' + escapeHtml(item.titre) + '</a>';
             }
         }
@@ -1889,7 +1972,6 @@ async function fetchRelatedArticles(tags, category) {
     }
     if (box) box.style.display = 'block';
     
-    // ✅ getArticleUrl est maintenant définie
     grid.innerHTML = related.map(function(art) {
         return '<a href="' + getArticleUrl(art) + '" class="rec-card">' +
             '<div class="rec-image-container">' +
@@ -1901,25 +1983,7 @@ async function fetchRelatedArticles(tags, category) {
         '</a>';
     }).join('');
 }
-// À ajouter dans renderArticle ou loadArticle
-async function incrementArticleViews(articleId) {
-    if (!articleId) return;
-    
-    // Vérifier si l'utilisateur a déjà vu cet article (session)
-    var viewedKey = 'article_viewed_' + articleId;
-    if (sessionStorage.getItem(viewedKey)) return;
-    
-    try {
-        await supabaseClient
-            .from('articles')
-            .update({ views: supabaseClient.rpc('increment', { row_id: articleId }) })
-            .eq('id', articleId);
-        
-        sessionStorage.setItem(viewedKey, 'true');
-    } catch (error) {
-        console.error('Erreur incrémentation vues:', error);
-    }
-}
+
 /* --------------------------------------
    INITIALISATION
    -------------------------------------- */

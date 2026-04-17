@@ -616,7 +616,37 @@ h4 { font-size: 1.2rem; }
     align-items: center;
     gap: 12px;
 }
+.sub-article-image-wrapper {
+    position: relative;
+    overflow: hidden;
+    background: #1a1a2e;
+}
 
+.video-as-image {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background: #1a1a2e;
+}
+
+.video-as-image::after {
+    content: "▶";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 40px;
+    background: rgba(163, 0, 0, 0.8);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 18px;
+    pointer-events: none;
+}
 .hero-video-caption .subtitle-icon {
     width: 18px;
     height: 18px;

@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MAKMUS MEDIA — SCRIPT PRINCIPAL COMPLET
+   MAKMUS MEDIA — SCRIPT PRINCIPAL COMPLET (CORRIGÉ)
    ========================================================================== */
 
 /* --------------------------------------
@@ -147,7 +147,6 @@ window.checkUserStatus = async function() {
             if (emailDisplay) emailDisplay.textContent = user.email;
             if (avatar) avatar.textContent = user.email.charAt(0).toUpperCase();
             
-            // Vérifier que loadUserActivity existe avant de l'appeler
             if (typeof window.loadUserActivity === 'function') {
                 window.loadUserActivity().catch(function(err) {
                     console.warn('loadUserActivity error:', err);
@@ -474,6 +473,7 @@ window.toggleBookmark = async function() {
         showToast('Erreur lors de la sauvegarde', 'error');
     }
 };
+
 /* --------------------------------------
    DECONNEXION
    -------------------------------------- */
@@ -483,28 +483,24 @@ window.handleLogout = async function() {
         await supabaseClient.auth.signOut();
         currentUser = null;
         
-        // Mettre à jour l'interface utilisateur
         const loggedOut = document.getElementById('logged-out-view');
         const loggedIn = document.getElementById('logged-in-view');
         
         if (loggedOut) loggedOut.style.display = 'block';
         if (loggedIn) loggedIn.style.display = 'none';
         
-        // Vider les favoris affichés
         const favoritesContainer = document.getElementById('user-favorites-list');
         if (favoritesContainer) {
             favoritesContainer.innerHTML = '<div class="no-favs">Connectez-vous pour voir vos favoris</div>';
         }
         
         showToast('Déconnexion réussie', 'success');
-        
-        // Optionnel : recharger la page pour rafraîchir tout l'état
-        // window.location.reload();
     } catch (error) {
         console.error("Erreur déconnexion:", error);
         showToast('Erreur lors de la déconnexion', 'error');
     }
 };
+
 /* --------------------------------------
    6. TICKER BOURSIER
    -------------------------------------- */
@@ -643,7 +639,7 @@ async function fetchMakmusNews(querySearch) {
         renderAudios(audios || []);
         renderGamesPromo();
         
-        console.log('🔍 Vérification doublons: IDs uniques:', usedIds.size, '/ Total:', articles.length);
+        console.log('Vérification doublons: IDs uniques:', usedIds.size, '/ Total:', articles.length);
         
         if (status) status.textContent = "EDITION DU JOUR";
         
@@ -810,9 +806,8 @@ function getArticleUrl(article) {
 
 function getPlaceholderImage(width, height, text) {
     text = text || 'Image';
-    return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${width}' height='${height}' viewBox='0 0 ${width} ${height}'%3E%3Crect width='${width}' height='${height}' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23999' font-size='${Math.min(width, height) * 0.1}'%3E${encodeURIComponent(text)}%3C/text%3E%3C/svg%3E`;
+    return 'https://placehold.co/' + width + 'x' + height + '/f0f0f0/999?text=' + encodeURIComponent(text);
 }
-
 /* ==========================================================================
    10. RENDER UI - AVEC GESTION DES VIDÉOS EN SOUS-ARTICLES
    ========================================================================== */
@@ -833,7 +828,7 @@ function renderUI(heroArticle, gridArticles) {
             
             // Si c'est une vidéo mais pas d'image, on utilise un placeholder
             if (!displayImage && hasVideo) {
-                displayImage = sub.video_thumbnail || getPlaceholderImage(100, 100, 'Vidéo');
+                displayImage = sub.video_thumbnail || sub.image_url || 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 100 100\'%3E%3Crect width=\'100\' height=\'100\' fill=\'%23333\'/%3E%3Cpolygon points=\'40,30 70,50 40,70\' fill=\'%23a30000\'/%3E%3C/svg%3E';
             }
             
             const hasImage = displayImage && displayImage !== '';
@@ -844,7 +839,7 @@ function renderUI(heroArticle, gridArticles) {
                 subHtml += `
                     <div class="sub-article-card" onclick="window.location.href='${articleUrl}'">
                         <div class="sub-article-image-wrapper">
-                            <img src="${displayImage}" class="sub-article-image" onerror="this.src='${getPlaceholderImage(100, 100, 'Image')}'">
+                            <img src="${displayImage}" class="sub-article-image" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 100 100\'%3E%3Crect width=\'100\' height=\'100\' fill=\'%23f0f0f0\'/%3E%3Ctext x=\'50\' y=\'50\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%23999\' font-size=\'10\'%3EImage%3C/text%3E%3C/svg%3E'">
                             ${hasVideo ? '<div class="video-play-badge">▶</div>' : ''}
                         </div>
                         <div class="sub-article-content">
@@ -901,17 +896,15 @@ function renderUI(heroArticle, gridArticles) {
             
             // ✅ Gérer l'image ou la vignette vidéo
             let displayImage = art.image_url;
-            const hasVideo = art.video_url && art.video_url !== '';
-            
-            if (!displayImage && hasVideo) {
-                displayImage = art.video_thumbnail || getPlaceholderImage(400, 250, 'Vidéo');
+            if (!displayImage && art.video_url) {
+                displayImage = art.video_thumbnail || 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'250\' viewBox=\'0 0 400 250\'%3E%3Crect width=\'400\' height=\'250\' fill=\'%23333\'/%3E%3Cpolygon points=\'160,100 260,125 160,150\' fill=\'%23a30000\'/%3E%3C/svg%3E';
             }
             
             return `
                 <div class="article-card" onclick="window.location.href='${articleUrl}'">
                     <div class="card-img-wrapper">
-                        <img class="article-image" src="${displayImage || getPlaceholderImage(400, 250, 'Image')}" onerror="this.src='${getPlaceholderImage(400, 250, 'Image')}'">
-                        ${hasVideo ? '<div class="video-play-badge video-play-small">▶</div>' : ''}
+                        <img class="article-image" src="${displayImage || 'https://via.placeholder.com/400x250'}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'250\' viewBox=\'0 0 400 250\'%3E%3Crect width=\'400\' height=\'250\' fill=\'%23f0f0f0\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%23999\' font-size=\'14\'%3EImage%3C/text%3E%3C/svg%3E'">
+                        ${art.video_url ? '<div class="video-play-badge video-play-small">▶</div>' : ''}
                     </div>
                     <div class="article-meta-content">
                         <h3 class="article-title">${escapeHtml(art.titre)}</h3>
@@ -925,7 +918,7 @@ function renderUI(heroArticle, gridArticles) {
 }
 
 /* ==========================================================================
-   11. FONCTIONS DE RENDU MÉDIA ET SECTIONS
+   11. FONCTIONS DE RENDU MÉDIA ET SECTIONS (CORRIGÉE)
    ========================================================================== */
 function renderSectionMedia(article) {
     if (article.video_url && article.video_url !== '') {
@@ -974,18 +967,23 @@ function renderSectionMedia(article) {
         articleMedias.forEach(media => galleryItems.push({ type: media.type || 'image', url: media.url, caption: media.caption || '' }));
         
         if (galleryItems.length > 1) {
-            const galleryId = 'gallery_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            // ✅ Correction : substring au lieu de substr
+            const galleryId = 'gallery_' + Date.now() + '_' + Math.random().toString(36).substring(2, 11);
             let slidesHtml = '', dotsHtml = '';
             
             galleryItems.forEach((item, i) => {
                 const mediaType = item.type === 'video' ? 'video' : 'image';
                 const captionText = item.caption || '';
+                const placeholder = getPlaceholderImage(800, 500, 'Média');
                 
                 slidesHtml += `
                     <div class="hero-gallery-slide" data-index="${i}">
                         ${mediaType === 'video' ? 
-                            `<video src="${item.url}" controls poster="${item.url}?frame=1"></video>` : 
-                            `<img src="${item.url}" onerror="this.src='${getPlaceholderImage(800, 500, 'Image')}'">`
+                            `<video src="${item.url}" controls playsinline preload="metadata">
+                                <source src="${item.url}" type="video/mp4">
+                                Votre navigateur ne supporte pas la vidéo.
+                            </video>` : 
+                            `<img src="${item.url}" loading="lazy" onerror="this.src='${placeholder}'" alt="${escapeHtml(captionText)}">`
                         }
                         ${captionText ? `<div class="hero-slide-caption"><p>${escapeHtml(captionText)}</p></div>` : ''}
                     </div>
@@ -1040,18 +1038,19 @@ function renderSectionMedia(article) {
         
         if (galleryItems.length === 1) {
             const singleItem = galleryItems[0];
+            const placeholder = getPlaceholderImage(800, 500, 'Image');
             return `
                 <div class="hero-single-image">
-                    <img src="${singleItem.url}" onerror="this.src='${getPlaceholderImage(800, 500, 'Image')}'">
+                    <img src="${singleItem.url}" loading="lazy" onerror="this.src='${placeholder}'" alt="${escapeHtml(singleItem.caption || 'Image')}">
                     ${singleItem.caption ? `<div class="photo-credit">${escapeHtml(singleItem.caption)}</div>` : ''}
                 </div>
             `;
         }
     }
     
-    return `<div class="hero-single-image"><img src="${article.image_url || getPlaceholderImage(800, 450, 'Image par défaut')}" onerror="this.src='${getPlaceholderImage(800, 450, 'Image par défaut')}'"></div>`;
+    const defaultPlaceholder = getPlaceholderImage(800, 450, 'Image');
+    return `<div class="hero-single-image"><img src="${article.image_url || defaultPlaceholder}" loading="lazy" onerror="this.src='${defaultPlaceholder}'" alt="Image par défaut"></div>`;
 }
-
 /* ==========================================================================
    12. FONCTIONS VIDÉO POUR LES SECTIONS
    ========================================================================== */
@@ -1168,7 +1167,7 @@ function nextGallerySectionById(galleryId) {
 }
 
 /* ==========================================================================
-   14. SOUS-ARTICLES EN MEDIA OBJECT (VERSION ULTRA SIMPLE)
+   14. SOUS-ARTICLES EN MEDIA OBJECT
    ========================================================================== */
 function renderSubArticlesAsMediaObject(subArticles) {
     if (!subArticles.length) return '';
@@ -1176,27 +1175,24 @@ function renderSubArticlesAsMediaObject(subArticles) {
     return `
         <div class="economy-sub-section">
             <div class="economy-sub-header">
-                <span class="economy-sub-label">À LA UNE</span>
+                <span class="economy-sub-label">À LA UNE ÉCO</span>
                 <span class="economy-sub-line"></span>
             </div>
             <div class="economy-sub-grid media-object-grid">
                 ${subArticles.map(art => {
                     const articleUrl = getArticleUrl(art);
+                    let displayImage = art.image_url;
                     const hasVideo = art.video_url && art.video_url !== '';
                     
-                    // ✅ La miniature d'une vidéo = son image_url
-                    // Si pas d'image, rien ne s'affiche (pas de placeholder)
-                    const displayImage = art.image_url || '';
+                    if (!displayImage && hasVideo) {
+                        displayImage = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 100 100\'%3E%3Crect width=\'100\' height=\'100\' fill=\'%23333\'/%3E%3Cpolygon points=\'40,30 70,50 40,70\' fill=\'%23a30000\'/%3E%3C/svg%3E';
+                    }
                     
                     return `
                     <div class="media-object-card" onclick="window.location.href='${articleUrl}'">
                         <div class="media-object-thumbnail" style="position: relative;">
-                            ${displayImage ? `
-                                <img src="${displayImage}" alt="${escapeHtml(art.titre)}">
-                            ` : `
-                                <div style="width:100%; height:100%; background:#f5f5f5;"></div>
-                            `}
-                            ${hasVideo && displayImage ? '<div class="media-video-badge">▶</div>' : ''}
+                            <img src="${displayImage || 'https://via.placeholder.com/100x100'}" alt="${escapeHtml(art.titre)}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 100 100\'%3E%3Crect width=\'100\' height=\'100\' fill=\'%23f0f0f0\'/%3E%3Ctext x=\'50\' y=\'50\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%23999\' font-size=\'10\'%3EImage%3C/text%3E%3C/svg%3E'">
+                            ${hasVideo ? '<div class="media-video-badge">▶</div>' : ''}
                         </div>
                         <div class="media-object-content">
                             <h3 class="media-object-title">${escapeHtml(art.titre)}</h3>
@@ -1209,6 +1205,7 @@ function renderSubArticlesAsMediaObject(subArticles) {
         </div>
     `;
 }
+
 /* ==========================================================================
    15. RENDER ECONOMY, INTERNATIONAL, ENVIRONNEMENT, SPORT
    ========================================================================== */
@@ -1319,18 +1316,9 @@ function renderAutreInfo(articles) {
     const mainArt = articles[0];
     const secondaryArticles = articles.slice(1, 3);
     const mainUrl = getArticleUrl(mainArt);
-    const hasVideo = mainArt.video_url && mainArt.video_url !== '';
-    let displayImage = mainArt.image_url;
-    
-    if (!displayImage && hasVideo) {
-        displayImage = mainArt.video_thumbnail || getPlaceholderImage(600, 400, 'Vidéo');
-    }
     
     let html = `<article class="main-trending-card" onclick="window.location.href='${mainUrl}'">
-        <div style="position: relative;">
-            <img src="${displayImage || getPlaceholderImage(600, 400, 'Image')}" class="slide-cover" onerror="this.src='${getPlaceholderImage(600, 400, 'Image')}'">
-            ${hasVideo ? '<div class="video-play-badge" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">▶</div>' : ''}
-        </div>
+        <img src="${mainArt.image_url || 'https://via.placeholder.com/600x400'}" class="slide-cover" onerror="this.src='https://via.placeholder.com/600x400'">
         <div class="card-content"><span class="photo-credit">${escapeHtml(mainArt.author_name || 'MakMus')}</span>
         <h2 class="main-headline">${escapeHtml(mainArt.titre)}</h2>
         <p class="summary-text">${escapeHtml((mainArt.description || "").replace(/<[^>]*>/g, '').substring(0, 100))}...</p>
@@ -1339,18 +1327,8 @@ function renderAutreInfo(articles) {
     if (secondaryArticles.length) {
         html += `<div class="secondary-grid">${secondaryArticles.map(art => {
             const subUrl = getArticleUrl(art);
-            const subHasVideo = art.video_url && art.video_url !== '';
-            let subDisplayImage = art.image_url;
-            
-            if (!subDisplayImage && subHasVideo) {
-                subDisplayImage = art.video_thumbnail || getPlaceholderImage(300, 300, 'Vidéo');
-            }
-            
             return `<article class="grid-card" onclick="window.location.href='${subUrl}'">
-                <div style="position: relative;">
-                    <img src="${subDisplayImage || getPlaceholderImage(300, 300, 'Image')}" class="grid-cover" onerror="this.src='${getPlaceholderImage(300, 300, 'Image')}'">
-                    ${subHasVideo ? '<div class="video-play-badge-small">▶</div>' : ''}
-                </div>
+                <img src="${art.image_url || 'https://via.placeholder.com/300x300'}" class="grid-cover" onerror="this.src='https://via.placeholder.com/300x300'">
                 <h4 class="grid-headline">${escapeHtml(art.titre)}</h4>
                 <span class="grid-read-time">${calculerTempsLecture(art.description)}</span>
             </article>`;
@@ -1365,22 +1343,12 @@ function renderOpinions(opinions) {
     if (!container || !opinions?.length) return;
     container.innerHTML = opinions.map((op, i) => {
         const opUrl = getArticleUrl(op);
-        const hasVideo = op.video_url && op.video_url !== '';
-        let displayImage = op.image_url;
-        
-        if (!displayImage && hasVideo) {
-            displayImage = op.video_thumbnail || getPlaceholderImage(40, 40, 'Avatar');
-        }
-        
         return `<div class="opinion-container-box">
             <div class="opinion-author-row"><span class="author-name">${escapeHtml(op.author_name || 'La Redaction')}</span>
-            <img class="author-avatar" src="${op.author_image || getPlaceholderImage(40, 40, 'Avatar')}" onerror="this.src='${getPlaceholderImage(40, 40, 'Avatar')}'"></div>
+            <img class="author-avatar" src="${op.author_image || 'https://via.placeholder.com/40'}" onerror="this.src='https://via.placeholder.com/40'"></div>
             <h4 class="opinion-text-title" onclick="window.location.href='${opUrl}'">${escapeHtml(op.titre)}</h4>
             <span class="read-time-small">${calculerTempsLecture(op.description)}</span>
-            ${i === 0 ? `<div style="position: relative;">
-                <img class="opinion-main-cover" src="${op.image_url || getPlaceholderImage(800, 500, 'Image')}" onclick="window.location.href='${opUrl}'" onerror="this.src='${getPlaceholderImage(800, 500, 'Image')}'">
-                ${hasVideo ? '<div class="video-play-badge" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">▶</div>' : ''}
-            </div>` : ''}
+            ${i === 0 && op.image_url ? `<img class="opinion-main-cover" src="${op.image_url}" onclick="window.location.href='${opUrl}'">` : ''}
         </div>`;
     }).join('');
     syncSidebarContent();
@@ -1392,32 +1360,15 @@ function renderLifestyle(articles) {
     const main = articles[0];
     const subs = articles.slice(1, 4);
     const mainUrl = getArticleUrl(main);
-    const mainHasVideo = main.video_url && main.video_url !== '';
-    let mainDisplayImage = main.image_url;
-    
-    if (!mainDisplayImage && mainHasVideo) {
-        mainDisplayImage = main.video_thumbnail || getPlaceholderImage(800, 500, 'Vidéo');
-    }
     
     container.innerHTML = `<div class="lifestyle-main" onclick="window.location.href='${mainUrl}'">
         <div class="ls-main-text"><h2 class="ls-main-title">${escapeHtml(main.titre)}</h2><p class="ls-excerpt">${(main.description || "").replace(/<[^>]*>/g, '').substring(0, 160)}...</p><span class="ls-read-time">${calculerTempsLecture(main.description)}</span></div>
-        <div class="ls-main-img" style="position: relative;"><img src="${mainDisplayImage || getPlaceholderImage(800, 500, 'Image')}" onerror="this.src='${getPlaceholderImage(800, 500, 'Image')}'">${main.author_name ? `<span class="ls-photo-credit">${escapeHtml(main.author_name)}</span>` : ''}${mainHasVideo ? '<div class="video-play-badge" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">▶</div>' : ''}</div>
+        <div class="ls-main-img"><img src="${main.image_url || 'https://via.placeholder.com/800x500'}" onerror="this.src='https://via.placeholder.com/800x500'">${main.author_name ? `<span class="ls-photo-credit">${escapeHtml(main.author_name)}</span>` : ''}</div>
     </div><div class="lifestyle-sub-grid">${subs.map(art => {
         const subUrl = getArticleUrl(art);
-        const subHasVideo = art.video_url && art.video_url !== '';
-        let subDisplayImage = art.image_url;
-        
-        if (!subDisplayImage && subHasVideo) {
-            subDisplayImage = art.video_thumbnail || getPlaceholderImage(150, 150, 'Vidéo');
-        }
-        
         return `<div class="ls-sub-card" onclick="window.location.href='${subUrl}'">
             <div class="ls-sub-text"><h4>${escapeHtml(art.titre)}</h4><span class="ls-read-time">${calculerTempsLecture(art.description)}</span></div>
-            <div style="position: relative;">
-                <img src="${subDisplayImage || getPlaceholderImage(150, 150, 'Image')}" class="ls-sub-img" onerror="this.src='${getPlaceholderImage(150, 150, 'Image')}'">
-                ${subHasVideo ? '<div class="video-play-badge-small">▶</div>' : ''}
-            </div>
-        </div>`;
+            <img src="${art.image_url || 'https://via.placeholder.com/150x150'}" class="ls-sub-img"></div>`;
     }).join('')}</div>`;
 }
 
@@ -1431,18 +1382,9 @@ function renderMoreNews(articles) {
         const main = filtered[0];
         const subs = filtered.slice(1);
         const mainUrl = getArticleUrl(main);
-        const mainHasVideo = main.video_url && main.video_url !== '';
-        let mainDisplayImage = main.image_url;
-        
-        if (!mainDisplayImage && mainHasVideo) {
-            mainDisplayImage = main.video_thumbnail || getPlaceholderImage(800, 500, 'Vidéo');
-        }
         
         return `<div class="info-category-block"><span class="category-label">${cat.replace('_', ' ')}</span>
-            <div style="position: relative;">
-                <img src="${mainDisplayImage || getPlaceholderImage(800, 500, 'Image')}" class="info-main-img" onclick="window.location.href='${mainUrl}'" onerror="this.src='${getPlaceholderImage(800, 500, 'Image')}'">
-                ${mainHasVideo ? '<div class="video-play-badge" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">▶</div>' : ''}
-            </div>
+            <img src="${main.image_url}" class="info-main-img" onclick="window.location.href='${mainUrl}'">
             <h4 class="info-main-title" onclick="window.location.href='${mainUrl}'">${escapeHtml(main.titre)}</h4>
             <div class="info-sub-list">${subs.map(s => {
                 const subUrl = getArticleUrl(s);
@@ -1450,6 +1392,7 @@ function renderMoreNews(articles) {
             }).join('')}</div></div>`;
     }).join('');
 }
+
 /* ==========================================================================
    17. SYNC SIDEBAR CONTENT
    ========================================================================== */
@@ -1472,61 +1415,12 @@ function syncSidebarContent() {
 }
 
 /* ==========================================================================
-   18. RENDER AUDIOS
+   18. HANDLE AUDIO PLAY (défini avant renderAudios)
    ========================================================================== */
-function renderAudios(audios) {
-    const container = document.getElementById('audio-grid');
-    if (!container) {
-        console.warn('⚠️ #audio-grid non trouvé dans le DOM');
-        return;
-    }
-    
-    if (!audios || audios.length === 0) {
-        container.innerHTML = '<div class="audio-empty">Aucun audio disponible</div>';
-        return;
-    }
-    
-    container.innerHTML = audios.map(audio => {
-        const minutes = Math.floor(audio.duree / 60);
-        const seconds = audio.duree % 60;
-        const tag = audio.type === 'resume' ? 'RÉSUMÉ' : audio.type === 'podcast' ? 'PODCAST' : 'INFO';
-        
-        return `
-            <div class="audio-card" data-audio-id="${audio.id}">
-                <div class="audio-image-wrapper">
-                    <img src="${audio.image_url || 'https://picsum.photos/80/80'}" onerror="this.src='https://picsum.photos/80/80'">
-                </div>
-                <div class="audio-info">
-                    <div class="audio-label-group">
-                        <span class="audio-tag">${tag}</span>
-                        ${audio.source ? `<span class="audio-source">${escapeHtml(audio.source)}</span>` : ''}
-                        ${audio.category ? `<span class="audio-category">${escapeHtml(audio.category)}</span>` : ''}
-                    </div>
-                    <h4 class="audio-title">${escapeHtml(audio.titre)}</h4>
-                    ${audio.description ? `<p class="audio-description">${escapeHtml(audio.description.substring(0, 100))}...</p>` : ''}
-                    <div class="audio-player-bar">
-                        <button class="play-circle" data-audio-url="${audio.audio_url}">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                                <polygon points="5 3 19 12 5 21 5 3"/>
-                            </svg>
-                        </button>
-                        <span class="audio-duration">${minutes}:${seconds < 10 ? '0' + seconds : seconds}</span>
-                    </div>
-                </div>
-            </div>
-        `;
-    }).join('');
-    
-    document.querySelectorAll('.play-circle').forEach(btn => {
-        btn.removeEventListener('click', handleAudioPlay);
-        btn.addEventListener('click', handleAudioPlay);
-    });
-}
-
 function handleAudioPlay(e) {
     e.stopPropagation();
-    const btn = e.currentTarget;
-    const audioUrl = btn.getAttribute('data-audio-url');
+    var btn = e.currentTarget;
+    var audioUrl = btn.getAttribute('data-audio-url');
     
     if (!audioUrl) {
         showToast('Audio non disponible', 'error');
@@ -1556,7 +1450,7 @@ function handleAudioPlay(e) {
     }
     
     currentAudioObj = new Audio(audioUrl);
-    currentAudioObj.play().catch(error => {
+    currentAudioObj.play().catch(function(error) {
         console.error('Erreur lecture:', error);
         showToast('Impossible de lire cet audio', 'error');
         btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
@@ -1567,13 +1461,66 @@ function handleAudioPlay(e) {
     btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
     currentPlayBtn = btn;
     
-    currentAudioObj.onended = () => {
+    currentAudioObj.onended = function() {
         btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
         currentAudioObj = null;
         currentPlayBtn = null;
     };
 }
 
+/* ==========================================================================
+  RENDER AUDIOS (CORRIGÉ)
+   ========================================================================== */
+function renderAudios(audios) {
+    var container = document.getElementById('audio-grid');
+    if (!container) {
+        console.warn('⚠️ #audio-grid non trouvé dans le DOM');
+        return;
+    }
+    
+    if (!audios || audios.length === 0) {
+        container.innerHTML = '<div class="audio-empty">Aucun audio disponible</div>';
+        return;
+    }
+    
+    container.innerHTML = audios.map(function(audio) {
+        var minutes = Math.floor(audio.duree / 60);
+        var seconds = audio.duree % 60;
+        var tag = audio.type === 'resume' ? 'RÉSUMÉ' : audio.type === 'podcast' ? 'PODCAST' : 'INFO';
+        
+        // ✅ Utilisation de placehold.co (pas d'erreur de syntaxe)
+        var defaultImage = 'https://placehold.co/80x80/f0f0f0/999?text=Audio';
+        var coverImage = audio.image_url && audio.image_url !== '' ? audio.image_url : defaultImage;
+        
+        return '<div class="audio-card" data-audio-id="' + audio.id + '">' +
+            '<div class="audio-image-wrapper">' +
+                '<img src="' + coverImage + '" onerror="this.onerror=null; this.src=\'https://placehold.co/80x80/f0f0f0/999?text=Audio\'">' +
+            '</div>' +
+            '<div class="audio-info">' +
+                '<div class="audio-label-group">' +
+                    '<span class="audio-tag">' + tag + '</span>' +
+                    (audio.source ? '<span class="audio-source">' + escapeHtml(audio.source) + '</span>' : '') +
+                    (audio.category ? '<span class="audio-category">' + escapeHtml(audio.category) + '</span>' : '') +
+                '</div>' +
+                '<h4 class="audio-title">' + escapeHtml(audio.titre) + '</h4>' +
+                (audio.description ? '<p class="audio-description">' + escapeHtml(audio.description.substring(0, 100)) + '...</p>' : '') +
+                '<div class="audio-player-bar">' +
+                    '<button class="play-circle" data-audio-url="' + audio.audio_url + '">' +
+                        '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">' +
+                            '<polygon points="5 3 19 12 5 21 5 3"/>' +
+                        '</svg>' +
+                    '</button>' +
+                    '<span class="audio-duration">' + minutes + ':' + (seconds < 10 ? '0' + seconds : seconds) + '</span>' +
+                '</div>' +
+            '</div>' +
+        '</div>';
+    }).join('');
+    
+    document.querySelectorAll('.play-circle').forEach(function(btn) {
+        btn.removeEventListener('click', handleAudioPlay);
+        btn.addEventListener('click', handleAudioPlay);
+    });
+}
 /* ==========================================================================
    19. PUBLICITE
    ========================================================================== */
@@ -1647,7 +1594,7 @@ function displayNextAd() {
     } else {
         const imageUrl = ad.media_url && ad.media_url !== '' 
             ? ad.media_url 
-            : 'https://via.placeholder.com/728x90?text=Publicite';
+            : getPlaceholderImage(728, 90, 'Publicité');
         
         adHtml = `
             <div class="ad-container ad-image">
@@ -1655,7 +1602,7 @@ function displayNextAd() {
                 <img class="ad-raw-media" 
                      src="${imageUrl}" 
                      onclick="window.open('${clickUrl}', '_blank')" 
-                     onerror="this.src='https://via.placeholder.com/728x90?text=Image+non+disponible'">
+                     onerror="this.src='${getPlaceholderImage(728, 90, 'Image non disponible')}'">
             </div>
         `;
     }
@@ -1680,9 +1627,8 @@ function displayFallbackAd() {
 }
 
 /* ==========================================================================
-   20. VIDEOS - VERSION CORRIGÉE POUR MOBILE
+   20. VIDEOS
    ========================================================================== */
-
 async function fetchVideos() {
     const { data } = await supabaseClient.from('videos_du_jour').select('*').eq('is_published', true);
     const slider = document.getElementById('video-slider');
@@ -1736,7 +1682,6 @@ async function fetchVideos() {
         </div>
     `).join('');
     
-    // Initialiser les sources vidéo après le rendu
     setTimeout(() => {
         const videos = document.querySelectorAll('.video-card video');
         data.forEach((vid, index) => {
@@ -1745,7 +1690,6 @@ async function fetchVideos() {
                 videoElement.src = vid.video_url;
                 videoElement.load();
                 
-                // Pour la première vidéo, essayer de la jouer silencieusement
                 if (index === 0) {
                     videoElement.play().catch(e => console.log('Autoplay bloqué:', e));
                 }
@@ -1754,7 +1698,6 @@ async function fetchVideos() {
     }, 100);
 }
 
-// Fonction de partage pour les vidéos
 window.shareVideoItem = function(videoId, videoTitle) {
     const videoUrl = `${window.location.origin}/video.html?id=${videoId}`;
     if (navigator.share) {
@@ -1815,18 +1758,16 @@ window.toggleVideoFullscreen = function(btn) {
     const video = videoCard.querySelector('video');
     if (!video) return;
     
-    // Pour mobile et desktop
     if (video.requestFullscreen) {
         video.requestFullscreen();
-    } else if (video.webkitRequestFullscreen) { // Safari
+    } else if (video.webkitRequestFullscreen) {
         video.webkitRequestFullscreen();
-    } else if (video.msRequestFullscreen) { // IE/Edge
+    } else if (video.msRequestFullscreen) {
         video.msRequestFullscreen();
     } else if (videoCard.requestFullscreen) {
         videoCard.requestFullscreen();
     }
     
-    // Afficher un message si le plein écran n'est pas supporté
     if (!video.requestFullscreen && !video.webkitRequestFullscreen) {
         showToast('Plein écran non supporté sur ce navigateur', 'info');
     }
@@ -1844,7 +1785,6 @@ window.playVideo = function(overlay) {
         showToast('Lecture impossible, vérifiez votre connexion', 'error');
     });
     
-    // Mettre à jour l'icône play/pause
     const playPauseBtn = videoCard.querySelector('.play-pause-btn');
     if (playPauseBtn) {
         const playIcon = playPauseBtn.querySelector('.play-icon-section');
@@ -1859,7 +1799,6 @@ window.scrollVideoSlider = function(distance) {
     if (slider) slider.scrollBy({ left: distance, behavior: 'smooth' });
 };
 
-// Initialiser les vidéos avec lazy loading et gestion mobile
 function initVideoLazyLoading() {
     const videos = document.querySelectorAll('.video-card video');
     
@@ -1867,7 +1806,6 @@ function initVideoLazyLoading() {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 const video = entry.target;
-                // Ne charger que si la vidéo n'a pas de source
                 if (!video.src || video.src === '') {
                     const source = video.querySelector('source');
                     if (source && source.src) {
@@ -1882,7 +1820,6 @@ function initVideoLazyLoading() {
     videos.forEach(video => observer.observe(video));
 }
 
-// Gestion du plein écran au niveau du document
 document.addEventListener('fullscreenchange', exitHandler);
 document.addEventListener('webkitfullscreenchange', exitHandler);
 document.addEventListener('mozfullscreenchange', exitHandler);
@@ -1934,7 +1871,7 @@ function updateSlideDisplay() {
     const mainUrl = getArticleUrl(mainArt);
     
     let html = `<article class="main-trending-card" onclick="window.location.href='${mainUrl}'">
-        <img src="${mainArt.image_url || 'https://via.placeholder.com/600x400'}" class="slide-cover" onerror="this.src='https://via.placeholder.com/600x400'">
+        <img src="${mainArt.image_url || getPlaceholderImage(600, 400, 'Image')}" class="slide-cover" onerror="this.src='${getPlaceholderImage(600, 400, 'Image')}'">
         <div class="card-content"><span class="photo-credit">${escapeHtml(mainArt.author_name || 'MakMus')}</span>
         <h2 class="main-headline">${escapeHtml(mainArt.titre)}</h2>
         <p class="summary-text">${escapeHtml((mainArt.description || "").replace(/<[^>]*>/g, '').substring(0, 100))}...</p>
@@ -1944,7 +1881,7 @@ function updateSlideDisplay() {
         html += `<div class="secondary-grid">${secondaryArticles.map(art => {
             const subUrl = getArticleUrl(art);
             return `<article class="grid-card" onclick="window.location.href='${subUrl}'">
-                <img src="${art.image_url || 'https://via.placeholder.com/300x300'}" class="grid-cover" onerror="this.src='https://via.placeholder.com/300x300'">
+                <img src="${art.image_url || getPlaceholderImage(300, 300, 'Image')}" class="grid-cover" onerror="this.src='${getPlaceholderImage(300, 300, 'Image')}'">
                 <h4 class="grid-headline">${escapeHtml(art.titre)}</h4>
                 <span class="grid-read-time">${calculerTempsLecture(art.description)}</span>
             </article>`;
@@ -2045,7 +1982,6 @@ window.shareToThreads = function() {
     showToast("Partagez le lien sur Threads", 'info');
 };
 
-// Générer un slug à partir d'un titre
 function generateSlug(title) {
     if (!title) return '';
     return title
@@ -2061,8 +1997,6 @@ function generateSlug(title) {
 /* ==========================================================================
    24. JEUX
    ========================================================================== */
-  
-// Ajouter la section jeux dans la sidebar
 function renderGamesPromo() {
     const sidebar = document.querySelector('.sidebar-column .sidebar-section');
     if (!sidebar) return;
@@ -2092,7 +2026,27 @@ function renderGamesPromo() {
     
     sidebar.insertAdjacentHTML('beforeend', gamesHtml);
 }
+function videoToImage(videoUrl, callback) {
+    const video = document.createElement('video');
+    video.crossOrigin = 'Anonymous';
+    video.src = videoUrl;
+    video.currentTime = 1; // Capture à 1 seconde
+    
+    video.addEventListener('loadeddata', () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const thumbnail = canvas.toDataURL('image/jpeg', 0.7);
+        callback(thumbnail);
+    });
+}
 
+// Utilisation
+videoToImage('https://...mp4', (thumbnail) => {
+    document.querySelector('.sub-article-image').src = thumbnail;
+});
 /* ==========================================================================
    25. INITIALISATION
    ========================================================================== */
