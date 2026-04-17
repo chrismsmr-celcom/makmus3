@@ -3204,22 +3204,32 @@ body.dark-mode .widget-btn:hover {
     .footer-links-grid { grid-template-columns: 1fr 1fr; gap: 30px; }
     .footer-bottom { flex-direction: column; gap: 15px; text-align: center; }
 }
-
+.footer-bottom { 
+    flex-direction: column; 
+    gap: 15px; 
+    text-align: center; 
+}
 /* ==========================================================================
-   STYLES FORCÉS POUR LISTES, BLOCKQUOTES, CITATIONS ET TABLEAUX
+   STYLES POUR LISTES, BLOCKQUOTES, CITATIONS ET TABLEAUX
    ========================================================================== */
+
+/* --------------------------------------
+   LISTES À PUCE (UL)
+   -------------------------------------- */
 #article-text-content ul,
 .article-content ul {
     margin: 1.5em 0 !important;
-    padding-left: 1.8em !important;
+    padding-left: 0 !important;
     list-style-type: none !important;
+    display: block !important;
 }
 
 #article-text-content ul li,
 .article-content ul li {
     position: relative !important;
-    padding-left: 1.2em !important;
+    padding-left: 1.5em !important;
     margin-bottom: 0.75em !important;
+    line-height: 1.7 !important;
 }
 
 #article-text-content ul li::before,
@@ -3232,20 +3242,39 @@ body.dark-mode .widget-btn:hover {
     font-size: 1.2em !important;
 }
 
+/* Listes de niveau 2 */
+#article-text-content ul ul li::before,
+.article-content ul ul li::before {
+    content: "◦" !important;
+    color: var(--gray) !important;
+}
+
+/* Listes de niveau 3 */
+#article-text-content ul ul ul li::before,
+.article-content ul ul ul li::before {
+    content: "▪" !important;
+    color: var(--gray-light) !important;
+}
+
+/* --------------------------------------
+   LISTES NUMÉROTÉES (OL)
+   -------------------------------------- */
 #article-text-content ol,
 .article-content ol {
     margin: 1.5em 0 !important;
-    padding-left: 1.8em !important;
+    padding-left: 0 !important;
     list-style-type: none !important;
     counter-reset: item !important;
+    display: block !important;
 }
 
 #article-text-content ol li,
 .article-content ol li {
     position: relative !important;
-    padding-left: 1.8em !important;
+    padding-left: 2em !important;
     margin-bottom: 0.75em !important;
     counter-increment: item !important;
+    line-height: 1.7 !important;
 }
 
 #article-text-content ol li::before,
@@ -3259,64 +3288,84 @@ body.dark-mode .widget-btn:hover {
     font-size: 0.9em !important;
 }
 
-#article-text-content ul ul li::before,
-.article-content ul ul li::before {
-    content: "◦" !important;
-    color: var(--gray) !important;
+/* Listes numérotées imbriquées */
+#article-text-content ol ol,
+.article-content ol ol {
+    counter-reset: subitem !important;
 }
 
-#article-text-content ul ul ul li::before,
-.article-content ul ul ul li::before {
-    content: "▪" !important;
-    color: var(--gray-light) !important;
+#article-text-content ol ol li,
+.article-content ol ol li {
+    counter-increment: subitem !important;
 }
 
+#article-text-content ol ol li::before,
+.article-content ol ol li::before {
+    content: counter(item) "." counter(subitem) !important;
+}
+
+/* --------------------------------------
+   BLOCKQUOTES (CITATIONS EN BLOC)
+   -------------------------------------- */
 #article-text-content blockquote,
 .article-content blockquote {
     position: relative !important;
     margin: 2em 0 !important;
-    padding: 1.2em 1.5em 1.2em 3em !important;
+    padding: 1.5em 2em 1.5em 3.5em !important;
     font-style: italic !important;
     background: var(--gray-bg) !important;
     border-left: 4px solid var(--red) !important;
-    border-radius: 0 8px 8px 0 !important;
+    border-radius: 0 12px 12px 0 !important;
+    font-family: var(--serif) !important;
+    font-size: 1.05rem !important;
+    line-height: 1.6 !important;
 }
 
+/* Guillemet ouvrant */
 #article-text-content blockquote::before,
 .article-content blockquote::before {
     content: "“" !important;
     position: absolute !important;
     left: 0.75em !important;
     top: 0.5em !important;
-    font-size: 2.5rem !important;
+    font-size: 3rem !important;
     font-style: normal !important;
     color: var(--red) !important;
     font-family: Georgia, serif !important;
-    opacity: 0.6 !important;
+    opacity: 0.5 !important;
+    line-height: 1 !important;
 }
 
+/* Guillemet fermant */
 #article-text-content blockquote::after,
 .article-content blockquote::after {
     content: "”" !important;
     position: absolute !important;
     right: 0.75em !important;
     bottom: 0.2em !important;
-    font-size: 2rem !important;
+    font-size: 2.5rem !important;
     font-style: normal !important;
     color: var(--red) !important;
     font-family: Georgia, serif !important;
     opacity: 0.4 !important;
+    line-height: 1 !important;
 }
 
 #article-text-content blockquote p,
 .article-content blockquote p {
-    margin: 0 !important;
+    margin: 0 0 0.5em 0 !important;
     font-style: italic !important;
 }
 
+#article-text-content blockquote p:last-child,
+.article-content blockquote p:last-child {
+    margin-bottom: 0 !important;
+}
+
+/* Attribution dans blockquote */
 #article-text-content blockquote footer,
 .article-content blockquote footer {
-    margin-top: 0.8em !important;
+    margin-top: 1em !important;
     font-size: 0.8rem !important;
     font-style: normal !important;
     color: var(--gray-light) !important;
@@ -3328,27 +3377,35 @@ body.dark-mode .widget-btn:hover {
     content: "— " !important;
 }
 
+/* --------------------------------------
+   CITATIONS INLINE (Q)
+   -------------------------------------- */
 #article-text-content q,
 .article-content q {
-    quotes: "« " " »" !important;
+    quotes: "«" "»" !important;
     font-style: italic !important;
     color: var(--gray-dark) !important;
 }
 
 #article-text-content q::before,
 .article-content q::before {
-    content: "« " !important;
+    content: "«" !important;
     font-style: normal !important;
     color: var(--red) !important;
+    margin-right: 2px !important;
 }
 
 #article-text-content q::after,
 .article-content q::after {
-    content: " »" !important;
+    content: "»" !important;
     font-style: normal !important;
     color: var(--red) !important;
+    margin-left: 2px !important;
 }
 
+/* --------------------------------------
+   PULL QUOTE (CITATION MISE EN AVANT)
+   -------------------------------------- */
 .pull-quote {
     margin: 2em 0 !important;
     padding: 1.5em 2em !important;
@@ -3364,24 +3421,26 @@ body.dark-mode .widget-btn:hover {
     position: relative !important;
 }
 
-.pull-quote::before,
-.pull-quote::after {
+.pull-quote::before {
     content: "“" !important;
     font-size: 2.5rem !important;
     color: var(--red) !important;
     opacity: 0.5 !important;
     position: absolute !important;
-}
-
-.pull-quote::before {
     left: 0.2em !important;
     top: 0.2em !important;
+    line-height: 1 !important;
 }
 
 .pull-quote::after {
     content: "”" !important;
+    font-size: 2.5rem !important;
+    color: var(--red) !important;
+    opacity: 0.5 !important;
+    position: absolute !important;
     right: 0.2em !important;
     bottom: 0.2em !important;
+    line-height: 1 !important;
 }
 
 .pull-quote p {
@@ -3399,6 +3458,9 @@ body.dark-mode .widget-btn:hover {
     font-family: var(--sans) !important;
 }
 
+/* --------------------------------------
+   TABLEAUX
+   -------------------------------------- */
 #article-text-content table,
 .article-content table {
     width: 100% !important;
@@ -3406,11 +3468,22 @@ body.dark-mode .widget-btn:hover {
     border-collapse: collapse !important;
     font-family: var(--sans) !important;
     font-size: 0.9rem !important;
-    overflow-x: auto !important;
-    display: block !important;
     background: transparent !important;
+    display: table !important;
 }
 
+/* Wrapper pour scroll horizontal sur mobile */
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    margin: 2em 0;
+}
+
+.table-wrapper table {
+    margin: 0 !important;
+}
+
+/* En-tête du tableau */
 #article-text-content thead,
 .article-content thead {
     background: transparent !important;
@@ -3427,6 +3500,7 @@ body.dark-mode .widget-btn:hover {
     color: var(--black) !important;
 }
 
+/* Cellules du tableau */
 #article-text-content td,
 .article-content td {
     padding: 10px 15px !important;
@@ -3440,23 +3514,28 @@ body.dark-mode .widget-btn:hover {
     border-bottom: none !important;
 }
 
+/* Survol des lignes */
 #article-text-content tr:hover td,
 .article-content tr:hover td {
     background: var(--gray-bg) !important;
 }
 
+/* Lignes paires */
 #article-text-content tbody tr:nth-child(even) td,
 .article-content tbody tr:nth-child(even) td {
     background: rgba(0, 0, 0, 0.02) !important;
 }
 
+/* --------------------------------------
+   RESPONSIVE
+   -------------------------------------- */
 @media (max-width: 768px) {
+    /* Tableaux : scroll horizontal */
     #article-text-content table,
     .article-content table {
         font-size: 0.75rem !important;
-        display: block !important;
-        overflow-x: auto !important;
-        white-space: nowrap !important;
+        display: table !important;
+        min-width: 500px !important;
     }
     
     #article-text-content th,
@@ -3466,25 +3545,28 @@ body.dark-mode .widget-btn:hover {
         padding: 8px 10px !important;
     }
     
+    /* Blockquotes plus petits sur mobile */
     #article-text-content blockquote,
     .article-content blockquote {
-        padding: 1em 1em 1em 2.5em !important;
-        font-size: 1rem !important;
+        padding: 1em 1.2em 1em 2.5em !important;
+        font-size: 0.95rem !important;
     }
     
     #article-text-content blockquote::before,
     .article-content blockquote::before {
-        font-size: 1.8rem !important;
+        font-size: 2rem !important;
         left: 0.5em !important;
+        top: 0.4em !important;
     }
     
     #article-text-content blockquote::after,
     .article-content blockquote::after {
-        font-size: 1.5rem !important;
+        font-size: 1.8rem !important;
         right: 0.5em !important;
-        bottom: 0 !important;
+        bottom: 0.1em !important;
     }
     
+    /* Pull quotes sur mobile */
     .pull-quote {
         font-size: 1.1rem !important;
         padding: 1.2em 1.5em !important;
@@ -3494,8 +3576,19 @@ body.dark-mode .widget-btn:hover {
     .pull-quote::after {
         font-size: 1.8rem !important;
     }
+    
+    /* Listes sur mobile */
+    #article-text-content ul li,
+    #article-text-content ol li,
+    .article-content ul li,
+    .article-content ol li {
+        margin-bottom: 0.6em !important;
+    }
 }
 
+/* --------------------------------------
+   MODE SOMBRE
+   -------------------------------------- */
 body.dark-mode #article-text-content th,
 body.dark-mode .article-content th {
     background: #2a2a2a !important;
@@ -3516,7 +3609,7 @@ body.dark-mode .article-content tr:hover td {
 
 body.dark-mode #article-text-content tbody tr:nth-child(even) td,
 body.dark-mode .article-content tbody tr:nth-child(even) td {
-    background: rgba(255, 255, 255, 0.05) !important;
+    background: rgba(255, 255, 255, 0.03) !important;
 }
 
 body.dark-mode #article-text-content blockquote,
@@ -3536,3 +3629,4 @@ body.dark-mode .pull-quote {
     border-color: #444 !important;
     color: #e0e0e0 !important;
 }
+   

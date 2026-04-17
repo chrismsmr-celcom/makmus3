@@ -1,0 +1,9 @@
+# MAKMUS - Authorized Digital Sellers
+# Dernière mise à jour: 2026-01-16
+# Contact: contact@makmus.com
+
+# Google Ad Manager / AdSense
+google.com, pub-7567982675325882, DIRECT, f08c47fec0942fa0
+
+# Google Ad Exchange (si utilisé)
+# google.com, pub-7567982675325882, RESELLER, f08c47fec0942fa0

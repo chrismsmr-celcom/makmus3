@@ -3723,6 +3723,90 @@ body.dark-mode .btn-logout-link {
         -webkit-line-clamp: 2;
     }
 }
+/* ==========================================================================
+   SUB NAV TAG 
+   ========================================================================== */
+/* ========================================
+   SOUS-MENU DYNAMIQUE (VERSION SIMPLIFIÉE)
+   ======================================== */
+.sub-nav-wrapper {
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: thin;
+    margin: 10px 0;
+}
+
+.sub-nav-scroll {
+    max-width: var(--max-width, 1200px);
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+
+.sub-nav-group {
+    display: inline-flex;
+    gap: 12px;
+    align-items: baseline;
+}
+
+.sub-nav-category {
+    font-family: var(--sans, 'Libre Franklin', sans-serif);
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--red, #a30000);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.sub-nav-links {
+    display: flex;
+    gap: 16px;
+    align-items: baseline;
+}
+
+.sub-nav-link {
+    font-family: var(--sans, 'Libre Franklin', sans-serif);
+    font-size: 0.7rem;
+    color: var(--gray-light, #888);
+    text-decoration: none;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: color 0.2s ease;
+    padding-bottom: 2px;
+    cursor: pointer;
+}
+
+.sub-nav-link:hover,
+.sub-nav-link.active {
+    color: var(--red, #a30000);
+}
+
+/* Version mobile */
+@media (max-width: 768px) {
+    .sub-nav-scroll {
+        gap: 16px;
+        padding: 0 15px;
+    }
+    
+    .sub-nav-group {
+        gap: 8px;
+    }
+    
+    .sub-nav-links {
+        gap: 12px;
+    }
+    
+    .sub-nav-link {
+        font-size: 0.65rem;
+    }
+    
+    .sub-nav-category {
+        font-size: 0.65rem;
+    }
+}
 
 /* ==========================================================================
    24. INTERNATIONAL ZONE
@@ -4492,8 +4576,8 @@ body.dark-mode .environnement-sub-card {
     }
     
     .play-button {
-        width: 50px;
-        height: 50px;
+        width: 80px;
+        height: 80px;
     }
 }
 

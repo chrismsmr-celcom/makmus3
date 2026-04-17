@@ -805,8 +805,7 @@ function getArticleUrl(article) {
 }
 
 function getPlaceholderImage(width, height, text) {
-    text = text || 'Image';
-    return 'https://placehold.co/' + width + 'x' + height + '/f0f0f0/999?text=' + encodeURIComponent(text);
+    return 'https://placehold.co/' + width + 'x' + height + '/f0f0f0/999?text=' + encodeURIComponent(text || 'Image');
 }
 /* ==========================================================================
    10. RENDER UI - AVEC GESTION DES VIDÉOS EN SOUS-ARTICLES
@@ -822,13 +821,11 @@ function renderUI(heroArticle, gridArticles) {
         subArticles.forEach(sub => {
             if (!sub) return;
             
-            // ✅ Priorité à l'image, sinon utiliser l'image de la vidéo comme poster
             let displayImage = sub.image_url;
             let hasVideo = sub.video_url && sub.video_url !== '';
             
-            // Si c'est une vidéo mais pas d'image, on utilise un placeholder
             if (!displayImage && hasVideo) {
-                displayImage = sub.video_thumbnail || sub.image_url || 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 100 100\'%3E%3Crect width=\'100\' height=\'100\' fill=\'%23333\'/%3E%3Cpolygon points=\'40,30 70,50 40,70\' fill=\'%23a30000\'/%3E%3C/svg%3E';
+                displayImage = sub.video_thumbnail || getPlaceholderImage(100, 100, 'Vidéo');
             }
             
             const hasImage = displayImage && displayImage !== '';
@@ -839,7 +836,7 @@ function renderUI(heroArticle, gridArticles) {
                 subHtml += `
                     <div class="sub-article-card" onclick="window.location.href='${articleUrl}'">
                         <div class="sub-article-image-wrapper">
-                            <img src="${displayImage}" class="sub-article-image" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 100 100\'%3E%3Crect width=\'100\' height=\'100\' fill=\'%23f0f0f0\'/%3E%3Ctext x=\'50\' y=\'50\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%23999\' font-size=\'10\'%3EImage%3C/text%3E%3C/svg%3E'">
+                            <img src="${displayImage}" class="sub-article-image" onerror="this.src='${getPlaceholderImage(100, 100, 'Image')}'">
                             ${hasVideo ? '<div class="video-play-badge">▶</div>' : ''}
                         </div>
                         <div class="sub-article-content">
@@ -894,17 +891,18 @@ function renderUI(heroArticle, gridArticles) {
             const excerpt = (art.description || "").replace(/<[^>]*>/g, '').substring(0, 120);
             const articleUrl = getArticleUrl(art);
             
-            // ✅ Gérer l'image ou la vignette vidéo
             let displayImage = art.image_url;
-            if (!displayImage && art.video_url) {
-                displayImage = art.video_thumbnail || 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'250\' viewBox=\'0 0 400 250\'%3E%3Crect width=\'400\' height=\'250\' fill=\'%23333\'/%3E%3Cpolygon points=\'160,100 260,125 160,150\' fill=\'%23a30000\'/%3E%3C/svg%3E';
+            const hasVideo = art.video_url && art.video_url !== '';
+            
+            if (!displayImage && hasVideo) {
+                displayImage = art.video_thumbnail || getPlaceholderImage(400, 250, 'Vidéo');
             }
             
             return `
                 <div class="article-card" onclick="window.location.href='${articleUrl}'">
                     <div class="card-img-wrapper">
-                        <img class="article-image" src="${displayImage || 'https://via.placeholder.com/400x250'}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'250\' viewBox=\'0 0 400 250\'%3E%3Crect width=\'400\' height=\'250\' fill=\'%23f0f0f0\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%23999\' font-size=\'14\'%3EImage%3C/text%3E%3C/svg%3E'">
-                        ${art.video_url ? '<div class="video-play-badge video-play-small">▶</div>' : ''}
+                        <img class="article-image" src="${displayImage || getPlaceholderImage(400, 250, 'Image')}" onerror="this.src='${getPlaceholderImage(400, 250, 'Image')}'">
+                        ${hasVideo ? '<div class="video-play-badge video-play-small">▶</div>' : ''}
                     </div>
                     <div class="article-meta-content">
                         <h3 class="article-title">${escapeHtml(art.titre)}</h3>
@@ -916,10 +914,9 @@ function renderUI(heroArticle, gridArticles) {
         }).join('');
     }
 }
-
-/* ==========================================================================
-   11. FONCTIONS DE RENDU MÉDIA ET SECTIONS (CORRIGÉE)
-   ========================================================================== */
+// ==========================================================================
+// 11. FONCTIONS DE RENDU MÉDIA ET SECTIONS (CORRIGÉE - SANS DOUBLONS)
+// ==========================================================================
 function renderSectionMedia(article) {
     if (article.video_url && article.video_url !== '') {
         const videoCaption = article.video_caption || article.caption || '';
@@ -962,22 +959,48 @@ function renderSectionMedia(article) {
     
     const articleMedias = article.medias || [];
     if (articleMedias.length > 0 || article.image_url) {
+        // ✅ CORRECTION: Éviter les doublons d'URL
         const galleryItems = [];
-        if (article.image_url) galleryItems.push({ type: 'image', url: article.image_url, caption: article.image_caption || '' });
-        articleMedias.forEach(media => galleryItems.push({ type: media.type || 'image', url: media.url, caption: media.caption || '' }));
+        const urlsVues = new Set();
         
+        // Ajouter l'image principale si elle existe et n'est pas déjà dans les médias
+        if (article.image_url && article.image_url !== '') {
+            // Vérifier si l'URL n'est pas déjà dans les médias
+            let estDansMedias = false;
+            for (var i = 0; i < articleMedias.length; i++) {
+                if (articleMedias[i].url === article.image_url) {
+                    estDansMedias = true;
+                    break;
+                }
+            }
+            if (!estDansMedias) {
+                urlsVues.add(article.image_url);
+                galleryItems.push({ type: 'image', url: article.image_url, caption: article.image_caption || '' });
+            }
+        }
+        
+        // Ajouter les médias (uniquement les URLs uniques)
+        for (var j = 0; j < articleMedias.length; j++) {
+            var media = articleMedias[j];
+            if (media.url && media.url !== '' && !urlsVues.has(media.url)) {
+                urlsVues.add(media.url);
+                galleryItems.push({ type: media.type || 'image', url: media.url, caption: media.caption || '' });
+            }
+        }
+        
+        // Afficher la galerie ou l'image unique
         if (galleryItems.length > 1) {
-            // ✅ Correction : substring au lieu de substr
             const galleryId = 'gallery_' + Date.now() + '_' + Math.random().toString(36).substring(2, 11);
             let slidesHtml = '', dotsHtml = '';
             
-            galleryItems.forEach((item, i) => {
-                const mediaType = item.type === 'video' ? 'video' : 'image';
-                const captionText = item.caption || '';
-                const placeholder = getPlaceholderImage(800, 500, 'Média');
+            for (var k = 0; k < galleryItems.length; k++) {
+                var item = galleryItems[k];
+                var mediaType = item.type === 'video' ? 'video' : 'image';
+                var captionText = item.caption || '';
+                var placeholder = getPlaceholderImage(800, 500, 'Média');
                 
                 slidesHtml += `
-                    <div class="hero-gallery-slide" data-index="${i}">
+                    <div class="hero-gallery-slide" data-index="${k}">
                         ${mediaType === 'video' ? 
                             `<video src="${item.url}" controls playsinline preload="metadata">
                                 <source src="${item.url}" type="video/mp4">
@@ -988,8 +1011,8 @@ function renderSectionMedia(article) {
                         ${captionText ? `<div class="hero-slide-caption"><p>${escapeHtml(captionText)}</p></div>` : ''}
                     </div>
                 `;
-                dotsHtml += `<div class="gallery-dot ${i === 0 ? 'active' : ''}" data-index="${i}" onclick="goToGallerySlideSection('${galleryId}', ${i})"></div>`;
-            });
+                dotsHtml += `<div class="gallery-dot ${k === 0 ? 'active' : ''}" data-index="${k}" onclick="goToGallerySlideSection('${galleryId}', ${k})"></div>`;
+            }
             
             return `
                 <div class="hero-gallery-wrapper" id="${galleryId}">
@@ -1181,18 +1204,18 @@ function renderSubArticlesAsMediaObject(subArticles) {
             <div class="economy-sub-grid media-object-grid">
                 ${subArticles.map(art => {
                     const articleUrl = getArticleUrl(art);
-                    let displayImage = art.image_url;
                     const hasVideo = art.video_url && art.video_url !== '';
-                    
-                    if (!displayImage && hasVideo) {
-                        displayImage = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 100 100\'%3E%3Crect width=\'100\' height=\'100\' fill=\'%23333\'/%3E%3Cpolygon points=\'40,30 70,50 40,70\' fill=\'%23a30000\'/%3E%3C/svg%3E';
-                    }
+                    const displayImage = art.image_url || '';
                     
                     return `
                     <div class="media-object-card" onclick="window.location.href='${articleUrl}'">
                         <div class="media-object-thumbnail" style="position: relative;">
-                            <img src="${displayImage || 'https://via.placeholder.com/100x100'}" alt="${escapeHtml(art.titre)}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 100 100\'%3E%3Crect width=\'100\' height=\'100\' fill=\'%23f0f0f0\'/%3E%3Ctext x=\'50\' y=\'50\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%23999\' font-size=\'10\'%3EImage%3C/text%3E%3C/svg%3E'">
-                            ${hasVideo ? '<div class="media-video-badge">▶</div>' : ''}
+                            ${displayImage ? `
+                                <img src="${displayImage}" alt="${escapeHtml(art.titre)}">
+                            ` : `
+                                <div style="width:100%; height:100%; background:#f5f5f5;"></div>
+                            `}
+                            ${hasVideo && displayImage ? '<div class="media-video-badge">▶</div>' : ''}
                         </div>
                         <div class="media-object-content">
                             <h3 class="media-object-title">${escapeHtml(art.titre)}</h3>
@@ -1205,7 +1228,6 @@ function renderSubArticlesAsMediaObject(subArticles) {
         </div>
     `;
 }
-
 /* ==========================================================================
    15. RENDER ECONOMY, INTERNATIONAL, ENVIRONNEMENT, SPORT
    ========================================================================== */
@@ -1837,17 +1859,216 @@ function exitHandler() {
 async function loadTrendingTags() {
     const container = document.getElementById('tags-container');
     if (!container) return;
+    
     try {
-        const { data } = await supabaseClient.from('articles').select('tags').eq('is_published', true).not('tags', 'is', null).limit(50);
+        const { data } = await supabaseClient
+            .from('articles')
+            .select('tags')
+            .eq('is_published', true)
+            .not('tags', 'is', null)
+            .limit(200);
+        
+        if (!data || data.length === 0) {
+            container.innerHTML = '<span class="trending-link">AUCUN TAG</span>';
+            return;
+        }
+        
+        // Compter les occurrences
         const counts = {};
-        data?.forEach(art => {
-            if (typeof art.tags === 'string') art.tags.split(',').forEach(t => { const tag = t.trim(); if (tag) counts[tag] = (counts[tag] || 0) + 1; });
+        data.forEach(art => {
+            if (typeof art.tags === 'string' && art.tags.trim()) {
+                art.tags.split(',').forEach(t => {
+                    let tag = t.trim();
+                    if (tag && tag.length > 1) {
+                        const normalized = tag.toLowerCase();
+                        counts[normalized] = counts[normalized] || { 
+                            count: 0, 
+                            original: tag 
+                        };
+                        counts[normalized].count++;
+                    }
+                });
+            }
         });
-        const topTags = Object.keys(counts).sort((a,b) => counts[b] - counts[a]).slice(0, 6);
-        container.innerHTML = topTags.length ? topTags.map((tag, i) => `<span class="trending-link ${i === 0 ? 'is-live' : ''}" onclick="fetchMakmusNews('${tag.replace(/'/g, "\\'")}')">${tag.toUpperCase()}</span>`).join('') : '<span class="trending-link">AUCUN TAG</span>';
-    } catch(e) { console.warn("Tags error:", e); container.innerHTML = '<span class="trending-link">TAGS INDISPONIBLES</span>'; }
+        
+        const tagArray = Object.values(counts);
+        
+        if (tagArray.length === 0) {
+            container.innerHTML = '<span class="trending-link">AUCUN TAG</span>';
+            return;
+        }
+        
+        // Prendre les 10 tags les plus fréquents
+        const topTags = tagArray
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 10);
+        
+        // Afficher SANS le comptage
+        container.innerHTML = topTags.map((tag, i) => {
+            const escapedTag = tag.original.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            return `<span class="trending-link ${i === 0 ? 'is-live' : ''}" 
+                           onclick="if(window.fetchMakmusNews) fetchMakmusNews('${escapedTag}')">
+                        ${tag.original.toUpperCase()}
+                    </span>`;
+        }).join('');
+        
+        console.log('✅ Tags trending chargés:', topTags.map(t => `${t.original} (${t.count})`));
+        
+    } catch(e) { 
+        console.warn("Tags error:", e); 
+        container.innerHTML = '<span class="trending-link">TAGS INDISPONIBLES</span>'; 
+    }
+}
+ /*==========================================================================
+   SUB NAV TAG 
+   ==========================================================================*/
+   
+   // Récupérer toutes les sous-catégories uniques
+async function getUniqueSubcategories() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('articles')
+            .select('subcategory, category')
+            .eq('is_published', true)
+            .not('subcategory', 'is', null)
+            .not('subcategory', 'eq', '');
+        
+        if (error) throw error;
+        
+        // Extraire les sous-catégories uniques
+        const subcategories = {};
+        
+        data.forEach(article => {
+            if (article.subcategory && article.subcategory.trim()) {
+                const cat = article.category || 'GENERAL';
+                const sub = article.subcategory.trim();
+                
+                if (!subcategories[cat]) {
+                    subcategories[cat] = new Set();
+                }
+                subcategories[cat].add(sub);
+            }
+        });
+        
+        // Convertir Sets en tableaux
+        const result = {};
+        for (const [cat, subs] of Object.entries(subcategories)) {
+            result[cat] = Array.from(subs);
+        }
+        
+        return result;
+    } catch (error) {
+        console.error('Erreur récupération sous-catégories:', error);
+        return {};
+    }
 }
 
+// Générer le HTML du sous-menu
+async function renderSubNav() {
+    const subNavContainer = document.getElementById('sub-nav-container');
+    if (!subNavContainer) return;
+    
+    const subcategories = await getUniqueSubcategories();
+    
+    if (Object.keys(subcategories).length === 0) {
+        subNavContainer.style.display = 'none';
+        return;
+    }
+    
+    let html = '<div class="sub-nav-wrapper"><div class="sub-nav-scroll">';
+    
+    for (const [category, subs] of Object.entries(subcategories)) {
+        // Limiter à 5 sous-catégories maximum
+        const limitedSubs = subs.slice(0, 5);
+        
+        html += `
+            <div class="sub-nav-group">
+                <span class="sub-nav-category">${category}</span>
+                <div class="sub-nav-links">
+                    ${limitedSubs.map(sub => `
+                        <a href="javascript:void(0)" 
+                           class="sub-nav-link"
+                           data-category="${category}"
+                           data-sub="${sub.replace(/'/g, "\\'")}"
+                           onclick="filterBySubcategory('${category}', '${sub.replace(/'/g, "\\'")}')">
+                            ${sub}
+                        </a>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+    
+    html += '</div></div>';
+    subNavContainer.innerHTML = html;
+}
+
+// Fonction de filtrage
+window.filterBySubcategory = function(category, subcategory) {
+    console.log(`Filtrage: ${category} → ${subcategory}`);
+    
+    // Mettre à jour l'URL
+    const newUrl = `${window.location.origin}${window.location.pathname}?category=${encodeURIComponent(category)}&subcategory=${encodeURIComponent(subcategory)}`;
+    window.history.pushState({}, '', newUrl);
+    
+    // Appeler votre fonction de chargement des articles
+    if (typeof fetchMakmusNews === 'function') {
+        fetchMakmusNews(subcategory);
+    }
+    
+    // Marquer le lien actif
+    document.querySelectorAll('.sub-nav-link').forEach(link => {
+        link.classList.toggle('active', link.dataset.sub === subcategory);
+    });
+};  
+  async function getUniqueSubcategories() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('articles')
+            .select('subcategory, category')
+            .eq('is_published', true)
+            .not('subcategory', 'is', null)
+            .not('subcategory', 'eq', '');
+        
+        if (error) throw error;
+        
+        // Structure: { category: Set(subcategories) }
+        const subcategoriesMap = new Map();
+        
+        data.forEach(article => {
+            if (!article.subcategory || !article.subcategory.trim()) return;
+            
+            let category = article.category || 'AUTRES';
+            let subcategory = article.subcategory.trim();
+            
+            // Nettoyer les catégories (éviter les doublons comme "top")
+            if (category === 'top') category = 'TOP';
+            if (category === 'ACTUALITES') category = 'ACTUALITÉS';
+            
+            if (!subcategoriesMap.has(category)) {
+                subcategoriesMap.set(category, new Set());
+            }
+            
+            subcategoriesMap.get(category).add(subcategory);
+        });
+        
+        // Convertir en objet avec tri alphabétique
+        const result = {};
+        const sortedCategories = Array.from(subcategoriesMap.keys()).sort();
+        
+        for (const category of sortedCategories) {
+            const subs = Array.from(subcategoriesMap.get(category)).sort();
+            result[category] = subs;
+        }
+        
+        console.log('📊 Sous-catégories groupées:', result);
+        return result;
+        
+    } catch (error) {
+        console.error('Erreur récupération sous-catégories:', error);
+        return {};
+    }
+}
 /* ==========================================================================
    22. SLIDER AUTRE INFO
    ========================================================================== */
@@ -2086,6 +2307,10 @@ document.addEventListener('DOMContentLoaded', () => {
     initAds();
     initAuthEvents();
     loadTrendingTags();
+    renderSubNav();
+    setInterval(() => {
+    loadTrendingTags();
+}, 5 * 60 * 1000);
     
     console.log("MAKMUS — Initialisé avec succès");
 });

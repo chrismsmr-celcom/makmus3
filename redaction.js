@@ -1767,13 +1767,14 @@ window.closeAuthorBio = function() {
 /* --------------------------------------
    INCRÉMENTATION DES VUES (VERSION DURABLE)
    -------------------------------------- */
+// Remplacez la fonction incrementArticleViews par celle-ci :
+
 async function incrementArticleViews(articleId) {
     if (!articleId) {
         console.warn('❌ Aucun ID article fourni');
         return;
     }
     
-    // Protection contre les doublons (session)
     const sessionKey = `viewed_${articleId}`;
     if (sessionStorage.getItem(sessionKey)) {
         console.log('📊 Vue déjà comptée dans cette session');
@@ -1783,9 +1784,11 @@ async function incrementArticleViews(articleId) {
     console.log('📊 Incrémentation des vues pour article:', articleId);
     
     try {
-        // Essayer d'abord la méthode RPC (si la fonction SQL existe)
+        // Convertir l'ID en string pour éviter le conflit de types
+        const articleIdStr = String(articleId);
+        
         const { data, error } = await supabaseClient.rpc('increment_article_views', {
-            article_id_param: articleId
+            article_id_param: articleIdStr
         });
         
         if (error) {
@@ -1804,7 +1807,6 @@ async function incrementArticleViews(articleId) {
         await manualIncrementViews(articleId);
     }
 }
-
 // Méthode manuelle de secours (fonctionne toujours)
 async function manualIncrementViews(articleId) {
     try {
@@ -1983,7 +1985,22 @@ async function fetchRelatedArticles(tags, category) {
         '</a>';
     }).join('');
 }
-
+/* --------------------------------------
+   TOGGLE PASSWORD VISIBILITY
+   -------------------------------------- */
+window.togglePasswordVisibility = function() {
+    const passwordInput = document.getElementById('auth-password');
+    if (!passwordInput) return;
+    
+    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+    passwordInput.setAttribute('type', type);
+    
+    // Optionnel : changer l'icône
+    const btn = document.querySelector('.toggle-password-btn');
+    if (btn) {
+        btn.textContent = type === 'password' ? '👁️' : '🙈';
+    }
+};
 /* --------------------------------------
    INITIALISATION
    -------------------------------------- */
