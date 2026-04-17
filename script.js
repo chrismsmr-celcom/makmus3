@@ -1861,31 +1861,46 @@ async function loadTrendingTags() {
     if (!container) return;
     
     try {
-        const { data } = await supabaseClient
+        // Récupérer les articles les plus récents d'abord
+        const { data, error } = await supabaseClient
             .from('articles')
-            .select('tags')
+            .select('tags, created_at')
             .eq('is_published', true)
             .not('tags', 'is', null)
+            .order('created_at', { ascending: false })  // ← Les plus récents d'abord
             .limit(200);
+        
+        if (error) throw error;
         
         if (!data || data.length === 0) {
             container.innerHTML = '<span class="trending-link">AUCUN TAG</span>';
             return;
         }
         
-        // Compter les occurrences
+        // Compter les occurrences avec un poids pour les articles récents
         const counts = {};
-        data.forEach(art => {
+        const maxIndex = data.length; // 200 maximum
+        
+        data.forEach((art, index) => {
             if (typeof art.tags === 'string' && art.tags.trim()) {
+                // Calcul du poids : plus l'article est récent, plus le poids est élevé
+                // index 0 = article le plus récent → poids 200
+                // index 199 = article le plus ancien → poids 1
+                const weight = maxIndex - index;
+                
                 art.tags.split(',').forEach(t => {
                     let tag = t.trim();
                     if (tag && tag.length > 1) {
                         const normalized = tag.toLowerCase();
-                        counts[normalized] = counts[normalized] || { 
-                            count: 0, 
-                            original: tag 
-                        };
+                        if (!counts[normalized]) {
+                            counts[normalized] = { 
+                                count: 0, 
+                                weight: 0,
+                                original: tag 
+                            };
+                        }
                         counts[normalized].count++;
+                        counts[normalized].weight += weight;
                     }
                 });
             }
@@ -1898,9 +1913,14 @@ async function loadTrendingTags() {
             return;
         }
         
-        // Prendre les 10 tags les plus fréquents
+        // Trier par poids (priorité aux articles récents) puis par nombre d'occurrences
         const topTags = tagArray
-            .sort((a, b) => b.count - a.count)
+            .sort((a, b) => {
+                // D'abord par poids (récence)
+                if (a.weight !== b.weight) return b.weight - a.weight;
+                // En cas d'égalité, par nombre d'occurrences
+                return b.count - a.count;
+            })
             .slice(0, 10);
         
         // Afficher SANS le comptage
@@ -1912,162 +1932,183 @@ async function loadTrendingTags() {
                     </span>`;
         }).join('');
         
-        console.log('✅ Tags trending chargés:', topTags.map(t => `${t.original} (${t.count})`));
+        console.log('✅ Tags trending (priorité récents):', topTags.map(t => `${t.original} (poids:${t.weight}, count:${t.count})`));
         
     } catch(e) { 
         console.warn("Tags error:", e); 
         container.innerHTML = '<span class="trending-link">TAGS INDISPONIBLES</span>'; 
     }
 }
- /*==========================================================================
-   SUB NAV TAG 
-   ==========================================================================*/
-   
-   // Récupérer toutes les sous-catégories uniques
-async function getUniqueSubcategories() {
+
+ /* ==========================================================================
+   SUB NAV TAG - Sous-catégories groupées par catégorie (affichage sans catégorie)
+   ========================================================================== */
+
+/* ==========================================================================
+   SUB NAV TAG - Sous-catégories groupées par catégorie (affichage sans catégorie)
+   ========================================================================== */
+
+// Récupérer les sous-catégories pour une catégorie spécifique (les 5 plus récentes)
+async function getSubcategoriesByCategory(categoryName) {
     try {
         const { data, error } = await supabaseClient
             .from('articles')
-            .select('subcategory, category')
+            .select('subcategory, created_at')
             .eq('is_published', true)
+            .eq('category', categoryName)
             .not('subcategory', 'is', null)
-            .not('subcategory', 'eq', '');
+            .not('subcategory', 'eq', '')
+            .order('created_at', { ascending: false });
         
         if (error) throw error;
         
-        // Extraire les sous-catégories uniques
-        const subcategories = {};
+        if (!data || data.length === 0) return [];
         
-        data.forEach(article => {
-            if (article.subcategory && article.subcategory.trim()) {
-                const cat = article.category || 'GENERAL';
-                const sub = article.subcategory.trim();
-                
-                if (!subcategories[cat]) {
-                    subcategories[cat] = new Set();
-                }
-                subcategories[cat].add(sub);
-            }
-        });
-        
-        // Convertir Sets en tableaux
-        const result = {};
-        for (const [cat, subs] of Object.entries(subcategories)) {
-            result[cat] = Array.from(subs);
-        }
-        
-        return result;
-    } catch (error) {
-        console.error('Erreur récupération sous-catégories:', error);
-        return {};
-    }
-}
-
-// Générer le HTML du sous-menu
-async function renderSubNav() {
-    const subNavContainer = document.getElementById('sub-nav-container');
-    if (!subNavContainer) return;
-    
-    const subcategories = await getUniqueSubcategories();
-    
-    if (Object.keys(subcategories).length === 0) {
-        subNavContainer.style.display = 'none';
-        return;
-    }
-    
-    let html = '<div class="sub-nav-wrapper"><div class="sub-nav-scroll">';
-    
-    for (const [category, subs] of Object.entries(subcategories)) {
-        // Limiter à 5 sous-catégories maximum
-        const limitedSubs = subs.slice(0, 5);
-        
-        html += `
-            <div class="sub-nav-group">
-                <span class="sub-nav-category">${category}</span>
-                <div class="sub-nav-links">
-                    ${limitedSubs.map(sub => `
-                        <a href="javascript:void(0)" 
-                           class="sub-nav-link"
-                           data-category="${category}"
-                           data-sub="${sub.replace(/'/g, "\\'")}"
-                           onclick="filterBySubcategory('${category}', '${sub.replace(/'/g, "\\'")}')">
-                            ${sub}
-                        </a>
-                    `).join('')}
-                </div>
-            </div>
-        `;
-    }
-    
-    html += '</div></div>';
-    subNavContainer.innerHTML = html;
-}
-
-// Fonction de filtrage
-window.filterBySubcategory = function(category, subcategory) {
-    console.log(`Filtrage: ${category} → ${subcategory}`);
-    
-    // Mettre à jour l'URL
-    const newUrl = `${window.location.origin}${window.location.pathname}?category=${encodeURIComponent(category)}&subcategory=${encodeURIComponent(subcategory)}`;
-    window.history.pushState({}, '', newUrl);
-    
-    // Appeler votre fonction de chargement des articles
-    if (typeof fetchMakmusNews === 'function') {
-        fetchMakmusNews(subcategory);
-    }
-    
-    // Marquer le lien actif
-    document.querySelectorAll('.sub-nav-link').forEach(link => {
-        link.classList.toggle('active', link.dataset.sub === subcategory);
-    });
-};  
-  async function getUniqueSubcategories() {
-    try {
-        const { data, error } = await supabaseClient
-            .from('articles')
-            .select('subcategory, category')
-            .eq('is_published', true)
-            .not('subcategory', 'is', null)
-            .not('subcategory', 'eq', '');
-        
-        if (error) throw error;
-        
-        // Structure: { category: Set(subcategories) }
+        // Extraire les sous-catégories uniques en gardant la plus récente pour chaque
         const subcategoriesMap = new Map();
         
         data.forEach(article => {
             if (!article.subcategory || !article.subcategory.trim()) return;
             
-            let category = article.category || 'AUTRES';
-            let subcategory = article.subcategory.trim();
+            const subcategory = article.subcategory.trim();
+            const createdAt = new Date(article.created_at);
             
-            // Nettoyer les catégories (éviter les doublons comme "top")
-            if (category === 'top') category = 'TOP';
-            if (category === 'ACTUALITES') category = 'ACTUALITÉS';
-            
-            if (!subcategoriesMap.has(category)) {
-                subcategoriesMap.set(category, new Set());
+            if (!subcategoriesMap.has(subcategory)) {
+                subcategoriesMap.set(subcategory, createdAt);
+            } else {
+                // Garder la date la plus récente
+                const existingDate = subcategoriesMap.get(subcategory);
+                if (createdAt > existingDate) {
+                    subcategoriesMap.set(subcategory, createdAt);
+                }
             }
-            
-            subcategoriesMap.get(category).add(subcategory);
         });
         
-        // Convertir en objet avec tri alphabétique
-        const result = {};
-        const sortedCategories = Array.from(subcategoriesMap.keys()).sort();
+        // Convertir en tableau et trier par date (plus récent d'abord)
+        const sortedSubcategories = Array.from(subcategoriesMap.entries())
+            .sort((a, b) => b[1] - a[1])
+            .map(entry => entry[0]);
         
-        for (const category of sortedCategories) {
-            const subs = Array.from(subcategoriesMap.get(category)).sort();
-            result[category] = subs;
-        }
+        // Prendre seulement les 5 plus récentes
+        const latestSubcategories = sortedSubcategories.slice(0, 5);
         
-        console.log('📊 Sous-catégories groupées:', result);
-        return result;
+        console.log(`📊 ${categoryName} - Sous-catégories (5 plus récentes):`, latestSubcategories);
+        return latestSubcategories;
         
     } catch (error) {
-        console.error('Erreur récupération sous-catégories:', error);
-        return {};
+        console.error(`Erreur récupération sous-catégories pour ${categoryName}:`, error);
+        return [];
     }
+}
+
+// Générer le HTML d'un sous-menu spécifique
+async function renderSubNavForCategory(containerId, categoryName) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    const subcategories = await getSubcategoriesByCategory(categoryName);
+    
+    if (subcategories.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+    
+    let html = '<div class="sub-nav-wrapper"><div class="sub-nav-scroll"><div class="sub-nav-links">';
+    
+    subcategories.forEach(sub => {
+        const escapedSub = sub.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        html += `
+            <a href="javascript:void(0)" 
+               class="sub-nav-link"
+               data-category="${categoryName}"
+               data-sub="${escapedSub}"
+               onclick="filterBySubcategory('${categoryName}', '${escapedSub}')">
+                ${sub}
+            </a>
+        `;
+    });
+    
+    html += '</div></div></div>';
+    container.innerHTML = html;
+    container.style.display = 'block';
+}
+
+// Initialiser tous les sous-menus
+async function initAllSubNavs() {
+    await renderSubNavForCategory('sub-nav-economie', 'ECONOMIE');
+    await renderSubNavForCategory('sub-nav-international', 'INTERNATIONAL');
+    await renderSubNavForCategory('sub-nav-environnement', 'ENVIRONNEMENT');
+    await renderSubNavForCategory('sub-nav-sport', 'SPORT');
+}
+
+// Fonction de filtrage par catégorie + sous-catégorie
+window.filterBySubcategory = async function(category, subcategory) {
+    console.log(`🔍 Filtrage: ${category} → ${subcategory}`);
+    
+    try {
+        // Récupérer les articles de cette catégorie ET sous-catégorie
+        const { data, error } = await supabaseClient
+            .from('articles')
+            .select('*')
+            .eq('is_published', true)
+            .eq('category', category)
+            .eq('subcategory', subcategory)
+            .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        console.log(`📄 ${data?.length || 0} article(s) trouvé(s) pour ${category} / ${subcategory}`);
+        
+        // Mettre à jour l'URL
+        const newUrl = `${window.location.origin}${window.location.pathname}?category=${encodeURIComponent(category)}&subcategory=${encodeURIComponent(subcategory)}`;
+        window.history.pushState({}, '', newUrl);
+        
+        // Afficher les articles filtrés
+        if (typeof renderFilteredArticles === 'function') {
+            renderFilteredArticles(data, category, subcategory);
+        } else if (typeof fetchMakmusNews === 'function') {
+            fetchMakmusNews(subcategory);
+        }
+        
+        // Marquer le lien actif
+        document.querySelectorAll('.sub-nav-link').forEach(link => {
+            link.classList.toggle('active', 
+                link.dataset.category === category && link.dataset.sub === subcategory);
+        });
+        
+        if (!data || data.length === 0) {
+            showToast(`Aucun article dans "${subcategory}"`, 'info');
+        }
+        
+    } catch (error) {
+        console.error('Erreur filtrage:', error);
+        showToast('Erreur lors du filtrage', 'error');
+    }
+};
+
+// Fonction pour afficher les articles filtrés (optionnel)
+function renderFilteredArticles(articles, category, subcategory) {
+    const container = document.getElementById('news-grid');
+    if (!container) return;
+    
+    if (!articles || articles.length === 0) {
+        container.innerHTML = `<div class="no-results">
+            <p>Aucun article trouvé pour : ${subcategory}</p>
+        </div>`;
+        return;
+    }
+    
+    // Afficher les articles (adaptez selon votre template)
+    container.innerHTML = articles.map(article => `
+        <div class="article-card" onclick="window.location.href='redaction.html?id=${article.id}'">
+            ${article.image_url ? `<img src="${article.image_url}" alt="${article.titre}">` : ''}
+            <h3>${article.titre}</h3>
+            <p>${(article.description || '').substring(0, 150)}...</p>
+        </div>
+    `).join('');
+    
+    // Scroll en haut
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 /* ==========================================================================
    22. SLIDER AUTRE INFO
@@ -2308,6 +2349,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initAuthEvents();
     loadTrendingTags();
     renderSubNav();
+    initAllSubNavs();
     setInterval(() => {
     loadTrendingTags();
 }, 5 * 60 * 1000);
