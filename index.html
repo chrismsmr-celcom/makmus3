@@ -146,90 +146,18 @@
     </div>
 
     <!-- ================= CONTENU PRINCIPAL ================= -->
-    <main class="newspaper-body">
-        <div class="status-line" id="status-line">EDITION DU JOUR</div>
+<main class="newspaper-body">
+    <div class="status-line" id="status-line">EDITION DU JOUR</div>
+    
+    <!-- Hero + Sidebar en ligne (2 colonnes) pour DESKTOP -->
+    <div class="hero-sidebar-wrapper">
+        <div id="hero-zone">
+            <div class="hero-flexible"></div>
+        </div>
         
-        <!-- Hero + Sidebar en ligne (2 colonnes) pour DESKTOP -->
-        <div class="hero-sidebar-wrapper">
-            <div id="hero-zone">
-                <div class="hero-flexible"></div>
-            </div>
-            
-            <aside class="sidebar-column sidebar-desktop">
-                <div class="sidebar-heading">TENDANCES</div>
-                <div id="sidebar-list" class="ordered-news-list"></div>
-                
-                <div class="slider-nav">
-                    <button class="nav-btn prev" onclick="window.moveSlide(-1)" aria-label="Précédent">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="15 18 9 12 15 6"></polyline>
-                        </svg>
-                    </button>
-                    <button class="nav-btn next" onclick="window.moveSlide(1)" aria-label="Suivant">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="9 18 15 12 9 6"></polyline>
-                        </svg>
-                    </button>
-                </div>
-
-                <div class="sidebar-section">
-                    <h3 class="section-title">OPINION</h3>
-                    <div id="opinion-list" class="opinion-list"></div>
-                    <div class="opinion-footer">
-                        <a href="mailto:contact@makmus.com?subject=Proposition%20de%20Chronique" class="discreet-link">
-                            Devenir chroniqueur <span class="arrow">→</span>
-                        </a>
-                    </div>
-                </div>
-            </aside>
-        </div>
-
-        <!-- Sections -->
-        <section id="economy-section" class="magazine-section">
-            <div class="section-header">
-                <h2 class="section-title">ÉCONOMIE & FINANCE</h2>
-                <!-- SOUS-MENU DYNAMIQUE -->
-            <div id="sub-nav-container"></div>           
-             </div>
-            <div id="economy-grid"></div>
-        </section>
-
-        <section id="international-section" class="magazine-section">
-            <div class="section-header">
-                <h2 class="section-title">INTERNATIONAL</h2>
-                <!-- SOUS-MENU DYNAMIQUE -->
-                <div id="sub-nav-container"></div>
-            </div>
-            <div id="international-grid"></div>
-        </section>
-
-        <section id="environnement-section" class="magazine-section">
-            <div class="section-header">
-                <h2 class="section-title">ENVIRONNEMENT</h2>
-                <!-- SOUS-MENU DYNAMIQUE -->
-               <div id="sub-nav-container"></div>
-            </div>
-            <div id="environnement-grid"></div>
-        </section>
-
-        <section id="sport-section" class="magazine-section">
-            <div class="section-header">
-                <h2 class="section-title">SPORT</h2>
-                <!-- SOUS-MENU DYNAMIQUE -->
-                <div id="sub-nav-container"></div>
-            </div>
-            <div id="sport-grid"></div>
-        </section>
-
-        <div class="newspaper-layout-single">
-            <div class="main-news-column">
-                <div id="news-grid" class="news-grid"></div>
-            </div>
-        </div>
-
-        <aside class="sidebar-column sidebar-mobile">
+        <aside class="sidebar-column sidebar-desktop">
             <div class="sidebar-heading">TENDANCES</div>
-            <div id="sidebar-list-mobile" class="ordered-news-list"></div>
+            <div id="sidebar-list" class="ordered-news-list"></div>
             
             <div class="slider-nav">
                 <button class="nav-btn prev" onclick="window.moveSlide(-1)" aria-label="Précédent">
@@ -246,7 +174,7 @@
 
             <div class="sidebar-section">
                 <h3 class="section-title">OPINION</h3>
-                <div id="opinion-list-mobile" class="opinion-list"></div>
+                <div id="opinion-list" class="opinion-list"></div>
                 <div class="opinion-footer">
                     <a href="mailto:contact@makmus.com?subject=Proposition%20de%20Chronique" class="discreet-link">
                         Devenir chroniqueur <span class="arrow">→</span>
@@ -254,7 +182,79 @@
                 </div>
             </div>
         </aside>
-    </main>
+    </div>
+
+    <!-- Sections avec IDs uniques pour chaque sous-menu -->
+    <section id="economy-section" class="magazine-section">
+        <div class="section-header">
+            <h2 class="section-title">ÉCONOMIE & FINANCE</h2>
+            <!-- SOUS-MENU DYNAMIQUE ÉCONOMIE -->
+            <div id="sub-nav-economie"></div>           
+        </div>
+        <div id="economy-grid"></div>
+    </section>
+
+    <section id="international-section" class="magazine-section">
+        <div class="section-header">
+            <h2 class="section-title">INTERNATIONAL</h2>
+            <!-- SOUS-MENU DYNAMIQUE INTERNATIONAL -->
+            <div id="sub-nav-international"></div>
+        </div>
+        <div id="international-grid"></div>
+    </section>
+
+    <section id="environnement-section" class="magazine-section">
+        <div class="section-header">
+            <h2 class="section-title">ENVIRONNEMENT</h2>
+            <!-- SOUS-MENU DYNAMIQUE ENVIRONNEMENT -->
+            <div id="sub-nav-environnement"></div>
+        </div>
+        <div id="environnement-grid"></div>
+    </section>
+
+    <section id="sport-section" class="magazine-section">
+        <div class="section-header">
+            <h2 class="section-title">SPORT</h2>
+            <!-- SOUS-MENU DYNAMIQUE SPORT -->
+            <div id="sub-nav-sport"></div>
+        </div>
+        <div id="sport-grid"></div>
+    </section>
+
+    <div class="newspaper-layout-single">
+        <div class="main-news-column">
+            <div id="news-grid" class="news-grid"></div>
+        </div>
+    </div>
+
+    <aside class="sidebar-column sidebar-mobile">
+        <div class="sidebar-heading">TENDANCES</div>
+        <div id="sidebar-list-mobile" class="ordered-news-list"></div>
+        
+        <div class="slider-nav">
+            <button class="nav-btn prev" onclick="window.moveSlide(-1)" aria-label="Précédent">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </button>
+            <button class="nav-btn next" onclick="window.moveSlide(1)" aria-label="Suivant">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+            </button>
+        </div>
+
+        <div class="sidebar-section">
+            <h3 class="section-title">OPINION</h3>
+            <div id="opinion-list-mobile" class="opinion-list"></div>
+            <div class="opinion-footer">
+                <a href="mailto:contact@makmus.com?subject=Proposition%20de%20Chronique" class="discreet-link">
+                    Devenir chroniqueur <span class="arrow">→</span>
+                </a>
+            </div>
+        </div>
+    </aside>
+        </main>
 
     <!-- VIDEOS DU JOUR -->
     <section id="video-section" class="video-section">
