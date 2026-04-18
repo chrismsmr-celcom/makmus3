@@ -808,7 +808,7 @@ function getPlaceholderImage(width, height, text) {
     return 'https://placehold.co/' + width + 'x' + height + '/f0f0f0/999?text=' + encodeURIComponent(text || 'Image');
 }
 /* ==========================================================================
-   10. RENDER UI - AVEC GESTION DES VIDÉOS EN SOUS-ARTICLES
+   10. RENDER UI - AVEC GESTION DES VIDÉOS EN SOUS-ARTICLES ET DESCRIPTIONS
    ========================================================================== */
 function renderUI(heroArticle, gridArticles) {
     const heroZone = document.getElementById('hero-zone');
@@ -821,16 +821,26 @@ function renderUI(heroArticle, gridArticles) {
         subArticles.forEach(sub => {
             if (!sub) return;
             
-            let displayImage = sub.image_url;
-            let hasVideo = sub.video_url && sub.video_url !== '';
+            const hasVideo = sub.video_url && sub.video_url !== '';
+            let displayImage = '';
             
-            if (!displayImage && hasVideo) {
-                displayImage = sub.video_thumbnail || getPlaceholderImage(100, 100, 'Vidéo');
+            // ✅ Gestion des vidéos en sous-article
+            if (hasVideo) {
+                if (sub.video_poster && sub.video_poster !== '') {
+                    displayImage = sub.video_poster;
+                } else if (sub.image_url && sub.image_url !== '') {
+                    displayImage = sub.image_url;
+                } else {
+                    displayImage = '';  // Pas de placeholder
+                }
+            } else {
+                displayImage = sub.image_url || '';
             }
             
             const hasImage = displayImage && displayImage !== '';
             const readTime = calculerTempsLecture(sub.description);
             const articleUrl = getArticleUrl(sub);
+            const subExcerpt = (sub.description || "").replace(/<[^>]*>/g, '').substring(0, 120);
             
             if (hasImage) {
                 subHtml += `
@@ -841,6 +851,7 @@ function renderUI(heroArticle, gridArticles) {
                         </div>
                         <div class="sub-article-content">
                             <h4 class="sub-article-title">${escapeHtml(sub.titre)}</h4>
+                            <p class="sub-article-description">${escapeHtml(subExcerpt)}${subExcerpt.length >= 120 ? '...' : ''}</p>
                             <span class="sub-article-read-time">${readTime}</span>
                         </div>
                     </div>
@@ -849,13 +860,14 @@ function renderUI(heroArticle, gridArticles) {
                 subHtml += `
                     <div class="sub-article-text-only" onclick="window.location.href='${articleUrl}'">
                         <h4 class="sub-article-title">${escapeHtml(sub.titre)}</h4>
+                        <p class="sub-article-description">${escapeHtml(subExcerpt)}${subExcerpt.length >= 120 ? '...' : ''}</p>
                         <span class="sub-article-read-time">${readTime}</span>
                     </div>
                 `;
             }
         });
         
-        const cleanDesc = (heroArticle.description || "").replace(/<[^>]*>/g, '').substring(0, 560);
+        const cleanDesc = (heroArticle.description || "").replace(/<[^>]*>/g, '').substring(0, 1060);
         const heroUrl = getArticleUrl(heroArticle);
         
         heroZone.innerHTML = `
@@ -891,11 +903,20 @@ function renderUI(heroArticle, gridArticles) {
             const excerpt = (art.description || "").replace(/<[^>]*>/g, '').substring(0, 120);
             const articleUrl = getArticleUrl(art);
             
-            let displayImage = art.image_url;
             const hasVideo = art.video_url && art.video_url !== '';
+            let displayImage = '';
             
-            if (!displayImage && hasVideo) {
-                displayImage = art.video_thumbnail || getPlaceholderImage(400, 250, 'Vidéo');
+            // ✅ Gestion des vidéos dans la grille principale - CORRIGÉ (utilisation de "art")
+            if (hasVideo) {
+                if (art.video_poster && art.video_poster !== '') {
+                    displayImage = art.video_poster;
+                } else if (art.image_url && art.image_url !== '') {
+                    displayImage = art.image_url;
+                } else {
+                    displayImage = '';  // Pas de placeholder
+                }
+            } else {
+                displayImage = art.image_url || '';
             }
             
             return `
@@ -959,13 +980,12 @@ function renderSectionMedia(article) {
     
     const articleMedias = article.medias || [];
     if (articleMedias.length > 0 || article.image_url) {
-        // ✅ CORRECTION: Éviter les doublons d'URL
+        // Éviter les doublons d'URL
         const galleryItems = [];
         const urlsVues = new Set();
         
         // Ajouter l'image principale si elle existe et n'est pas déjà dans les médias
         if (article.image_url && article.image_url !== '') {
-            // Vérifier si l'URL n'est pas déjà dans les médias
             let estDansMedias = false;
             for (var i = 0; i < articleMedias.length; i++) {
                 if (articleMedias[i].url === article.image_url) {
@@ -988,77 +1008,92 @@ function renderSectionMedia(article) {
             }
         }
         
-        // Afficher la galerie ou l'image unique
-        if (galleryItems.length > 1) {
-            const galleryId = 'gallery_' + Date.now() + '_' + Math.random().toString(36).substring(2, 11);
-            let slidesHtml = '', dotsHtml = '';
-            
-            for (var k = 0; k < galleryItems.length; k++) {
-                var item = galleryItems[k];
-                var mediaType = item.type === 'video' ? 'video' : 'image';
-                var captionText = item.caption || '';
-                var placeholder = getPlaceholderImage(800, 500, 'Média');
-                
-                slidesHtml += `
-                    <div class="hero-gallery-slide" data-index="${k}">
-                        ${mediaType === 'video' ? 
-                            `<video src="${item.url}" controls playsinline preload="metadata">
-                                <source src="${item.url}" type="video/mp4">
-                                Votre navigateur ne supporte pas la vidéo.
-                            </video>` : 
-                            `<img src="${item.url}" loading="lazy" onerror="this.src='${placeholder}'" alt="${escapeHtml(captionText)}">`
-                        }
-                        ${captionText ? `<div class="hero-slide-caption"><p>${escapeHtml(captionText)}</p></div>` : ''}
-                    </div>
-                `;
-                dotsHtml += `<div class="gallery-dot ${k === 0 ? 'active' : ''}" data-index="${k}" onclick="goToGallerySlideSection('${galleryId}', ${k})"></div>`;
-            }
-            
-            return `
-                <div class="hero-gallery-wrapper" id="${galleryId}">
-                    <div class="hero-gallery-slides">${slidesHtml}</div>
-                    <div class="hero-gallery-controls">
-                        <div class="hero-gallery-dots">${dotsHtml}</div>
-                        <div class="hero-gallery-nav">
-                            <button class="gallery-prev" onclick="prevGallerySectionById('${galleryId}')">‹</button>
-                            <button class="gallery-next" onclick="nextGallerySectionById('${galleryId}')">›</button>
-                        </div>
-                    </div>
-                </div>
-                <style>
-                    #${galleryId} .hero-gallery-slides {
-                        display: flex;
-                        overflow-x: auto;
-                        scroll-snap-type: x mandatory;
-                        scroll-behavior: smooth;
-                    }
-                    #${galleryId} .hero-gallery-slide {
-                        flex: 0 0 100%;
-                        scroll-snap-align: start;
-                        position: relative;
-                    }
-                    #${galleryId} .hero-gallery-slide img,
-                    #${galleryId} .hero-gallery-slide video {
-                        width: 100%;
-                        height: auto;
-                        max-height: 500px;
-                        object-fit: cover;
-                    }
-                    #${galleryId} .hero-slide-caption {
-                        position: absolute;
-                        bottom: 0;
-                        left: 0;
-                        right: 0;
-                        background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
-                        color: white;
-                        padding: 40px 30px 20px;
-                        font-family: var(--serif);
-                        font-size: 0.9rem;
-                    }
-                </style>
-            `;
-        }
+        // Cas 1 : Galerie avec plusieurs médias
+if (galleryItems.length > 1) {
+    const galleryId = 'gallery_' + Date.now() + '_' + Math.random().toString(36).substring(2, 11);
+    let slidesHtml = '', dotsHtml = '';
+    
+    for (var k = 0; k < galleryItems.length; k++) {
+        var item = galleryItems[k];
+        var mediaType = item.type === 'video' ? 'video' : 'image';
+        var captionText = item.caption || '';
+        var placeholder = getPlaceholderImage(800, 500, 'Média');
         
+        slidesHtml += `
+            <div class="hero-gallery-slide" data-index="${k}">
+                <div class="hero-slide-media-wrapper">
+                    ${mediaType === 'video' ? 
+                        `<video src="${item.url}" controls playsinline preload="metadata">
+                            <source src="${item.url}" type="video/mp4">
+                            Votre navigateur ne supporte pas la vidéo.
+                        </video>` : 
+                        `<img src="${item.url}" loading="lazy" onerror="this.src='${placeholder}'" alt="${escapeHtml(captionText)}">`
+                    }
+                    ${captionText ? `<div class="hero-slide-caption-overlay">${escapeHtml(captionText)}</div>` : ''}
+                </div>
+            </div>
+        `;
+        dotsHtml += `<div class="gallery-dot ${k === 0 ? 'active' : ''}" data-index="${k}" onclick="goToGallerySlideSection('${galleryId}', ${k})"></div>`;
+    }
+    
+    return `
+        <div class="hero-gallery-wrapper" id="${galleryId}">
+            <div class="hero-gallery-slides">${slidesHtml}</div>
+            <div class="hero-gallery-controls">
+                <div class="hero-gallery-dots">${dotsHtml}</div>
+                <div class="hero-gallery-nav">
+                    <button class="gallery-prev" onclick="prevGallerySectionById('${galleryId}')">‹</button>
+                    <button class="gallery-next" onclick="nextGallerySectionById('${galleryId}')">›</button>
+                </div>
+            </div>
+        </div>
+        <style>
+            #${galleryId} {
+                position: relative;
+            }
+            #${galleryId} .hero-gallery-slides {
+                display: flex;
+                overflow-x: auto;
+                scroll-snap-type: x mandatory;
+                scroll-behavior: smooth;
+                scrollbar-width: none;
+            }
+            #${galleryId} .hero-gallery-slides::-webkit-scrollbar {
+                display: none;
+            }
+            #${galleryId} .hero-gallery-slide {
+                flex: 0 0 100%;
+                scroll-snap-align: start;
+            }
+            /* L'image garde son ratio */
+            #${galleryId} .hero-slide-media-wrapper {
+                position: relative;
+                width: 100%;
+            }
+            #${galleryId} .hero-gallery-slide img,
+            #${galleryId} .hero-gallery-slide video {
+                width: 100%;
+                height: auto;
+                display: block;
+            }
+            /* Description SUR l'image (overlay) */
+            #${galleryId} .hero-slide-caption-overlay {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: linear-gradient(to top, rgba(0,0,0,10), transparent);
+                color: white;
+                padding: 30px 20px 15px 20px;
+                font-family: var(--sans, 'Libre Franklin', sans-serif);
+                font-size: 0.85rem;
+                text-align: left;
+                pointer-events: none;
+            }
+        </style>
+    `;
+}        
+        // Cas 2 : Un seul média
         if (galleryItems.length === 1) {
             const singleItem = galleryItems[0];
             const placeholder = getPlaceholderImage(800, 500, 'Image');
@@ -1071,6 +1106,7 @@ function renderSectionMedia(article) {
         }
     }
     
+    // Cas 3 : Aucun média, image par défaut
     const defaultPlaceholder = getPlaceholderImage(800, 450, 'Image');
     return `<div class="hero-single-image"><img src="${article.image_url || defaultPlaceholder}" loading="lazy" onerror="this.src='${defaultPlaceholder}'" alt="Image par défaut"></div>`;
 }
@@ -1205,21 +1241,34 @@ function renderSubArticlesAsMediaObject(subArticles) {
                 ${subArticles.map(art => {
                     const articleUrl = getArticleUrl(art);
                     const hasVideo = art.video_url && art.video_url !== '';
-                    const displayImage = art.image_url || '';
+                    let displayImage = '';
+                    
+                    // ✅ Gestion des vidéos
+                    if (hasVideo) {
+                        if (art.video_poster && art.video_poster !== '') {
+                            displayImage = art.video_poster;
+                        } else if (art.image_url && art.image_url !== '') {
+                            displayImage = art.image_url;
+                        } else {
+                            displayImage = getPlaceholderImage(100, 100, 'Vidéo');
+                        }
+                    } else {
+                        displayImage = art.image_url || '';
+                    }
                     
                     return `
                     <div class="media-object-card" onclick="window.location.href='${articleUrl}'">
                         <div class="media-object-thumbnail" style="position: relative;">
                             ${displayImage ? `
-                                <img src="${displayImage}" alt="${escapeHtml(art.titre)}">
+                                <img src="${displayImage}" alt="${escapeHtml(art.titre)}" loading="lazy">
                             ` : `
                                 <div style="width:100%; height:100%; background:#f5f5f5;"></div>
                             `}
-                            ${hasVideo && displayImage ? '<div class="media-video-badge">▶</div>' : ''}
+                            ${hasVideo ? '<div class="media-video-badge">▶</div>' : ''}
                         </div>
                         <div class="media-object-content">
                             <h3 class="media-object-title">${escapeHtml(art.titre)}</h3>
-                            <p class="media-object-excerpt">${(art.description || "").replace(/<[^>]*>/g, '').substring(0, 80)}...</p>
+                            <p class="media-object-excerpt">${(art.description || "").replace(/<[^>]*>/g, '').substring(0, 200)}...</p>
                             <span class="media-object-read-time">${calculerTempsLecture(art.description)}</span>
                         </div>
                     </div>
