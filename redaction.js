@@ -1784,26 +1784,18 @@ async function incrementArticleViews(articleId) {
     console.log('📊 Incrémentation des vues pour article:', articleId);
     
     try {
-        // Convertir l'ID en string pour éviter le conflit de types
-        const articleIdStr = String(articleId);
-        
+        // ✅ Envoi direct de l'UUID (pas de conversion en string)
         const { data, error } = await supabaseClient.rpc('increment_article_views', {
-            article_id_param: articleIdStr
+            article_id_param: articleId  // ← UUID direct
         });
         
-        if (error) {
-            console.warn('⚠️ RPC échoué, fallback vers méthode manuelle:', error.message);
-            await manualIncrementViews(articleId);
-        } else {
-            console.log(`✅ Vue comptée (RPC): ${data}`);
-            sessionStorage.setItem(sessionKey, 'true');
-            
-            const viewsSpan = document.getElementById('nb-views');
-            if (viewsSpan) viewsSpan.textContent = data;
-            if (currentArticle) currentArticle.views_count = data;
-        }
+        if (error) throw error;
+        
+        console.log(`✅ Vue comptée (RPC): ${data}`);
+        sessionStorage.setItem(sessionKey, 'true');
+        
     } catch (error) {
-        console.error('❌ Erreur RPC:', error);
+        console.warn('⚠️ RPC échoué, fallback vers méthode manuelle:', error.message);
         await manualIncrementViews(articleId);
     }
 }
