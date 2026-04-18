@@ -146,18 +146,135 @@
     </div>
 
     <!-- ================= CONTENU PRINCIPAL ================= -->
-<main class="newspaper-body">
-    <div class="status-line" id="status-line">EDITION DU JOUR</div>
-    
-    <!-- Hero + Sidebar en ligne (2 colonnes) pour DESKTOP -->
-    <div class="hero-sidebar-wrapper">
-        <div id="hero-zone">
-            <div class="hero-flexible"></div>
-        </div>
+    <main class="newspaper-body">
+        <div class="status-line" id="status-line">EDITION DU JOUR</div>
         
-        <aside class="sidebar-column sidebar-desktop">
+        <!-- Layout en 2 colonnes pour TOUT le contenu -->
+        <div class="two-columns-layout">
+            
+            <!-- COLONNE DE GAUCHE : Hero + Toutes les sections -->
+            <div class="left-column">
+                <!-- Hero zone -->
+                <div id="hero-zone">
+                    <div class="hero-flexible"></div>
+                </div>
+
+                <!-- Sections magazine -->
+                <section id="economy-section" class="magazine-section">
+                    <div class="section-header">
+                        <h2 class="section-title">ÉCONOMIE & FINANCE</h2>
+                        <div id="sub-nav-economie"></div>           
+                    </div>
+                    <div id="economy-grid"></div>
+                </section>
+
+                <section id="international-section" class="magazine-section">
+                    <div class="section-header">
+                        <h2 class="section-title">INTERNATIONAL</h2>
+                        <div id="sub-nav-international"></div>
+                    </div>
+                    <div id="international-grid"></div>
+                </section>
+
+                <section id="environnement-section" class="magazine-section">
+                    <div class="section-header">
+                        <h2 class="section-title">ENVIRONNEMENT</h2>
+                        <div id="sub-nav-environnement"></div>
+                    </div>
+                    <div id="environnement-grid"></div>
+                </section>
+
+                <section id="sport-section" class="magazine-section">
+                    <div class="section-header">
+                        <h2 class="section-title">SPORT</h2>
+                        <div id="sub-nav-sport"></div>
+                    </div>
+                    <div id="sport-grid"></div>
+                </section>
+
+                <div class="newspaper-layout-single">
+                    <div class="main-news-column">
+                        <div id="news-grid" class="news-grid"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COLONNE DE DROITE : Sidebar Desktop (caché sur mobile) -->
+            <aside class="right-column sidebar-desktop">
+                <div class="sticky-content">
+                    <div class="sidebar-heading">TENDANCES</div>
+                    <div id="sidebar-list" class="ordered-news-list"></div>
+                    
+                    <div class="slider-nav">
+                        <button class="nav-btn prev" onclick="window.moveSlide(-1)" aria-label="Précédent">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="15 18 9 12 15 6"></polyline>
+                            </svg>
+                        </button>
+                        <button class="nav-btn next" onclick="window.moveSlide(1)" aria-label="Suivant">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="sidebar-section">
+                        <h3 class="section-title">OPINION</h3>
+                        <div id="opinion-list" class="opinion-list"></div>
+                        <div class="opinion-footer">
+                            <a href="mailto:contact@makmus.com?subject=Proposition%20de%20Chronique" class="discreet-link">
+                                Devenir chroniqueur <span class="arrow">→</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <!-- VIDEOS DU JOUR -->
+        <section id="video-section" class="video-section">
+            <div class="standard-section-header">
+                <h2 class="section-label">Videos du jour</h2>
+            </div>
+            <div class="video-slider-wrapper">
+                <div id="video-slider" class="video-slider"></div>
+                <div class="slider-controls-container">
+                    <div class="slider-dots" id="video-dots"></div>
+                    <div class="slider-nav-arrows">
+                        <button class="nav-arrow-btn" onclick="window.scrollVideoSlider(-300)">❮</button>
+                        <button class="nav-arrow-btn" onclick="window.scrollVideoSlider(300)">❯</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- LIFESTYLE -->
+        <section id="lifestyle-section" class="magazine-section">
+            <div class="section-header">
+                <h2 class="section-title">Lifestyle & bien-être</h2>
+            </div>
+            <div id="lifestyle-grid"></div>
+        </section>
+
+        <!-- AUDIO SECTION -->
+        <section class="audio-section">
+            <div class="section-header">
+                <h2 class="section-title">Audio <span class="subtitle">Podcasts et articles lus</span></h2>
+            </div>
+            <div id="audio-grid" class="audio-grid"></div>
+        </section>
+
+        <!-- PLUS D'INFO -->
+        <section class="more-info-section">
+            <div class="section-divider-double"></div>
+            <h2 class="section-main-title">PLUS D'INFO</h2>
+            <div id="more-info-grid" class="more-info-grid"></div>
+        </section>
+
+        <!-- SIDEBAR MOBILE (affiché UNIQUEMENT sur mobile) -->
+        <aside class="sidebar-mobile">
             <div class="sidebar-heading">TENDANCES</div>
-            <div id="sidebar-list" class="ordered-news-list"></div>
+            <div id="sidebar-list-mobile" class="ordered-news-list"></div>
             
             <div class="slider-nav">
                 <button class="nav-btn prev" onclick="window.moveSlide(-1)" aria-label="Précédent">
@@ -174,7 +291,7 @@
 
             <div class="sidebar-section">
                 <h3 class="section-title">OPINION</h3>
-                <div id="opinion-list" class="opinion-list"></div>
+                <div id="opinion-list-mobile" class="opinion-list"></div>
                 <div class="opinion-footer">
                     <a href="mailto:contact@makmus.com?subject=Proposition%20de%20Chronique" class="discreet-link">
                         Devenir chroniqueur <span class="arrow">→</span>
@@ -182,145 +299,7 @@
                 </div>
             </div>
         </aside>
-    </div>
-
-    <!-- Sections avec IDs uniques pour chaque sous-menu -->
-    <section id="economy-section" class="magazine-section">
-        <div class="section-header">
-            <h2 class="section-title">ÉCONOMIE & FINANCE</h2>
-            <!-- SOUS-MENU DYNAMIQUE ÉCONOMIE -->
-            <div id="sub-nav-economie"></div>           
-        </div>
-        <div id="economy-grid"></div>
-    </section>
-
-    <section id="international-section" class="magazine-section">
-        <div class="section-header">
-            <h2 class="section-title">INTERNATIONAL</h2>
-            <!-- SOUS-MENU DYNAMIQUE INTERNATIONAL -->
-            <div id="sub-nav-international"></div>
-        </div>
-        <div id="international-grid"></div>
-    </section>
-
-    <section id="environnement-section" class="magazine-section">
-        <div class="section-header">
-            <h2 class="section-title">ENVIRONNEMENT</h2>
-            <!-- SOUS-MENU DYNAMIQUE ENVIRONNEMENT -->
-            <div id="sub-nav-environnement"></div>
-        </div>
-        <div id="environnement-grid"></div>
-    </section>
-
-    <section id="sport-section" class="magazine-section">
-        <div class="section-header">
-            <h2 class="section-title">SPORT</h2>
-            <!-- SOUS-MENU DYNAMIQUE SPORT -->
-            <div id="sub-nav-sport"></div>
-        </div>
-        <div id="sport-grid"></div>
-    </section>
-
-    <div class="newspaper-layout-single">
-        <div class="main-news-column">
-            <div id="news-grid" class="news-grid"></div>
-        </div>
-    </div>
-
-    <aside class="sidebar-column sidebar-mobile">
-        <div class="sidebar-heading">TENDANCES</div>
-        <div id="sidebar-list-mobile" class="ordered-news-list"></div>
-        
-        <div class="slider-nav">
-            <button class="nav-btn prev" onclick="window.moveSlide(-1)" aria-label="Précédent">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="15 18 9 12 15 6"></polyline>
-                </svg>
-            </button>
-            <button class="nav-btn next" onclick="window.moveSlide(1)" aria-label="Suivant">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="9 18 15 12 9 6"></polyline>
-                </svg>
-            </button>
-        </div>
-
-        <div class="sidebar-section">
-            <h3 class="section-title">OPINION</h3>
-            <div id="opinion-list-mobile" class="opinion-list"></div>
-            <div class="opinion-footer">
-                <a href="mailto:contact@makmus.com?subject=Proposition%20de%20Chronique" class="discreet-link">
-                    Devenir chroniqueur <span class="arrow">→</span>
-                </a>
-            </div>
-        </div>
-    </aside>
-        </main>
-
-    <!-- VIDEOS DU JOUR -->
-    <section id="video-section" class="video-section">
-        <div class="standard-section-header">
-            <h2 class="section-label">Videos du jour</h2>
-        </div>
-        <div class="video-slider-wrapper">
-            <div id="video-slider" class="video-slider"></div>
-            <div class="slider-controls-container">
-                <div class="slider-dots" id="video-dots"></div>
-                <div class="slider-nav-arrows">
-                    <button class="nav-arrow-btn" onclick="window.scrollVideoSlider(-300)">❮</button>
-                    <button class="nav-arrow-btn" onclick="window.scrollVideoSlider(300)">❯</button>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- LIFESTYLE -->
-    <section id="lifestyle-section" class="magazine-section">
-        <div class="section-header">
-            <h2 class="section-title">Lifestyle & bien-être</h2>
-        </div>
-        <div id="lifestyle-grid"></div>
-    </section>
-
-    <!-- AUDIO SECTION -->
-    <section class="audio-section">
-        <div class="section-header">
-            <h2 class="section-title">Audio <span class="subtitle">Podcasts et articles lus</span></h2>
-        </div>
-        <div id="audio-grid" class="audio-grid"></div>
-    </section>
-
-    <!-- Widget Audio Flottant -->
-    <div id="audio-widget" class="audio-widget" style="display: none;">
-        <div class="audio-widget-content">
-            <div class="audio-widget-info">
-                <img id="widget-cover" src="" alt="Cover">
-                <div class="audio-widget-details">
-                    <span id="widget-title">Titre</span>
-                    <span id="widget-source">Source</span>
-                </div>
-            </div>
-            <div class="audio-widget-controls">
-                <button id="widget-prev" class="widget-btn">⏮</button>
-                <button id="widget-play" class="widget-btn play-btn">▶</button>
-                <button id="widget-next" class="widget-btn">⏭</button>
-                <button id="widget-close" class="widget-btn close-btn">✕</button>
-            </div>
-            <div class="audio-widget-progress">
-                <span id="widget-current">0:00</span>
-                <div class="progress-bar">
-                    <div id="widget-progress-fill" class="progress-fill"></div>
-                </div>
-                <span id="widget-duration">0:00</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- PLUS D'INFO -->
-    <section class="more-info-section">
-        <div class="section-divider-double"></div>
-        <h2 class="section-main-title">PLUS D'INFO</h2>
-        <div id="more-info-grid" class="more-info-grid"></div>
-    </section>
+    </main>
 
     <!-- FOOTER -->
     <footer class="nyt-footer">
