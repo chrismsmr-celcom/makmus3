@@ -1,0 +1,36 @@
+name: Générer les images Open Graph
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '**.md'
+      - 'scripts/generate-og-images.js'
+  workflow_dispatch:  # Permet de lancer manuellement
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-js: '20'
+      
+      - name: Install dependencies
+        run: npm install @supabase/supabase-js puppeteer
+      
+      - name: Generate OG images
+        run: node scripts/generate-og-images.js
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      
+      - name: Upload images as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: og-images
+          path: og-images/
