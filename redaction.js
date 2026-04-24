@@ -996,6 +996,42 @@ window.shareToThreads = function() {
 /* --------------------------------------
    METADATA OPEN GRAPH & TWITTER CARDS
    -------------------------------------- */
+
+/**
+ * Nettoie et valide une URL d'image pour les réseaux sociaux
+ * @param {string} url - L'URL de l'image
+ * @returns {string|null} - URL nettoyée ou null
+ */
+function getValidSocialImageUrl(url) {
+    if (!url || typeof url !== 'string') return null;
+    
+    // Supprimer les espaces et caractères invisibles
+    let cleanUrl = url.trim();
+    
+    // Vérifier que c'est une URL HTTP/HTTPS valide
+    if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+        console.warn('❌ URL invalide (pas HTTP/HTTPS):', cleanUrl);
+        return null;
+    }
+    
+    // Enlever les paramètres de tracking (utm_, fbclid, etc.)
+    if (cleanUrl.includes('?')) {
+        const urlParts = cleanUrl.split('?');
+        const baseUrl = urlParts[0];
+        const params = urlParts[1];
+        
+        // Garder seulement les paramètres essentiels pour Wikimedia
+        if (baseUrl.includes('wikimedia')) {
+            // Extraire juste le chemin de l'image sans paramètres de redimensionnement
+            const match = baseUrl.match(/(https?:\/\/[^?]+)/);
+            if (match) return match[0];
+        }
+        return baseUrl;
+    }
+    
+    return cleanUrl;
+}
+
 function updateOpenGraphTags(article) {
     const setMeta = (selector, attribute, content, isProperty = true) => {
         let meta = document.querySelector(selector);
@@ -1008,23 +1044,56 @@ function updateOpenGraphTags(article) {
         meta.setAttribute('content', content);
     };
     
-    const cleanDesc = (article.description || '').replace(/<[^>]*>/g, '').substring(0, 300);
-    let imageUrl = article.image_url;
-    if (!imageUrl) {
-        imageUrl = 'https://i.postimg.cc/x88LbhZp/2_20251224_213424_0001.png';
+    // Nettoyer la description
+    const cleanDesc = (article.description || article.excerpt || '')
+        .replace(/<[^>]*>/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .substring(0, 300);
+    
+    // ✅ Récupérer et valider l'URL de l'image
+    let imageUrl = null;
+    
+    // 1. Essayer l'image principale (URL externe comme Wikimedia)
+    if (article.image_url && article.image_url.trim() !== '') {
+        imageUrl = getValidSocialImageUrl(article.image_url);
     }
-    const articleUrl = `${window.location.origin}/redaction.html?id=${article.id}`;
+    
+    // 2. Sinon, chercher dans les médias de l'article
+    if (!imageUrl && article.medias && article.medias.length > 0) {
+        const firstImage = article.medias.find(m => m.type === 'image');
+        if (firstImage && firstImage.url) {
+            imageUrl = getValidSocialImageUrl(firstImage.url);
+        }
+    }
+    
+    // 3. Fallback : image par défaut (ton logo MAKMUS)
+    if (!imageUrl) {
+        imageUrl = 'https://logphtrdkpbfgtejtime.supabase.co/storage/v1/object/public/Photo%2C%20Image/Untitled%20folder/MAK_MUS__1_-removebg-preview.png';
+    }
+    
+    // ✅ Construire l'URL canonique de l'article
+    let articleUrl;
+    if (article.slug && article.slug !== '') {
+        articleUrl = `${window.location.origin}/redaction.html?slug=${encodeURIComponent(article.slug)}`;
+    } else {
+        articleUrl = `${window.location.origin}/redaction.html?id=${article.id}`;
+    }
+    
+    // Mettre à jour le titre de la page
     document.title = `${article.titre} | MAKMUS`;
     
+    // 🔵 Open Graph Facebook, LinkedIn, WhatsApp
     setMeta('meta[property="og:title"]', 'og:title', `${article.titre} | MAKMUS`, true);
     setMeta('meta[property="og:description"]', 'og:description', cleanDesc, true);
     setMeta('meta[property="og:image"]', 'og:image', imageUrl, true);
+    setMeta('meta[property="og:image:width"]', 'og:image:width', '1200', true);
+    setMeta('meta[property="og:image:height"]', 'og:image:height', '630', true);
     setMeta('meta[property="og:url"]', 'og:url', articleUrl, true);
     setMeta('meta[property="og:type"]', 'og:type', 'article', true);
     setMeta('meta[property="og:site_name"]', 'og:site_name', 'MAKMUS', true);
-    setMeta('meta[property="og:image:width"]', 'og:image:width', '1200', true);
-    setMeta('meta[property="og:image:height"]', 'og:image:height', '630', true);
     
+    // 🐦 Twitter Card
     setMeta('meta[name="twitter:card"]', 'twitter:card', 'summary_large_image', false);
     setMeta('meta[name="twitter:site"]', 'twitter:site', '@MakMus', false);
     setMeta('meta[name="twitter:creator"]', 'twitter:creator', '@MakMus', false);
@@ -1032,31 +1101,88 @@ function updateOpenGraphTags(article) {
     setMeta('meta[name="twitter:description"]', 'twitter:description', cleanDesc, false);
     setMeta('meta[name="twitter:image"]', 'twitter:image', imageUrl, false);
     
-    const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) metaDesc.setAttribute('content', cleanDesc);
+    // Description standard pour SEO
+    let metaDesc = document.querySelector('meta[name="description"]');
+    if (!metaDesc) {
+        metaDesc = document.createElement('meta');
+        metaDesc.setAttribute('name', 'description');
+        document.head.appendChild(metaDesc);
+    }
+    metaDesc.setAttribute('content', cleanDesc);
     
     console.log('✅ Meta tags mis à jour pour:', article.titre);
+    console.log('📷 Image utilisée:', imageUrl);
 }
 
-function generateSlug(title) {
-    if (!title) return '';
-    return title
-        .toLowerCase()
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .replace(/['’]/g, '')
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '');
-}
+// Liste des mots à supprimer (stop words en français)
+const STOP_WORDS = [
+    'le', 'la', 'les', 'un', 'une', 'des', 'du', 'de', 'et', 'ou', 'mais',
+    'donc', 'or', 'ni', 'car', 'pour', 'dans', 'par', 'sur', 'avec', 'sans',
+    'souverainete', 'financiere', 'interieur', 'marche', 'titre', 'article'
+];
 
-function getArticleUrl(article) {
-    if (!article) return '#';
-    if (article.slug && article.slug !== '') {
-        return `redaction.html?slug=${encodeURIComponent(article.slug)}`;
+function generateSlug(title, id) {
+    if (!title) return id ? id.toString() : generateShortId();
+    
+    // Convertir et supprimer les accents
+    let slug = title.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    
+    // 1. Extraire les mots-clés importants (capitalisés, longs, ou après "de")
+    let words = slug.toLowerCase().split(/[^a-z0-9]+/);
+    let importantWords = words.filter(word => 
+        word.length > 4 && !STOP_WORDS.includes(word)
+    );
+    
+    // 2. Prendre les 4 premiers mots importants max
+    let shortSlug = importantWords.slice(0, 4).join('-');
+    
+    // 3. Si aucun mot important trouvé, prendre une partie du titre
+    if (shortSlug === '') {
+        shortSlug = slug.substring(0, 40).replace(/[^a-z0-9]+/g, '-');
     }
-    return `redaction.html?id=${article.id}`;
+    
+    // 4. Nettoyer et tronquer
+    shortSlug = shortSlug.replace(/^-+|-+$/g, '');
+    
+    // 5. Ajouter un identifiant court (soit l'ID, soit l'horodatage)
+    const shortId = id ? id.substring(0, 6) : Date.now().toString().substring(3, 9);
+    
+    return `${shortSlug}-${shortId}`;
 }
+
+function generateShortId() {
+    return Math.random().toString(36).substring(2, 8);
+}
+
+// Dans votre redaction.js, ajoutez une fonction d'extraction
+function getArticleIdFromShortUrl(pathname) {
+    // Pour une URL /p/mot-cles-123456
+    const match = pathname.match(/\/p\/(?:.*-)?(\d+)/);
+    if (match) return match[1];
+    return null;
+}
+// Fonction de debug pour les meta tags
+async function debugOpenGraph(article) {
+    console.group('🔍 Debug Open Graph');
+    console.log('Titre:', article.titre);
+    console.log('Image URL brute:', article.image_url);
+    
+    // Vérifier si l'URL est accessible
+    if (article.image_url) {
+        try {
+            const response = await fetch(article.image_url, { method: 'HEAD' });
+            console.log('Image accessible ?', response.ok);
+            console.log('Status:', response.status);
+            console.log('Content-Type:', response.headers.get('content-type'));
+        } catch (error) {
+            console.error('Erreur accès image:', error);
+        }
+    }
+    console.groupEnd();
+}
+
+// Appelle-la dans loadArticle après avoir récupéré l'article
+// debugOpenGraph(art);
 
 /* --------------------------------------
    TTS & LECTEUR AUDIO
