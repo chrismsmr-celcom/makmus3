@@ -1,0 +1,35 @@
+name: Déployer le site sur GitHub Pages
+
+on:
+  push:
+    branches:
+      - main  # ou master selon ta branche principale
+  workflow_dispatch:  # Permet de lancer manuellement
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+      - name: 📥 Récupérer le code
+        uses: actions/checkout@v4
+      
+      - name: 🎯 Configurer GitHub Pages
+        uses: actions/configure-pages@v4
+      
+      - name: 📂 Upload des fichiers
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'  # Le dossier racine de ton site
+      
+      - name: 🚀 Déployer
+        id: deployment
+        uses: actions/deploy-pages@v4
