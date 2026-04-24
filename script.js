@@ -1595,43 +1595,70 @@ function renderAudios(audios) {
 /* ==========================================================================
    19. PUBLICITE
    ========================================================================== */
+
+/**
+ * Initialise les publicités
+ * Récupère les annonces depuis Supabase et démarre le rotation
+ */
 async function initAds() {
     try {
+        // Vérifier si Supabase est disponible
         if (typeof supabaseClient === 'undefined') {
-            console.warn('Supabase non initialisé');
+            console.warn('⚠️ Supabase non initialisé, affichage fallback');
             displayFallbackAd();
             return;
         }
         
+        // Récupérer les publicités actives
         const { data, error } = await supabaseClient
             .from('publicites')
             .select('*')
             .eq('est_active', true)
             .order('created_at', { ascending: true });
         
-        if (error) throw error;
-        
-        if (!data || data.length === 0) {
+        if (error) {
+            console.error('❌ Erreur Supabase:', error);
             displayFallbackAd();
             return;
         }
         
+        // Vérifier si des publicités existent
+        if (!data || data.length === 0) {
+            console.warn('⚠️ Aucune publicité active trouvée');
+            displayFallbackAd();
+            return;
+        }
+        
+        // Stocker les données et démarrer la rotation
         adsData = data;
         currentAdIdx = 0;
-        displayNextAd();
         
-        if (adsInterval) clearInterval(adsInterval);
-        adsInterval = setInterval(displayNextAd, 15000);
+        // Afficher la première publicité
+        displayCurrentAd();
+        
+        // Démarrer l'intervalle de rotation (si plus d'une publicité)
+        if (adsData.length > 1) {
+            if (adsInterval) clearInterval(adsInterval);
+            adsInterval = setInterval(rotateAd, 15000);
+        }
+        
+        console.log(`✅ ${adsData.length} publicité(s) chargée(s)`);
         
     } catch (error) {
-        console.error('Erreur chargement publicites:', error);
+        console.error('❌ Erreur lors du chargement des publicités:', error);
         displayFallbackAd();
     }
 }
 
-function displayNextAd() {
+/**
+ * Affiche la publicité courante
+ */
+function displayCurrentAd() {
     const zone = document.getElementById('ad-display-zone');
-    if (!zone) return;
+    if (!zone) {
+        console.warn('⚠️ Zone publicitaire #ad-display-zone non trouvée');
+        return;
+    }
     
     if (!adsData || adsData.length === 0) {
         displayFallbackAd();
@@ -1640,62 +1667,215 @@ function displayNextAd() {
     
     const ad = adsData[currentAdIdx];
     if (!ad) {
+        console.warn('⚠️ Publicité invalide à l\'index', currentAdIdx);
         displayFallbackAd();
         return;
     }
     
-    const clickUrl = ad.lien_clic && ad.lien_clic !== '' ? ad.lien_clic : '#';
-    let adHtml = '';
-    const adLabel = '<div class="ad-label">PUBLICITÉ</div>';
+    // Générer le HTML de la publicité
+    const adHtml = generateAdHtml(ad);
     
-    if (ad.type === 'video') {
-        adHtml = `
-            <div class="ad-container ad-video">
+    // Appliquer avec effet de transition
+    zone.style.opacity = '0';
+    setTimeout(() => {
+        zone.innerHTML = adHtml;
+        zone.style.opacity = '1';
+    }, 150);
+    
+    // Tracker l'impression (optionnel)
+    trackAdImpression(ad);
+}
+
+/**
+ * Génère le HTML d'une publicité
+ * @param {Object} ad - Données de la publicité
+ * @returns {string} HTML de la publicité
+ */
+function generateAdHtml(ad) {
+    const clickUrl = (ad.lien_clic && ad.lien_clic.trim() !== '') ? ad.lien_clic : '#';
+    const adLabel = '<div class="ad-label-top">PUBLICITÉ</div>';
+    const adTag = '<div class="ad-tag">Sponsorisé</div>';
+    
+    // Nettoyer l'URL de l'image si nécessaire
+    let mediaUrl = ad.media_url || '';
+    if (mediaUrl && !mediaUrl.startsWith('http') && !mediaUrl.startsWith('/')) {
+        mediaUrl = 'https://' + mediaUrl;
+    }
+    
+    // Publicité vidéo
+    if (ad.type === 'video' && mediaUrl) {
+        return `
+            <div class="ad-content ad-video" data-ad-id="${ad.id}">
                 ${adLabel}
-                <video class="ad-raw-media" 
-                       src="${ad.media_url}" 
+                ${adTag}
+                <video class="ad-media video-ad" 
+                       src="${mediaUrl}" 
                        autoplay 
                        muted 
                        loop 
                        playsinline 
-                       onclick="window.open('${clickUrl}', '_blank')">
+                       onclick="trackAdClick('${ad.id}', '${clickUrl}')">
+                    Votre navigateur ne supporte pas la vidéo
                 </video>
-            </div>
-        `;
-    } else {
-        const imageUrl = ad.media_url && ad.media_url !== '' 
-            ? ad.media_url 
-            : getPlaceholderImage(728, 90, 'Publicité');
-        
-        adHtml = `
-            <div class="ad-container ad-image">
-                ${adLabel}
-                <img class="ad-raw-media" 
-                     src="${imageUrl}" 
-                     onclick="window.open('${clickUrl}', '_blank')" 
-                     onerror="this.src='${getPlaceholderImage(728, 90, 'Image non disponible')}'">
             </div>
         `;
     }
     
-    zone.innerHTML = adHtml;
-    currentAdIdx = (currentAdIdx + 1) % adsData.length;
+    // Publicité image (ou fallback)
+    const imageUrl = mediaUrl || getPlaceholderImage(728, 90, 'Publicité');
+    
+    return `
+        <div class="ad-content ad-image" data-ad-id="${ad.id}">
+            ${adLabel}
+            ${adTag}
+            <img class="ad-media image-ad" 
+                 src="${imageUrl}" 
+                 alt="Publicité"
+                 loading="lazy"
+                 onclick="trackAdClick('${ad.id}', '${clickUrl}')"
+                 onerror="this.src='${getPlaceholderImage(728, 90, 'Image non disponible')}'">
+        </div>
+    `;
 }
 
+/**
+ * Passe à la publicité suivante (rotation)
+ */
+function rotateAd() {
+    if (!adsData || adsData.length === 0) return;
+    
+    // Passer à l'index suivant
+    currentAdIdx = (currentAdIdx + 1) % adsData.length;
+    
+    // Afficher la nouvelle publicité
+    displayCurrentAd();
+}
+
+/**
+ * Affiche une publicité de secours (fallback)
+ */
 function displayFallbackAd() {
     const zone = document.getElementById('ad-display-zone');
     if (!zone) return;
     
     zone.innerHTML = `
-        <div class="ad-container ad-fallback">
-            <div class="ad-label">ESPACE PUBLICITAIRE</div>
+        <div class="ad-content ad-fallback">
+            <div class="ad-label-top">ESPACE PUBLICITAIRE</div>
             <div class="ad-fallback-content">
                 <span>Votre publicité ici</span>
-                <small>Contactez-nous</small>
+                <small>contact@makmus.com</small>
             </div>
+            <div class="ad-placeholder-icon">📺</div>
         </div>
     `;
 }
+
+/**
+ * Track l'impression d'une publicité
+ * @param {Object} ad - Publicité affichée
+ */
+async function trackAdImpression(ad) {
+    if (!ad || !ad.id) return;
+    
+    try {
+        // Optionnel: Envoyer les stats à Supabase
+        // await supabaseClient.from('publicite_stats').insert([{
+        //     publicite_id: ad.id,
+        //     type: 'impression',
+        //     created_at: new Date()
+        // }]);
+        
+        console.log(`📊 Impression: ${ad.type || 'publicité'} (ID: ${ad.id})`);
+    } catch (error) {
+        console.warn('Erreur tracking impression:', error);
+    }
+}
+
+/**
+ * Track le clic sur une publicité
+ * @param {string} adId - ID de la publicité
+ * @param {string} clickUrl - URL de redirection
+ */
+window.trackAdClick = async function(adId, clickUrl) {
+    if (!adId) return;
+    
+    try {
+        // Optionnel: Enregistrer le clic dans la base de données
+        // await supabaseClient.from('publicite_stats').insert([{
+        //     publicite_id: adId,
+        //     type: 'click',
+        //     created_at: new Date()
+        // }]);
+        
+        console.log(`🖱️ Clic sur publicité ${adId}`);
+        
+        // Rediriger vers l'URL de destination
+        if (clickUrl && clickUrl !== '#') {
+            window.open(clickUrl, '_blank');
+        }
+        
+    } catch (error) {
+        console.warn('Erreur tracking clic:', error);
+        // Redirection même en cas d'erreur
+        if (clickUrl && clickUrl !== '#') {
+            window.open(clickUrl, '_blank');
+        }
+    }
+};
+
+/**
+ * Génère une image placeholder
+ * @param {number} width - Largeur
+ * @param {number} height - Hauteur
+ * @param {string} text - Texte à afficher
+ * @returns {string} URL du placeholder
+ */
+function getPlaceholderImage(width, height, text) {
+    // Utiliser placeholder.com ou un service similaire
+    return `https://via.placeholder.com/${width}x${height}?text=${encodeURIComponent(text)}`;
+}
+
+/**
+ * Rafraîchit les publicités (rechargement manuel)
+ */
+async function refreshAds() {
+    // Nettoyer l'intervalle existant
+    if (adsInterval) {
+        clearInterval(adsInterval);
+        adsInterval = null;
+    }
+    
+    // Recharger les publicités
+    await initAds();
+}
+
+/**
+ * Nettoie les ressources publicitaires (à appeler si nécessaire)
+ */
+function cleanupAds() {
+    if (adsInterval) {
+        clearInterval(adsInterval);
+        adsInterval = null;
+    }
+    
+    const zone = document.getElementById('ad-display-zone');
+    if (zone) {
+        const videos = zone.querySelectorAll('video');
+        videos.forEach(video => {
+            video.pause();
+            video.src = '';
+            video.load();
+        });
+    }
+    
+    adsData = [];
+    currentAdIdx = 0;
+}
+
+// Exposer les fonctions globalement si nécessaire
+window.initAds = initAds;
+window.refreshAds = refreshAds;
+window.trackAdClick = window.trackAdClick;
 
 /* ==========================================================================
    20. VIDEOS
@@ -2358,32 +2538,157 @@ function videoToImage(videoUrl, callback) {
 videoToImage('https://...mp4', (thumbnail) => {
     document.querySelector('.sub-article-image').src = thumbnail;
 });
-/* ==========================================================================
-   25. INITIALISATION
-   ========================================================================== */
-function renderEmptyStates() {
-    const hero = document.getElementById('hero-zone');
-    if (hero) hero.innerHTML = '<div class="hero-empty">Aucun article disponible</div>';
-    
-    const eco = document.getElementById('economy-grid');
-    if (eco) eco.innerHTML = '<div class="economy-empty">Aucun article économique</div>';
-    
-    const international = document.getElementById('international-grid');
-    if (international) international.innerHTML = '<div class="international-empty">Aucun article international</div>';
-    
-    const environnement = document.getElementById('environnement-grid');
-    if (environnement) environnement.innerHTML = '<div class="environnement-empty">Aucun article environnement</div>';
-    
-    const sport = document.getElementById('sport-grid');
-    if (sport) sport.innerHTML = '<div class="sport-empty">Aucun article sport</div>';
-    
-    const audio = document.getElementById('audio-grid');
-    if (audio) audio.innerHTML = '<div class="audio-empty">Aucun audio disponible</div>';
-    
-    const news = document.getElementById('news-grid');
-    if (news) news.innerHTML = '<div class="news-empty">Aucun article</div>';
+/* --------------------------------------
+   18. SOUS-NAVIGATION (SUBNAV)
+   -------------------------------------- */
+async function getSubcategoriesByCategory(categoryName) {
+    try {
+        const { data, error } = await supabaseClient
+            .from('articles')
+            .select('subcategory, created_at')
+            .eq('is_published', true)
+            .eq('category', categoryName)
+            .not('subcategory', 'is', null)
+            .not('subcategory', 'eq', '')
+            .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        if (!data || data.length === 0) return [];
+        
+        const subcategoriesMap = new Map();
+        
+        data.forEach(article => {
+            if (!article.subcategory || !article.subcategory.trim()) return;
+            
+            const subcategory = article.subcategory.trim();
+            const createdAt = new Date(article.created_at);
+            
+            if (!subcategoriesMap.has(subcategory)) {
+                subcategoriesMap.set(subcategory, createdAt);
+            } else {
+                const existingDate = subcategoriesMap.get(subcategory);
+                if (createdAt > existingDate) {
+                    subcategoriesMap.set(subcategory, createdAt);
+                }
+            }
+        });
+        
+        const sortedSubcategories = Array.from(subcategoriesMap.entries())
+            .sort((a, b) => b[1] - a[1])
+            .map(entry => entry[0]);
+        
+        return sortedSubcategories.slice(0, 5);
+        
+    } catch (error) {
+        console.error(`Erreur récupération sous-catégories pour ${categoryName}:`, error);
+        return [];
+    }
 }
 
+async function renderSubNavForCategory(containerId, categoryName) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    const subcategories = await getSubcategoriesByCategory(categoryName);
+    
+    if (subcategories.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+    
+    let html = '<div class="sub-nav-wrapper"><div class="sub-nav-scroll"><div class="sub-nav-links">';
+    
+    subcategories.forEach(sub => {
+        const escapedSub = sub.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        html += `
+            <a href="javascript:void(0)" 
+               class="sub-nav-link"
+               data-category="${categoryName}"
+               data-sub="${escapedSub}"
+               onclick="filterBySubcategory('${categoryName}', '${escapedSub}')">
+                ${sub}
+            </a>
+        `;
+    });
+    
+    html += '</div></div></div>';
+    container.innerHTML = html;
+    container.style.display = 'block';
+}
+
+async function initAllSubNavs() {
+    await renderSubNavForCategory('sub-nav-economie', 'ECONOMIE');
+    await renderSubNavForCategory('sub-nav-international', 'INTERNATIONAL');
+    await renderSubNavForCategory('sub-nav-environnement', 'ENVIRONNEMENT');
+    await renderSubNavForCategory('sub-nav-sport', 'SPORT');
+}
+
+window.filterBySubcategory = async function(category, subcategory) {
+    console.log(`🔍 Filtrage: ${category} → ${subcategory}`);
+    
+    try {
+        const { data, error } = await supabaseClient
+            .from('articles')
+            .select('*')
+            .eq('is_published', true)
+            .eq('category', category)
+            .eq('subcategory', subcategory)
+            .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        console.log(`📄 ${data?.length || 0} article(s) trouvé(s) pour ${category} / ${subcategory}`);
+        
+        const newUrl = `${window.location.origin}${window.location.pathname}?category=${encodeURIComponent(category)}&subcategory=${encodeURIComponent(subcategory)}`;
+        window.history.pushState({}, '', newUrl);
+        
+        if (typeof renderFilteredArticles === 'function') {
+            renderFilteredArticles(data, category, subcategory);
+        } else if (typeof fetchMakmusNews === 'function') {
+            fetchMakmusNews(subcategory);
+        }
+        
+        document.querySelectorAll('.sub-nav-link').forEach(link => {
+            link.classList.toggle('active', 
+                link.dataset.category === category && link.dataset.sub === subcategory);
+        });
+        
+        if (!data || data.length === 0) {
+            showToast(`Aucun article dans "${subcategory}"`, 'info');
+        }
+        
+    } catch (error) {
+        console.error('Erreur filtrage:', error);
+        showToast('Erreur lors du filtrage', 'error');
+    }
+};
+
+function renderFilteredArticles(articles, category, subcategory) {
+    const container = document.getElementById('news-grid');
+    if (!container) return;
+    
+    if (!articles || articles.length === 0) {
+        container.innerHTML = `<div class="no-results">
+            <p>Aucun article trouvé pour : ${subcategory}</p>
+        </div>`;
+        return;
+    }
+    
+    container.innerHTML = articles.map(article => `
+        <div class="article-card" onclick="window.location.href='redaction.html?id=${article.id}'">
+            ${article.image_url ? `<img src="${article.image_url}" alt="${article.titre}">` : ''}
+            <h3>${article.titre}</h3>
+            <p>${(article.description || '').substring(0, 150)}...</p>
+        </div>
+    `).join('');
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* --------------------------------------
+   23. INITIALISATION
+   -------------------------------------- */
 document.addEventListener('DOMContentLoaded', () => {
     const dateEl = document.getElementById('live-date');
     if (dateEl) dateEl.textContent = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase();
@@ -2397,11 +2702,11 @@ document.addEventListener('DOMContentLoaded', () => {
     initAds();
     initAuthEvents();
     loadTrendingTags();
-    renderSubNav();
     initAllSubNavs();
+    
     setInterval(() => {
-    loadTrendingTags();
-}, 5 * 60 * 1000);
+        loadTrendingTags();
+    }, 5 * 60 * 1000);
     
     console.log("MAKMUS — Initialisé avec succès");
 });
