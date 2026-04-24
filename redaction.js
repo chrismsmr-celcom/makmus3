@@ -1318,18 +1318,33 @@ function parseHtmlToParagraphs(html) {
     var cleanHtml = sanitizeContent(html);
     var temp = document.createElement('div');
     temp.innerHTML = cleanHtml;
-    var paragraphs = [];
+    var elements = [];
     
-    var nodes = temp.querySelectorAll('p');
+    // ✅ Sélectionner TOUS les éléments de contenu (pas seulement les paragraphes)
+    var nodes = temp.querySelectorAll('p, ul, ol, table, blockquote, h1, h2, h3, h4, h5, h6, div.media-wrapper, figure');
+    
+    if (nodes.length === 0) {
+        // Si aucun élément trouvé, retourner le HTML brut
+        return [cleanHtml];
+    }
+    
     for (var i = 0; i < nodes.length; i++) {
-        paragraphs.push(nodes[i].outerHTML);
+        var el = nodes[i];
+        var outerHtml = el.outerHTML;
+        
+        // Nettoyer les styles résiduels
+        outerHtml = outerHtml.replace(/style="[^"]*"/gi, '');
+        outerHtml = outerHtml.replace(/class="[^"]*"/gi, '');
+        
+        elements.push(outerHtml);
     }
     
-    if (paragraphs.length === 0 && cleanHtml.trim()) {
-        paragraphs.push('<p>' + cleanHtml + '</p>');
+    // Si on a des listes ou tableaux, les conserver tels quels
+    if (cleanHtml.includes('<ul') || cleanHtml.includes('<ol') || cleanHtml.includes('<table')) {
+        return elements;
     }
     
-    return paragraphs;
+    return elements;
 }
 
 function initLazyImages() {
@@ -1594,33 +1609,39 @@ function renderAuthorBio(art) {
 
 function renderArticle(art) {
     var cleanContent = sanitizeContent(art.content || art.description || '');
-    var paragraphs = parseHtmlToParagraphs(cleanContent);
-    var totalPara = paragraphs.length;
+    var elements = parseHtmlToParagraphs(cleanContent);
+    var totalElements = elements.length;
     var readTime = calculateReadTime(art.content || art.description || '');
     var extraMedias = art.medias || [];
     var mediaIndex = 0;
     var textContent = '';
     
-    for (var idx = 0; idx < paragraphs.length; idx++) {
-        var p = paragraphs[idx];
-        if (p.trim() === "") continue;
-        textContent += p;
+    for (var idx = 0; idx < elements.length; idx++) {
+        var element = elements[idx];
+        if (!element || element.trim() === "") continue;
         
+        // ✅ Conserver l'élément tel quel (préserve les listes, tableaux, citations)
+        textContent += element;
+        
+        // Insérer un média tous les 3 éléments
         if (idx > 0 && idx % 3 === 0 && mediaIndex < extraMedias.length) {
             textContent += renderMedia(extraMedias[mediaIndex]);
             mediaIndex++;
         }
         
-        if (idx === 1 && totalPara > 3) {
+        // Pub après le 2ème élément
+        if (idx === 1 && totalElements > 3) {
             textContent += renderAd();
         }
         
-        if (idx === Math.floor(totalPara / 2) && totalPara > 5) {
+        // Bloc "À LIRE AUSSI" au milieu
+        if (idx === Math.floor(totalElements / 2) && totalElements > 5) {
             textContent += renderRecommendations();
             setTimeout(function() { fillInlineGrid(art.category, art.id); }, 200);
         }
     }
     
+    // S'il reste des médias non insérés
     while (mediaIndex < extraMedias.length) {
         textContent += renderMedia(extraMedias[mediaIndex]);
         mediaIndex++;
