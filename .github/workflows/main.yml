@@ -1,0 +1,35 @@
+name: Build & Deploy avec génération d'images
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Configurer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Installer les dépendances (si besoin)
+        run: |
+          npm install puppeteer sharp  # Pour générer des images
+          # ou juste npm ci si tu as un package.json
+      
+      - name: Générer les images Open Graph
+        run: |
+          node scripts/generate-og-images.js  # Ton script de génération
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      
+      - name: Uploader sur GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
