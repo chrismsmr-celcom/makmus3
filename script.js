@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MAKMUS MEDIA — SCRIPT PRINCIPAL COMPLET (CORRIGÉ)
+   MAKMUS MEDIA — SCRIPT PRINCIPAL COMPLET
    ========================================================================== */
 
 /* --------------------------------------
@@ -19,14 +19,6 @@ let currentTickerIndex = 0;
 let currentAudio = null;
 let currentPlayBtn = null;
 let sportCache = {};
-let currentAudioObj = null;
-let currentUser = null;
-let currentArticle = null;
-let adsData = [];
-let currentAdIdx = 0;
-let adsInterval = null;
-let currentSlideIndex = 0;
-let slidesData = [];
 
 /* --------------------------------------
    3. UTILITAIRES
@@ -79,84 +71,23 @@ window.toggleSidePanel = function(isOpen) {
     document.body.style.overflow = isOpen ? 'hidden' : 'auto';
 };
 
-window.toggleSharePanel = function(isOpen) {
-    const panel = document.getElementById('sharePanel');
-    if (!panel) return;
-    panel.classList.toggle('active', isOpen);
-    document.body.style.overflow = isOpen ? 'hidden' : 'auto';
-};
-
-window.toggleModal = function(id, show) {
-    const modal = document.getElementById(id);
-    if (modal) {
-        modal.style.display = show ? 'flex' : 'none';
-        document.body.style.overflow = show ? 'hidden' : 'auto';
-    }
-};
-
 /* --------------------------------------
-   AUTHENTIFICATION - FONCTIONS
+   5. AUTHENTIFICATION
    -------------------------------------- */
-
-// 1. D'abord définir loadUserActivity
-window.loadUserActivity = async function() {
-    try {
-        var { data: { user } } = await supabaseClient.auth.getUser();
-        if (!user) return;
-        
-        var { data: favs } = await supabaseClient
-            .from('user_favorites')
-            .select('article_id, articles(titre)')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
-            .limit(5);
-        
-        var container = document.getElementById('user-favorites-list');
-        if (container) {
-            if (!favs || favs.length === 0) {
-                container.innerHTML = '<div class="no-favs">Aucun favori pour le moment</div>';
-            } else {
-                container.innerHTML = favs.map(function(f) {
-                    var title = f.articles?.titre || 'Article';
-                    return '<div class="mini-fav-item"><a href="redaction.html?id=' + f.article_id + '">' + escapeHtml(title) + '</a></div>';
-                }).join('');
-            }
-        }
-    } catch (error) {
-        console.warn("Erreur chargement favoris:", error);
-        var container = document.getElementById('user-favorites-list');
-        if (container) {
-            container.innerHTML = '<div class="no-favs">Erreur de chargement</div>';
-        }
-    }
-};
-
-// 2. Ensuite checkUserStatus
 window.checkUserStatus = async function() {
     try {
-        var { data: { user } } = await supabaseClient.auth.getUser();
-        currentUser = user;
-        var loggedOut = document.getElementById('logged-out-view');
-        var loggedIn = document.getElementById('logged-in-view');
-        var emailDisplay = document.getElementById('user-email-display');
-        var avatar = document.querySelector('.user-avatar');
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        const loggedOut = document.getElementById('logged-out-view');
+        const loggedIn = document.getElementById('logged-in-view');
+        const emailDisplay = document.getElementById('user-email-display');
+        const avatar = document.querySelector('.user-avatar');
         
         if (user) {
             if (loggedOut) loggedOut.style.display = 'none';
             if (loggedIn) loggedIn.style.display = 'block';
             if (emailDisplay) emailDisplay.textContent = user.email;
             if (avatar) avatar.textContent = user.email.charAt(0).toUpperCase();
-            
-            if (typeof window.loadUserActivity === 'function') {
-                window.loadUserActivity().catch(function(err) {
-                    console.warn('loadUserActivity error:', err);
-                });
-            }
-            
-            if (typeof currentArticle !== 'undefined' && currentArticle) {
-                if (typeof fetchLikeStatus === 'function') fetchLikeStatus();
-                if (typeof fetchBookmarkStatus === 'function') fetchBookmarkStatus();
-            }
+            window.loadUserActivity();
         } else {
             if (loggedOut) loggedOut.style.display = 'block';
             if (loggedIn) loggedIn.style.display = 'none';
@@ -166,338 +97,55 @@ window.checkUserStatus = async function() {
     }
 };
 
-/* --------------------------------------
-   AUTHENTIFICATION SIMPLIFIÉE (sans vérification email)
-   -------------------------------------- */
-
-let isLoginMode = true;
-
-function updateAuthUI() {
-    const submitBtn = document.getElementById('auth-submit-btn');
-    const toggleBtn = document.getElementById('auth-toggle-btn');
-    const modeText = document.getElementById('auth-mode-text');
-    
-    if (!submitBtn) return;
-    
-    if (isLoginMode) {
-        submitBtn.textContent = 'SE CONNECTER';
-        if (toggleBtn) toggleBtn.textContent = 'CREER UN COMPTE';
-        if (modeText) modeText.innerHTML = 'Pas encore de compte ? Cliquez sur "Créer un compte"';
-    } else {
-        submitBtn.textContent = "S'INSCRIRE";
-        if (toggleBtn) toggleBtn.textContent = 'RETOUR A LA CONNEXION';
-        if (modeText) modeText.innerHTML = 'Déjà un compte ? Cliquez sur "Retour à la connexion"';
-    }
-}
-
-window.handleSimplifiedAuth = async function() {
-    const emailInput = document.getElementById('auth-email');
-    const passwordInput = document.getElementById('auth-password');
-    
-    const email = emailInput?.value.trim();
-    const password = passwordInput?.value;
-    
-    if (!email || !password) {
-        showToast('Veuillez remplir tous les champs', 'error');
-        return;
-    }
-    
-    if (!email.includes('@') || !email.includes('.')) {
-        showToast('Email invalide', 'error');
-        return;
-    }
-    
-    if (password.length < 6) {
-        showToast('Le mot de passe doit contenir au moins 6 caractères', 'error');
-        return;
-    }
+window.handleAuth = async function(type) {
+    const email = document.getElementById('auth-email')?.value;
+    const password = document.getElementById('auth-password')?.value;
+    if (!email || !password) return alert("Veuillez remplir tous les champs.");
     
     try {
         let result;
-        
-        if (isLoginMode) {
-            result = await supabaseClient.auth.signInWithPassword({ 
-                email: email, 
-                password: password 
-            });
-            if (result.error) throw result.error;
-            showToast('Connexion réussie !', 'success');
+        if (type === 'signup') {
+            result = await supabaseClient.auth.signUp({ email, password });
+            if (!result.error) alert("Inscription reussie ! Verifiez vos emails.");
         } else {
-            result = await supabaseClient.auth.signUp({ 
-                email: email, 
-                password: password,
-                options: {
-                    emailRedirectTo: window.location.origin,
-                    data: { full_name: email.split('@')[0] }
-                }
-            });
-            if (result.error) throw result.error;
-            
-            if (result.data.session) {
-                showToast('Inscription réussie ! Bienvenue !', 'success');
-            } else {
-                showToast('Inscription réussie ! Connectez-vous', 'success');
-                isLoginMode = true;
-                updateAuthUI();
-                if (emailInput) emailInput.value = '';
-                if (passwordInput) passwordInput.value = '';
-                return;
-            }
+            result = await supabaseClient.auth.signInWithPassword({ email, password });
         }
-        
-        await window.checkUserStatus();
-        
-        if (typeof window.toggleSidePanel === 'function') {
+        if (result.error) throw result.error;
+        if (result.data.session) {
+            await window.checkUserStatus();
             window.toggleSidePanel(false);
         }
-        
-        if (typeof currentArticle !== 'undefined' && currentArticle) {
-            if (typeof fetchLikeStatus === 'function') fetchLikeStatus();
-            if (typeof fetchBookmarkStatus === 'function') fetchBookmarkStatus();
-            if (typeof fetchLikesCount === 'function') fetchLikesCount();
-        }
-        
-        if (typeof window.loadUserActivity === 'function') {
-            window.loadUserActivity();
-        }
-        
-        if (emailInput) emailInput.value = '';
-        if (passwordInput) passwordInput.value = '';
-        
     } catch (error) {
-        console.error('Auth error:', error);
-        
-        if (error.message.includes('Invalid login credentials')) {
-            showToast('Email ou mot de passe incorrect', 'error');
-        } else if (error.message.includes('User already registered')) {
-            showToast('Cet email est déjà utilisé. Connectez-vous.', 'error');
-            isLoginMode = true;
-            updateAuthUI();
-        } else {
-            showToast(error.message, 'error');
-        }
+        alert("Erreur : " + error.message);
     }
 };
 
-window.toggleAuthMode = function() {
-    isLoginMode = !isLoginMode;
-    updateAuthUI();
-    
-    const emailInput = document.getElementById('auth-email');
-    const passwordInput = document.getElementById('auth-password');
-    if (emailInput) emailInput.value = '';
-    if (passwordInput) passwordInput.value = '';
-};
-
-function initAuthEvents() {
-    const submitBtn = document.getElementById('auth-submit-btn');
-    const toggleBtn = document.getElementById('auth-toggle-btn');
-    
-    if (submitBtn) {
-        submitBtn.removeEventListener('click', window.handleSimplifiedAuth);
-        submitBtn.addEventListener('click', window.handleSimplifiedAuth);
-    }
-    if (toggleBtn) {
-        toggleBtn.removeEventListener('click', window.toggleAuthMode);
-        toggleBtn.addEventListener('click', window.toggleAuthMode);
-    }
-    
-    updateAuthUI();
-}
-
-window.isLoginMode = isLoginMode;
-window.updateAuthUI = updateAuthUI;
-window.initAuthEvents = initAuthEvents;
-
-/* --------------------------------------
-   LIKES (avec BDD)
-   -------------------------------------- */
-async function fetchLikeStatus() {
-    if (!currentArticle || !currentUser) return;
-    
-    const likeBtn = document.getElementById('like-btn');
-    if (!likeBtn) return;
-    
-    try {
-        const { data, error } = await supabaseClient
-            .from('user_likes')
-            .select('id')
-            .eq('user_id', currentUser.id)
-            .eq('article_id', currentArticle.id)
-            .maybeSingle();
-        
-        if (data && !error) {
-            likeBtn.classList.add('liked');
-            likeBtn.disabled = true;
-            likeBtn.title = "Vous avez déjà aimé cet article";
-        } else {
-            likeBtn.classList.remove('liked');
-            likeBtn.disabled = false;
-        }
-    } catch (error) {
-        console.error('Erreur fetchLikeStatus:', error);
-    }
-}
-
-async function fetchLikesCount() {
-    if (!currentArticle) return;
-    
-    const likeSpan = document.getElementById('nb-like');
-    if (!likeSpan) return;
-    
-    try {
-        const { count, error } = await supabaseClient
-            .from('user_likes')
-            .select('id', { count: 'exact', head: true })
-            .eq('article_id', currentArticle.id);
-        
-        likeSpan.textContent = count || 0;
-    } catch (error) {
-        console.error('Erreur fetchLikesCount:', error);
-    }
-}
-
-window.toggleLike = async function() {
-    if (!currentArticle) return;
-    
-    if (!currentUser) {
-        showToast('Connectez-vous pour aimer cet article', 'info');
-        window.toggleSidePanel(true);
-        return;
-    }
-    
-    const likeBtn = document.getElementById('like-btn');
-    if (likeBtn.disabled) {
-        showToast('Vous avez déjà aimé cet article', 'info');
-        return;
-    }
-    
-    try {
-        const { error } = await supabaseClient
-            .from('user_likes')
-            .insert([{ 
-                user_id: currentUser.id, 
-                article_id: currentArticle.id 
-            }]);
-        
-        if (error) {
-            console.error('Erreur insertion:', error);
-            showToast('Erreur lors du like', 'error');
-            return;
-        }
-        
-        likeBtn.classList.add('liked');
-        likeBtn.disabled = true;
-        likeBtn.title = "Vous avez déjà aimé cet article";
-        showToast('Article aimé !', 'success');
-        fetchLikesCount();
-    } catch (error) {
-        console.error('Erreur toggleLike:', error);
-        showToast('Erreur lors du like', 'error');
-    }
-};
-
-/* --------------------------------------
-   FAVORIS (avec BDD)
-   -------------------------------------- */
-async function fetchBookmarkStatus() {
-    if (!currentArticle || !currentUser) return;
-    
-    const bookmarkBtn = document.getElementById('bookmark-btn');
-    if (!bookmarkBtn) return;
-    
-    const span = bookmarkBtn?.querySelector('span:last-child');
-    
-    try {
-        const { data, error } = await supabaseClient
-            .from('user_favorites')
-            .select('id')
-            .eq('user_id', currentUser.id)
-            .eq('article_id', currentArticle.id)
-            .maybeSingle();
-        
-        if (data && !error) {
-            bookmarkBtn.classList.add('bookmarked');
-            bookmarkBtn.disabled = true;
-            if (span) span.textContent = 'Sauvegardé ✓';
-            bookmarkBtn.title = "Article déjà sauvegardé";
-        } else {
-            bookmarkBtn.classList.remove('bookmarked');
-            bookmarkBtn.disabled = false;
-            if (span) span.textContent = 'Sauvegarder';
-        }
-    } catch (error) {
-        console.error('Erreur fetchBookmarkStatus:', error);
-    }
-}
-
-window.toggleBookmark = async function() {
-    if (!currentArticle) return;
-    
-    if (!currentUser) {
-        showToast('Connectez-vous pour sauvegarder des articles', 'info');
-        window.toggleSidePanel(true);
-        return;
-    }
-    
-    const bookmarkBtn = document.getElementById('bookmark-btn');
-    if (bookmarkBtn.disabled) {
-        showToast('Article déjà sauvegardé', 'info');
-        return;
-    }
-    
-    const span = bookmarkBtn?.querySelector('span:last-child');
-    
-    try {
-        const { error } = await supabaseClient
-            .from('user_favorites')
-            .insert([{ 
-                user_id: currentUser.id, 
-                article_id: currentArticle.id,
-                article_title: currentArticle.titre
-            }]);
-        
-        if (error) throw error;
-        
-        bookmarkBtn.classList.add('bookmarked');
-        bookmarkBtn.disabled = true;
-        if (span) span.textContent = 'Sauvegardé ✓';
-        bookmarkBtn.title = "Article déjà sauvegardé";
-        showToast('Article sauvegardé dans vos favoris', 'success');
-        
-        if (typeof window.loadUserActivity === 'function') {
-            window.loadUserActivity();
-        }
-    } catch (error) {
-        console.error('Erreur toggleBookmark:', error);
-        showToast('Erreur lors de la sauvegarde', 'error');
-    }
-};
-
-/* --------------------------------------
-   DECONNEXION
-   -------------------------------------- */
 window.handleLogout = async function() {
-    if (!confirm("Voulez-vous vous déconnecter ?")) return;
+    if (!confirm("Voulez-vous vous deconnecter ?")) return;
+    await supabaseClient.auth.signOut();
+    window.location.href = "index.html";
+};
+
+window.loadUserActivity = async function() {
     try {
-        await supabaseClient.auth.signOut();
-        currentUser = null;
-        
-        const loggedOut = document.getElementById('logged-out-view');
-        const loggedIn = document.getElementById('logged-in-view');
-        
-        if (loggedOut) loggedOut.style.display = 'block';
-        if (loggedIn) loggedIn.style.display = 'none';
-        
-        const favoritesContainer = document.getElementById('user-favorites-list');
-        if (favoritesContainer) {
-            favoritesContainer.innerHTML = '<div class="no-favs">Connectez-vous pour voir vos favoris</div>';
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) return;
+        const { data: favs } = await supabaseClient
+            .from('favorites')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(5);
+        const container = document.getElementById('user-favorites-list');
+        if (container) {
+            if (!favs || favs.length === 0) {
+                container.innerHTML = '<p class="no-favs">Aucun favori</p>';
+            } else {
+                container.innerHTML = favs.map(f => `<div class="mini-fav-item"><a href="redaction.html?id=${f.article_id}">${escapeHtml(f.article_title)}</a></div>`).join('');
+            }
         }
-        
-        showToast('Déconnexion réussie', 'success');
     } catch (error) {
-        console.error("Erreur déconnexion:", error);
-        showToast('Erreur lors de la déconnexion', 'error');
+        console.warn("Erreur chargement favoris:", error);
     }
 };
 
@@ -618,6 +266,7 @@ async function fetchMakmusNews(querySearch) {
         gridArticles.forEach(a => usedIds.add(a.id));
         const moreNews = articles.filter(a => !usedIds.has(a.id)).slice(0, 20);
         
+        // ✅ RÉCUPÉRATION DES AUDIOS
         const { data: audios, error: audioError } = await supabaseClient
             .from('audios')
             .select('*')
@@ -627,6 +276,7 @@ async function fetchMakmusNews(querySearch) {
         
         if (audioError) console.warn("Erreur chargement audios:", audioError);
         
+        // Rendu
         renderUI(heroArticle, gridArticles);
         renderAutreInfo(autreInfos);
         renderOpinions(opinions);
@@ -636,10 +286,9 @@ async function fetchMakmusNews(querySearch) {
         renderEnvironnement(environnement);
         renderSport(sport);
         renderMoreNews(moreNews);
-        renderAudios(audios || []);
-        renderGamesPromo();
+        renderAudios(audios || []); // ✅ AJOUT DU RENDU DES AUDIOS
         
-        console.log('Vérification doublons: IDs uniques:', usedIds.size, '/ Total:', articles.length);
+        console.log('🔍 Vérification doublons: IDs uniques:', usedIds.size, '/ Total:', articles.length);
         
         if (status) status.textContent = "EDITION DU JOUR";
         
@@ -651,7 +300,7 @@ async function fetchMakmusNews(querySearch) {
 }
 
 /* ==========================================================================
-   8. HERO FLEXIBLE
+   8. HERO FLEXIBLE - CORRIGÉ (SANS MASQUAGE ALÉATOIRE)
    ========================================================================== */
 const heroFlexible = {
     currentIndex: 0,
@@ -709,7 +358,7 @@ const heroFlexible = {
                 this.currentIndex = 0;
                 let slidesHtml = '', dotsHtml = '';
                 galleryItems.forEach((item, i) => {
-                    slidesHtml += `<div class="hero-gallery-slide">${item.type === 'video' ? `<video src="${item.url}" controls></video>` : `<img src="${item.url}" onerror="this.src='${getPlaceholderImage(800, 500, 'Image')}'">`}</div>`;
+                    slidesHtml += `<div class="hero-gallery-slide">${item.type === 'video' ? `<video src="${item.url}" controls></video>` : `<img src="${item.url}" onerror="this.src='https://via.placeholder.com/800x500'">`}</div>`;
                     dotsHtml += `<div class="gallery-dot ${i === 0 ? 'active' : ''}" data-index="${i}"></div>`;
                 });
                 setTimeout(() => {
@@ -723,11 +372,11 @@ const heroFlexible = {
                         <button class="gallery-next" onclick="heroFlexible.nextSlide()">›</button></div></div>`;
             }
             if (galleryItems.length === 1) {
-                return `<div class="hero-single-image"><img src="${galleryItems[0].url}" onerror="this.src='${getPlaceholderImage(800, 500, 'Image')}'">${galleryItems[0].caption ? `<div class="photo-credit">${escapeHtml(galleryItems[0].caption)}</div>` : ''}</div>`;
+                return `<div class="hero-single-image"><img src="${galleryItems[0].url}" onerror="this.src='https://via.placeholder.com/800x500'">${galleryItems[0].caption ? `<div class="photo-credit">${escapeHtml(galleryItems[0].caption)}</div>` : ''}</div>`;
             }
         }
         
-        return `<div class="hero-single-image"><img src="${getPlaceholderImage(800, 500, 'Image par défaut')}" alt="Image par défaut"></div>`;
+        return `<div class="hero-single-image"><img src="https://via.placeholder.com/800x500" alt="Image par défaut"></div>`;
     },
     
     goToSlide(index) {
@@ -793,23 +442,6 @@ const heroFlexible = {
     }
 };
 
-/* ==========================================================================
-   9. FONCTION UTILITAIRE POUR LES URLS
-   ========================================================================== */
-function getArticleUrl(article) {
-    if (!article) return '#';
-    if (article.slug && article.slug !== '') {
-        return `redaction.html?slug=${encodeURIComponent(article.slug)}`;
-    }
-    return `redaction.html?id=${article.id}`;
-}
-
-function getPlaceholderImage(width, height, text) {
-    return 'https://placehold.co/' + width + 'x' + height + '/f0f0f0/999?text=' + encodeURIComponent(text || 'Image');
-}
-/* ==========================================================================
-   10. RENDER UI - AVEC GESTION DES VIDÉOS EN SOUS-ARTICLES ET DESCRIPTIONS
-   ========================================================================== */
 function renderUI(heroArticle, gridArticles) {
     const heroZone = document.getElementById('hero-zone');
     const grid = document.getElementById('news-grid');
@@ -820,61 +452,36 @@ function renderUI(heroArticle, gridArticles) {
         
         subArticles.forEach(sub => {
             if (!sub) return;
-            
-            const hasVideo = sub.video_url && sub.video_url !== '';
-            let displayImage = '';
-            
-            // ✅ Gestion des vidéos en sous-article
-            if (hasVideo) {
-                if (sub.video_poster && sub.video_poster !== '') {
-                    displayImage = sub.video_poster;
-                } else if (sub.image_url && sub.image_url !== '') {
-                    displayImage = sub.image_url;
-                } else {
-                    displayImage = '';  // Pas de placeholder
-                }
-            } else {
-                displayImage = sub.image_url || '';
-            }
-            
-            const hasImage = displayImage && displayImage !== '';
+            // ✅ CORRIGÉ : L'image s'affiche toujours si elle existe (pas de masquage aléatoire)
+            const hasImage = sub.image_url && sub.image_url !== '';
             const readTime = calculerTempsLecture(sub.description);
-            const articleUrl = getArticleUrl(sub);
-            const subExcerpt = (sub.description || "").replace(/<[^>]*>/g, '').substring(0, 120);
             
             if (hasImage) {
                 subHtml += `
-                    <div class="sub-article-card" onclick="window.location.href='${articleUrl}'">
-                        <div class="sub-article-image-wrapper">
-                            <img src="${displayImage}" class="sub-article-image" onerror="this.src='${getPlaceholderImage(100, 100, 'Image')}'">
-                            ${hasVideo ? '<div class="video-play-badge">▶</div>' : ''}
-                        </div>
+                    <div class="sub-article-card" onclick="window.location.href='redaction.html?id=${sub.id}'">
+                        <img src="${sub.image_url}" class="sub-article-image" onerror="this.src='https://via.placeholder.com/100x100'">
                         <div class="sub-article-content">
                             <h4 class="sub-article-title">${escapeHtml(sub.titre)}</h4>
-                            <p class="sub-article-description">${escapeHtml(subExcerpt)}${subExcerpt.length >= 120 ? '...' : ''}</p>
                             <span class="sub-article-read-time">${readTime}</span>
                         </div>
                     </div>
                 `;
             } else {
                 subHtml += `
-                    <div class="sub-article-text-only" onclick="window.location.href='${articleUrl}'">
+                    <div class="sub-article-text-only" onclick="window.location.href='redaction.html?id=${sub.id}'">
                         <h4 class="sub-article-title">${escapeHtml(sub.titre)}</h4>
-                        <p class="sub-article-description">${escapeHtml(subExcerpt)}${subExcerpt.length >= 120 ? '...' : ''}</p>
                         <span class="sub-article-read-time">${readTime}</span>
                     </div>
                 `;
             }
         });
         
-        const cleanDesc = (heroArticle.description || "").replace(/<[^>]*>/g, '').substring(0, 1060);
-        const heroUrl = getArticleUrl(heroArticle);
-        
+        const cleanDesc = (heroArticle.description || "").replace(/<[^>]*>/g, '').substring(0, 560);
         heroZone.innerHTML = `
             <div class="hero-main-wrapper">
                 <div class="hero-two-columns">
                     <div class="hero-left">
-                        <h1 class="hero-title" onclick="window.location.href='${heroUrl}'">${escapeHtml(heroArticle.titre)}</h1>
+                        <h1 class="hero-title" onclick="window.location.href='redaction.html?id=${heroArticle.id}'">${escapeHtml(heroArticle.titre)}</h1>
                         <p class="hero-description">${cleanDesc}...</p>
                     </div>
                     <div class="hero-right">
@@ -901,44 +508,26 @@ function renderUI(heroArticle, gridArticles) {
     if (grid && gridArticles) {
         grid.innerHTML = gridArticles.slice(3, 15).map(art => {
             const excerpt = (art.description || "").replace(/<[^>]*>/g, '').substring(0, 120);
-            const articleUrl = getArticleUrl(art);
-            
-            const hasVideo = art.video_url && art.video_url !== '';
-            let displayImage = '';
-            
-            // ✅ Gestion des vidéos dans la grille principale - CORRIGÉ (utilisation de "art")
-            if (hasVideo) {
-                if (art.video_poster && art.video_poster !== '') {
-                    displayImage = art.video_poster;
-                } else if (art.image_url && art.image_url !== '') {
-                    displayImage = art.image_url;
-                } else {
-                    displayImage = '';  // Pas de placeholder
-                }
-            } else {
-                displayImage = art.image_url || '';
-            }
-            
-            return `
-                <div class="article-card" onclick="window.location.href='${articleUrl}'">
-                    <div class="card-img-wrapper">
-                        <img class="article-image" src="${displayImage || getPlaceholderImage(400, 250, 'Image')}" onerror="this.src='${getPlaceholderImage(400, 250, 'Image')}'">
-                        ${hasVideo ? '<div class="video-play-badge video-play-small">▶</div>' : ''}
-                    </div>
-                    <div class="article-meta-content">
-                        <h3 class="article-title">${escapeHtml(art.titre)}</h3>
-                        <p class="article-excerpt">${escapeHtml(excerpt)}...</p>
-                        <span class="read-time-small">${calculerTempsLecture(art.description)}</span>
-                    </div>
+            return `<div class="article-card" onclick="window.location.href='redaction.html?id=${art.id}'">
+                <div class="card-img-wrapper">
+                    <img class="article-image" src="${art.image_url || 'https://via.placeholder.com/400x250'}" onerror="this.src='https://via.placeholder.com/400x250'">
                 </div>
-            `;
+                <div class="article-meta-content">
+                    <h3 class="article-title">${escapeHtml(art.titre)}</h3>
+                    <p class="article-excerpt">${escapeHtml(excerpt)}...</p>
+                    <span class="read-time-small">${calculerTempsLecture(art.description)}</span>
+                </div>
+            </div>`;
         }).join('');
     }
 }
-// ==========================================================================
-// 11. FONCTIONS DE RENDU MÉDIA ET SECTIONS (CORRIGÉE - SANS DOUBLONS)
-// ==========================================================================
+/* ==========================================================================
+   9. FONCTION DE RENDU MÉDIA (COMME HERO) - CORRIGÉE
+   ========================================================================== */
+
+// Fonction utilitaire pour rendre les médias (vidéo, galerie, image) avec les mêmes icônes que Hero
 function renderSectionMedia(article) {
+    // CAS VIDÉO UNIQUE
     if (article.video_url && article.video_url !== '') {
         const videoCaption = article.video_caption || article.caption || '';
         return `
@@ -978,141 +567,114 @@ function renderSectionMedia(article) {
         `;
     }
     
+    // CAS GALERIE (images + vidéos avec descriptions individuelles)
     const articleMedias = article.medias || [];
     if (articleMedias.length > 0 || article.image_url) {
-        // Éviter les doublons d'URL
         const galleryItems = [];
-        const urlsVues = new Set();
         
-        // Ajouter l'image principale si elle existe et n'est pas déjà dans les médias
-        if (article.image_url && article.image_url !== '') {
-            let estDansMedias = false;
-            for (var i = 0; i < articleMedias.length; i++) {
-                if (articleMedias[i].url === article.image_url) {
-                    estDansMedias = true;
-                    break;
-                }
-            }
-            if (!estDansMedias) {
-                urlsVues.add(article.image_url);
-                galleryItems.push({ type: 'image', url: article.image_url, caption: article.image_caption || '' });
-            }
+        // Ajouter l'image à la une en premier avec sa description
+        if (article.image_url) {
+            galleryItems.push({ 
+                type: 'image', 
+                url: article.image_url, 
+                caption: article.image_caption || '' 
+            });
         }
         
-        // Ajouter les médias (uniquement les URLs uniques)
-        for (var j = 0; j < articleMedias.length; j++) {
-            var media = articleMedias[j];
-            if (media.url && media.url !== '' && !urlsVues.has(media.url)) {
-                urlsVues.add(media.url);
-                galleryItems.push({ type: media.type || 'image', url: media.url, caption: media.caption || '' });
-            }
-        }
+        // Ajouter tous les médias (images et vidéos)
+        articleMedias.forEach(media => {
+            galleryItems.push({ 
+                type: media.type || 'image', 
+                url: media.url, 
+                caption: media.caption || media.description || '' 
+            });
+        });
         
-        // Cas 1 : Galerie avec plusieurs médias
-if (galleryItems.length > 1) {
-    const galleryId = 'gallery_' + Date.now() + '_' + Math.random().toString(36).substring(2, 11);
-    let slidesHtml = '', dotsHtml = '';
-    
-    for (var k = 0; k < galleryItems.length; k++) {
-        var item = galleryItems[k];
-        var mediaType = item.type === 'video' ? 'video' : 'image';
-        var captionText = item.caption || '';
-        var placeholder = getPlaceholderImage(800, 500, 'Média');
-        
-        slidesHtml += `
-            <div class="hero-gallery-slide" data-index="${k}">
-                <div class="hero-slide-media-wrapper">
-                    ${mediaType === 'video' ? 
-                        `<video src="${item.url}" controls playsinline preload="metadata">
-                            <source src="${item.url}" type="video/mp4">
-                            Votre navigateur ne supporte pas la vidéo.
-                        </video>` : 
-                        `<img src="${item.url}" loading="lazy" onerror="this.src='${placeholder}'" alt="${escapeHtml(captionText)}">`
+        if (galleryItems.length > 1) {
+            const galleryId = 'gallery_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            let slidesHtml = '', dotsHtml = '';
+            
+            galleryItems.forEach((item, i) => {
+                const mediaType = item.type === 'video' ? 'video' : 'image';
+                const captionText = item.caption || '';
+                
+                slidesHtml += `
+                    <div class="hero-gallery-slide" data-index="${i}">
+                        ${mediaType === 'video' ? 
+                            `<video src="${item.url}" controls poster="${item.url}?frame=1"></video>` : 
+                            `<img src="${item.url}" onerror="this.src='https://via.placeholder.com/800x500'">`
+                        }
+                        ${captionText ? `<div class="hero-slide-caption"><p>${escapeHtml(captionText)}</p></div>` : ''}
+                    </div>
+                `;
+                dotsHtml += `<div class="gallery-dot ${i === 0 ? 'active' : ''}" data-index="${i}" onclick="goToGallerySlideSection('${galleryId}', ${i})"></div>`;
+            });
+            
+            return `
+                <div class="hero-gallery-wrapper" id="${galleryId}">
+                    <div class="hero-gallery-slides">${slidesHtml}</div>
+                    <div class="hero-gallery-controls">
+                        <div class="hero-gallery-dots">${dotsHtml}</div>
+                        <div class="hero-gallery-nav">
+                            <button class="gallery-prev" onclick="prevGallerySectionById('${galleryId}')">‹</button>
+                            <button class="gallery-next" onclick="nextGallerySectionById('${galleryId}')">›</button>
+                        </div>
+                    </div>
+                </div>
+                <style>
+                    #${galleryId} .hero-gallery-slides {
+                        display: flex;
+                        overflow-x: auto;
+                        scroll-snap-type: x mandatory;
+                        scroll-behavior: smooth;
                     }
-                    ${captionText ? `<div class="hero-slide-caption-overlay">${escapeHtml(captionText)}</div>` : ''}
-                </div>
-            </div>
-        `;
-        dotsHtml += `<div class="gallery-dot ${k === 0 ? 'active' : ''}" data-index="${k}" onclick="goToGallerySlideSection('${galleryId}', ${k})"></div>`;
-    }
-    
-    return `
-        <div class="hero-gallery-wrapper" id="${galleryId}">
-            <div class="hero-gallery-slides">${slidesHtml}</div>
-            <div class="hero-gallery-controls">
-                <div class="hero-gallery-dots">${dotsHtml}</div>
-                <div class="hero-gallery-nav">
-                    <button class="gallery-prev" onclick="prevGallerySectionById('${galleryId}')">‹</button>
-                    <button class="gallery-next" onclick="nextGallerySectionById('${galleryId}')">›</button>
-                </div>
-            </div>
-        </div>
-        <style>
-            #${galleryId} {
-                position: relative;
-            }
-            #${galleryId} .hero-gallery-slides {
-                display: flex;
-                overflow-x: auto;
-                scroll-snap-type: x mandatory;
-                scroll-behavior: smooth;
-                scrollbar-width: none;
-            }
-            #${galleryId} .hero-gallery-slides::-webkit-scrollbar {
-                display: none;
-            }
-            #${galleryId} .hero-gallery-slide {
-                flex: 0 0 100%;
-                scroll-snap-align: start;
-            }
-            /* L'image garde son ratio */
-            #${galleryId} .hero-slide-media-wrapper {
-                position: relative;
-                width: 100%;
-            }
-            #${galleryId} .hero-gallery-slide img,
-            #${galleryId} .hero-gallery-slide video {
-                width: 100%;
-                height: auto;
-                display: block;
-            }
-            /* Description SUR l'image (overlay) */
-            #${galleryId} .hero-slide-caption-overlay {
-                position: absolute;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                background: linear-gradient(to top, rgba(0,0,0,10), transparent);
-                color: white;
-                padding: 30px 20px 15px 20px;
-                font-family: var(--sans, 'Libre Franklin', sans-serif);
-                font-size: 0.85rem;
-                text-align: left;
-                pointer-events: none;
-            }
-        </style>
-    `;
-}        
-        // Cas 2 : Un seul média
+                    #${galleryId} .hero-gallery-slide {
+                        flex: 0 0 100%;
+                        scroll-snap-align: start;
+                        position: relative;
+                    }
+                    #${galleryId} .hero-gallery-slide img,
+                    #${galleryId} .hero-gallery-slide video {
+                        width: 100%;
+                        height: auto;
+                        max-height: 500px;
+                        object-fit: cover;
+                    }
+                    #${galleryId} .hero-slide-caption {
+                        position: absolute;
+                        bottom: 0;
+                        left: 0;
+                        right: 0;
+                        background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+                        color: white;
+                        padding: 40px 30px 20px;
+                        font-family: var(--serif);
+                        font-size: 0.9rem;
+                    }
+                </style>
+            `;
+        }
+        
+        // IMAGE UNIQUE avec description
         if (galleryItems.length === 1) {
             const singleItem = galleryItems[0];
-            const placeholder = getPlaceholderImage(800, 500, 'Image');
             return `
                 <div class="hero-single-image">
-                    <img src="${singleItem.url}" loading="lazy" onerror="this.src='${placeholder}'" alt="${escapeHtml(singleItem.caption || 'Image')}">
+                    <img src="${singleItem.url}" onerror="this.src='https://via.placeholder.com/800x500'">
                     ${singleItem.caption ? `<div class="photo-credit">${escapeHtml(singleItem.caption)}</div>` : ''}
                 </div>
             `;
         }
     }
     
-    // Cas 3 : Aucun média, image par défaut
-    const defaultPlaceholder = getPlaceholderImage(800, 450, 'Image');
-    return `<div class="hero-single-image"><img src="${article.image_url || defaultPlaceholder}" loading="lazy" onerror="this.src='${defaultPlaceholder}'" alt="Image par défaut"></div>`;
+    // FALLBACK
+    return `<div class="hero-single-image"><img src="${article.image_url || 'https://via.placeholder.com/800x450'}" onerror="this.src='https://via.placeholder.com/800x450'"></div>`;
 }
+
 /* ==========================================================================
-   12. FONCTIONS VIDÉO POUR LES SECTIONS
+   FONCTIONS VIDÉO POUR LES SECTIONS (COMME HERO)
    ========================================================================== */
+
 function toggleVideoPlaySection(btn) {
     const video = btn.closest('.hero-video-wrapper').querySelector('video');
     if (!video) return;
@@ -1159,8 +721,10 @@ function shareSectionArticle(articleId, articleTitle) {
 }
 
 /* ==========================================================================
-   13. FONCTIONS GALERIE
+   FONCTIONS GALERIE CORRIGÉES (SANS btn.closest)
    ========================================================================== */
+
+// Variables pour stocker l'état des galeries
 const galleryStates = {};
 
 function goToGallerySlideSection(galleryId, index) {
@@ -1174,6 +738,7 @@ function goToGallerySlideSection(galleryId, index) {
         slides.scrollTo({ left: index * slideWidth, behavior: 'smooth' });
     }
     
+    // Mettre à jour les dots
     const dots = wrapper.querySelectorAll('.gallery-dot');
     dots.forEach((dot, i) => {
         dot.classList.toggle('active', i === index);
@@ -1226,8 +791,10 @@ function nextGallerySectionById(galleryId) {
 }
 
 /* ==========================================================================
-   14. SOUS-ARTICLES EN MEDIA OBJECT
+   SOUS-ARTICLES EN MEDIA OBJECT / FLEXBOX ROW / LIST ITEM WITH THUMBNAIL
    ========================================================================== */
+
+// Fonction pour générer les sous-articles en format Media Object (flexbox row)
 function renderSubArticlesAsMediaObject(subArticles) {
     if (!subArticles.length) return '';
     
@@ -1238,47 +805,52 @@ function renderSubArticlesAsMediaObject(subArticles) {
                 <span class="economy-sub-line"></span>
             </div>
             <div class="economy-sub-grid media-object-grid">
-                ${subArticles.map(art => {
-                    const articleUrl = getArticleUrl(art);
-                    const hasVideo = art.video_url && art.video_url !== '';
-                    let displayImage = '';
-                    
-                    // ✅ Gestion des vidéos
-                    if (hasVideo) {
-                        if (art.video_poster && art.video_poster !== '') {
-                            displayImage = art.video_poster;
-                        } else if (art.image_url && art.image_url !== '') {
-                            displayImage = art.image_url;
-                        } else {
-                            displayImage = getPlaceholderImage(100, 100, 'Vidéo');
-                        }
-                    } else {
-                        displayImage = art.image_url || '';
-                    }
-                    
-                    return `
-                    <div class="media-object-card" onclick="window.location.href='${articleUrl}'">
-                        <div class="media-object-thumbnail" style="position: relative;">
-                            ${displayImage ? `
-                                <img src="${displayImage}" alt="${escapeHtml(art.titre)}" loading="lazy">
-                            ` : `
-                                <div style="width:100%; height:100%; background:#f5f5f5;"></div>
-                            `}
-                            ${hasVideo ? '<div class="media-video-badge">▶</div>' : ''}
+                ${subArticles.map(art => `
+                    <div class="media-object-card" onclick="window.location.href='redaction.html?id=${art.id}'">
+                        <div class="media-object-thumbnail">
+                            <img src="${art.image_url || 'https://via.placeholder.com/100x100'}" alt="${escapeHtml(art.titre)}" onerror="this.src='https://via.placeholder.com/100x100'">
                         </div>
                         <div class="media-object-content">
                             <h3 class="media-object-title">${escapeHtml(art.titre)}</h3>
-                            <p class="media-object-excerpt">${(art.description || "").replace(/<[^>]*>/g, '').substring(0, 200)}...</p>
+                            <p class="media-object-excerpt">${(art.description || "").replace(/<[^>]*>/g, '').substring(0, 80)}...</p>
                             <span class="media-object-read-time">${calculerTempsLecture(art.description)}</span>
                         </div>
                     </div>
-                `}).join('')}
+                `).join('')}
             </div>
         </div>
     `;
 }
+
+// Version alternative : Row Pattern (liste horizontale)
+function renderSubArticlesAsRowPattern(subArticles) {
+    if (!subArticles.length) return '';
+    
+    return `
+        <div class="economy-sub-section">
+            <div class="economy-sub-header">
+                <span class="economy-sub-label">À LA UNE ÉCO</span>
+                <span class="economy-sub-line"></span>
+            </div>
+            <div class="row-pattern-list">
+                ${subArticles.map(art => `
+                    <div class="row-pattern-item" onclick="window.location.href='redaction.html?id=${art.id}'">
+                        <div class="row-pattern-thumb">
+                            <img src="${art.image_url || 'https://via.placeholder.com/60x60'}" alt="${escapeHtml(art.titre)}" onerror="this.src='https://via.placeholder.com/60x60'">
+                        </div>
+                        <div class="row-pattern-text">
+                            <h4>${escapeHtml(art.titre)}</h4>
+                            <span class="read-time">${calculerTempsLecture(art.description)}</span>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
 /* ==========================================================================
-   15. RENDER ECONOMY, INTERNATIONAL, ENVIRONNEMENT, SPORT
+   9.1 ECONOMY ZONE AVEC MEDIA OBJECT
    ========================================================================== */
 function renderEconomy(articles) {
     const container = document.getElementById('economy-grid');
@@ -1289,21 +861,25 @@ function renderEconomy(articles) {
     const heroArticle = ecoArticles[0];
     const subArticles = ecoArticles.slice(1, 6);
     const cleanDesc = (heroArticle.description || "").replace(/<[^>]*>/g, '').substring(0, 400);
-    const heroUrl = getArticleUrl(heroArticle);
     
     let html = `<div class="economy-hero-wrapper"><div class="economy-hero-flexible">
         <div class="economy-hero-left"><span class="economy-hero-category">${heroArticle.category || 'ÉCONOMIE'}</span>
-        <h1 class="economy-hero-title" onclick="window.location.href='${heroUrl}'">${escapeHtml(heroArticle.titre)}</h1>
+        <h1 class="economy-hero-title" onclick="window.location.href='redaction.html?id=${heroArticle.id}'">${escapeHtml(heroArticle.titre)}</h1>
         <p class="economy-hero-description">${cleanDesc}...</p>
         <div class="economy-hero-meta"><span class="economy-hero-read-time">${calculerTempsLecture(heroArticle.description)}</span>
-        <span class="economy-hero-cta" onclick="window.location.href='${heroUrl}'"></span></div></div>
+        <span class="economy-hero-cta" onclick="window.location.href='redaction.html?id=${heroArticle.id}'"></span></div></div>
         <div class="economy-hero-right">${renderSectionMedia(heroArticle)}</div>
     </div></div>`;
     
+    // Utilisation du Media Object pour les sous-articles
     html += renderSubArticlesAsMediaObject(subArticles);
+    
     container.innerHTML = html;
 }
 
+/* ==========================================================================
+   9.2 INTERNATIONAL ZONE AVEC MEDIA OBJECT
+   ========================================================================== */
 function renderInternational(articles) {
     const container = document.getElementById('international-grid');
     if (!container) return;
@@ -1313,21 +889,24 @@ function renderInternational(articles) {
     const heroArticle = internationalArticles[0];
     const subArticles = internationalArticles.slice(1, 6);
     const cleanDesc = (heroArticle.description || "").replace(/<[^>]*>/g, '').substring(0, 400);
-    const heroUrl = getArticleUrl(heroArticle);
     
     let html = `<div class="international-hero-wrapper"><div class="international-hero-flexible">
         <div class="international-hero-left"><span class="international-hero-category">${heroArticle.subcategory || heroArticle.category || 'INTERNATIONAL'}</span>
-        <h1 class="international-hero-title" onclick="window.location.href='${heroUrl}'">${escapeHtml(heroArticle.titre)}</h1>
+        <h1 class="international-hero-title" onclick="window.location.href='redaction.html?id=${heroArticle.id}'">${escapeHtml(heroArticle.titre)}</h1>
         <p class="international-hero-description">${cleanDesc}...</p>
         <div class="international-hero-meta"><span class="international-hero-read-time">${calculerTempsLecture(heroArticle.description)}</span>
-        <span class="international-hero-cta" onclick="window.location.href='${heroUrl}'"></span></div></div>
+        <span class="international-hero-cta" onclick="window.location.href='redaction.html?id=${heroArticle.id}'"></span></div></div>
         <div class="international-hero-right">${renderSectionMedia(heroArticle)}</div>
     </div></div>`;
     
     html += renderSubArticlesAsMediaObject(subArticles);
+    
     container.innerHTML = html;
 }
 
+/* ==========================================================================
+   9.3 ENVIRONNEMENT ZONE AVEC MEDIA OBJECT
+   ========================================================================== */
 function renderEnvironnement(articles) {
     const container = document.getElementById('environnement-grid');
     if (!container) return;
@@ -1337,21 +916,24 @@ function renderEnvironnement(articles) {
     const heroArticle = environnementArticles[0];
     const subArticles = environnementArticles.slice(1, 6);
     const cleanDesc = (heroArticle.description || "").replace(/<[^>]*>/g, '').substring(0, 400);
-    const heroUrl = getArticleUrl(heroArticle);
     
     let html = `<div class="environnement-hero-wrapper"><div class="environnement-hero-flexible">
         <div class="environnement-hero-left"><span class="environnement-hero-category">${heroArticle.subcategory || heroArticle.category || 'ENVIRONNEMENT'}</span>
-        <h1 class="environnement-hero-title" onclick="window.location.href='${heroUrl}'">${escapeHtml(heroArticle.titre)}</h1>
+        <h1 class="environnement-hero-title" onclick="window.location.href='redaction.html?id=${heroArticle.id}'">${escapeHtml(heroArticle.titre)}</h1>
         <p class="environnement-hero-description">${cleanDesc}...</p>
         <div class="environnement-hero-meta"><span class="environnement-hero-read-time">${calculerTempsLecture(heroArticle.description)}</span>
-        <span class="environnement-hero-cta" onclick="window.location.href='${heroUrl}'"></span></div></div>
+        <span class="environnement-hero-cta" onclick="window.location.href='redaction.html?id=${heroArticle.id}'"></span></div></div>
         <div class="environnement-hero-right">${renderSectionMedia(heroArticle)}</div>
     </div></div>`;
     
     html += renderSubArticlesAsMediaObject(subArticles);
+    
     container.innerHTML = html;
 }
 
+/* ==========================================================================
+   9.4 SPORT ZONE AVEC MEDIA OBJECT
+   ========================================================================== */
 function renderSport(articles) {
     const container = document.getElementById('sport-grid');
     if (!container) return;
@@ -1362,23 +944,62 @@ function renderSport(articles) {
     const heroArticle = sportArticles[0];
     const subArticles = sportArticles.slice(1, 6);
     const cleanDesc = (heroArticle.description || "").replace(/<[^>]*>/g, '').substring(0, 400);
-    const heroUrl = getArticleUrl(heroArticle);
     
     let html = `<div class="sport-hero-wrapper"><div class="sport-hero-flexible">
         <div class="sport-hero-left"><span class="sport-hero-category">${heroArticle.category?.replace('SPORT_', '') || 'SPORT'}</span>
-        <h1 class="sport-hero-title" onclick="window.location.href='${heroUrl}'">${escapeHtml(heroArticle.titre)}</h1>
+        <h1 class="sport-hero-title" onclick="window.location.href='redaction.html?id=${heroArticle.id}'">${escapeHtml(heroArticle.titre)}</h1>
         <p class="sport-hero-description">${cleanDesc}...</p>
         <div class="sport-hero-meta"><span class="sport-hero-read-time">${calculerTempsLecture(heroArticle.description)}</span>
-        <span class="sport-hero-cta" onclick="window.location.href='${heroUrl}'"></span></div></div>
+        <span class="sport-hero-cta" onclick="window.location.href='redaction.html?id=${heroArticle.id}'"></span></div></div>
         <div class="sport-hero-right">${renderSectionMedia(heroArticle)}</div>
     </div></div>`;
     
     html += renderSubArticlesAsMediaObject(subArticles);
+    
     container.innerHTML = html;
 }
 
 /* ==========================================================================
-   16. RENDER AUTRE INFO, OPINIONS, LIFESTYLE, MORE NEWS
+   9.5 INIT SPORT NAVIGATION
+   ========================================================================== */
+function initSport() {
+    const sportTabs = document.querySelectorAll('.sport-nav-categories span');
+    if (!sportTabs.length) return;
+    sportTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            sportTabs.forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            const sportType = this.getAttribute('data-sport');
+            if (sportType) loadSportCategory(sportType);
+        });
+    });
+}
+
+async function loadSportCategory(category) {
+    const container = document.getElementById('sport-grid');
+    if (!container) return;
+    container.innerHTML = '<div class="sport-loading"><div class="sport-spinner"></div><span>Chargement...</span></div>';
+    try {
+        let sportCategory = '';
+        switch(category) {
+            case 'football': sportCategory = 'SPORT_FOOTBALL'; break;
+            case 'basketball': sportCategory = 'SPORT_BASKETBALL'; break;
+            case 'tennis': sportCategory = 'SPORT_TENNIS'; break;
+            case 'combat': sportCategory = 'SPORT_COMBAT'; break;
+            case 'e-sport': sportCategory = 'SPORT_ESPORT'; break;
+            default: sportCategory = 'SPORT';
+        }
+        const { data, error } = await supabaseClient.from('articles').select('*').eq('is_published', true).eq('category', sportCategory).order('created_at', { ascending: false }).limit(7);
+        if (error) throw error;
+        if (!data || data.length === 0) { container.innerHTML = '<div class="sport-empty">Aucun article dans cette catégorie</div>'; return; }
+        renderSport(data);
+    } catch (error) {
+        console.error("Sport category error:", error);
+        container.innerHTML = '<div class="sport-error"><p>Erreur de chargement</p><button onclick="loadSportCategory(\'' + category + '\')">Réessayer</button></div>';
+    }
+}
+/* ==========================================================================
+   10. AUTRE INFO & OPINIONS & LIFESTYLE & MORE NEWS
    ========================================================================== */
 function renderAutreInfo(articles) {
     const container = document.getElementById('sidebar-list');
@@ -1386,43 +1007,30 @@ function renderAutreInfo(articles) {
     setSlidesData(articles);
     const mainArt = articles[0];
     const secondaryArticles = articles.slice(1, 3);
-    const mainUrl = getArticleUrl(mainArt);
-    
-    let html = `<article class="main-trending-card" onclick="window.location.href='${mainUrl}'">
+    let html = `<article class="main-trending-card" onclick="window.location.href='redaction.html?id=${encodeURIComponent(mainArt.id)}'">
         <img src="${mainArt.image_url || 'https://via.placeholder.com/600x400'}" class="slide-cover" onerror="this.src='https://via.placeholder.com/600x400'">
         <div class="card-content"><span class="photo-credit">${escapeHtml(mainArt.author_name || 'MakMus')}</span>
         <h2 class="main-headline">${escapeHtml(mainArt.titre)}</h2>
         <p class="summary-text">${escapeHtml((mainArt.description || "").replace(/<[^>]*>/g, '').substring(0, 100))}...</p>
         <span class="main-read-time">${calculerTempsLecture(mainArt.description)}</span></div></article>`;
-        
     if (secondaryArticles.length) {
-        html += `<div class="secondary-grid">${secondaryArticles.map(art => {
-            const subUrl = getArticleUrl(art);
-            return `<article class="grid-card" onclick="window.location.href='${subUrl}'">
-                <img src="${art.image_url || 'https://via.placeholder.com/300x300'}" class="grid-cover" onerror="this.src='https://via.placeholder.com/300x300'">
-                <h4 class="grid-headline">${escapeHtml(art.titre)}</h4>
-                <span class="grid-read-time">${calculerTempsLecture(art.description)}</span>
-            </article>`;
-        }).join('')}</div>`;
+        html += `<div class="secondary-grid">${secondaryArticles.map(art => `<article class="grid-card" onclick="window.location.href='redaction.html?id=${encodeURIComponent(art.id)}'">
+            <img src="${art.image_url || 'https://via.placeholder.com/300x300'}" class="grid-cover" onerror="this.src='https://via.placeholder.com/300x300'">
+            <h4 class="grid-headline">${escapeHtml(art.titre)}</h4><span class="grid-read-time">${calculerTempsLecture(art.description)}</span></article>`).join('')}</div>`;
     }
     container.innerHTML = html;
-    syncSidebarContent();
 }
 
 function renderOpinions(opinions) {
     const container = document.getElementById('opinion-list');
     if (!container || !opinions?.length) return;
-    container.innerHTML = opinions.map((op, i) => {
-        const opUrl = getArticleUrl(op);
-        return `<div class="opinion-container-box">
-            <div class="opinion-author-row"><span class="author-name">${escapeHtml(op.author_name || 'La Redaction')}</span>
-            <img class="author-avatar" src="${op.author_image || 'https://via.placeholder.com/40'}" onerror="this.src='https://via.placeholder.com/40'"></div>
-            <h4 class="opinion-text-title" onclick="window.location.href='${opUrl}'">${escapeHtml(op.titre)}</h4>
-            <span class="read-time-small">${calculerTempsLecture(op.description)}</span>
-            ${i === 0 && op.image_url ? `<img class="opinion-main-cover" src="${op.image_url}" onclick="window.location.href='${opUrl}'">` : ''}
-        </div>`;
-    }).join('');
-    syncSidebarContent();
+    container.innerHTML = opinions.map((op, i) => `<div class="opinion-container-box">
+        <div class="opinion-author-row"><span class="author-name">${escapeHtml(op.author_name || 'La Redaction')}</span>
+        <img class="author-avatar" src="${op.author_image || 'https://via.placeholder.com/40'}" onerror="this.src='https://via.placeholder.com/40'"></div>
+        <h4 class="opinion-text-title" onclick="window.location.href='redaction.html?id=${op.id}'">${escapeHtml(op.titre)}</h4>
+        <span class="read-time-small">${calculerTempsLecture(op.description)}</span>
+        ${i === 0 && op.image_url ? `<img class="opinion-main-cover" src="${op.image_url}" onclick="window.location.href='redaction.html?id=${op.id}'">` : ''}
+    </div>`).join('');
 }
 
 function renderLifestyle(articles) {
@@ -1430,17 +1038,12 @@ function renderLifestyle(articles) {
     if (!container || !articles?.length) return;
     const main = articles[0];
     const subs = articles.slice(1, 4);
-    const mainUrl = getArticleUrl(main);
-    
-    container.innerHTML = `<div class="lifestyle-main" onclick="window.location.href='${mainUrl}'">
+    container.innerHTML = `<div class="lifestyle-main" onclick="window.location.href='redaction.html?id=${main.id}'">
         <div class="ls-main-text"><h2 class="ls-main-title">${escapeHtml(main.titre)}</h2><p class="ls-excerpt">${(main.description || "").replace(/<[^>]*>/g, '').substring(0, 160)}...</p><span class="ls-read-time">${calculerTempsLecture(main.description)}</span></div>
         <div class="ls-main-img"><img src="${main.image_url || 'https://via.placeholder.com/800x500'}" onerror="this.src='https://via.placeholder.com/800x500'">${main.author_name ? `<span class="ls-photo-credit">${escapeHtml(main.author_name)}</span>` : ''}</div>
-    </div><div class="lifestyle-sub-grid">${subs.map(art => {
-        const subUrl = getArticleUrl(art);
-        return `<div class="ls-sub-card" onclick="window.location.href='${subUrl}'">
-            <div class="ls-sub-text"><h4>${escapeHtml(art.titre)}</h4><span class="ls-read-time">${calculerTempsLecture(art.description)}</span></div>
-            <img src="${art.image_url || 'https://via.placeholder.com/150x150'}" class="ls-sub-img"></div>`;
-    }).join('')}</div>`;
+    </div><div class="lifestyle-sub-grid">${subs.map(art => `<div class="ls-sub-card" onclick="window.location.href='redaction.html?id=${art.id}'">
+        <div class="ls-sub-text"><h4>${escapeHtml(art.titre)}</h4><span class="ls-read-time">${calculerTempsLecture(art.description)}</span></div>
+        <img src="${art.image_url || 'https://via.placeholder.com/150x150'}" class="ls-sub-img"></div>`).join('')}</div>`;
 }
 
 function renderMoreNews(articles) {
@@ -1452,98 +1055,164 @@ function renderMoreNews(articles) {
         if (!filtered.length) return '';
         const main = filtered[0];
         const subs = filtered.slice(1);
-        const mainUrl = getArticleUrl(main);
-        
         return `<div class="info-category-block"><span class="category-label">${cat.replace('_', ' ')}</span>
-            <img src="${main.image_url}" class="info-main-img" onclick="window.location.href='${mainUrl}'">
-            <h4 class="info-main-title" onclick="window.location.href='${mainUrl}'">${escapeHtml(main.titre)}</h4>
-            <div class="info-sub-list">${subs.map(s => {
-                const subUrl = getArticleUrl(s);
-                return `<p class="info-sub-title" onclick="window.location.href='${subUrl}'">${escapeHtml(s.titre)}</p>`;
-            }).join('')}</div></div>`;
+            <img src="${main.image_url}" class="info-main-img" onclick="window.location.href='redaction.html?id=${main.id}'">
+            <h4 class="info-main-title" onclick="window.location.href='redaction.html?id=${main.id}'">${escapeHtml(main.titre)}</h4>
+            <div class="info-sub-list">${subs.map(s => `<p class="info-sub-title" onclick="window.location.href='redaction.html?id=${s.id}'">${escapeHtml(s.titre)}</p>`).join('')}</div></div>`;
     }).join('');
 }
 
 /* ==========================================================================
-   17. SYNC SIDEBAR CONTENT
+   11. VIDEOS
    ========================================================================== */
-function syncSidebarContent() {
-    const desktopList = document.querySelector('#sidebar-list');
-    const mobileList = document.querySelector('#sidebar-list-mobile');
+async function fetchVideos() {
+    const { data } = await supabaseClient.from('videos_du_jour').select('*').eq('is_published', true);
+    const slider = document.getElementById('video-slider');
+    if (!slider || !data) return;
     
-    if (desktopList && mobileList) {
-        mobileList.innerHTML = desktopList.innerHTML;
-        console.log('✅ Sidebar list synchronisée');
-    }
+    slider.innerHTML = data.map((vid, index) => `
+        <div class="video-magazine-item">
+            <div class="video-card">
+                <video playsinline muted ${index === 0 ? 'autoplay' : ''} loop data-src="${vid.video_url}" preload="none"></video>
+                <div class="video-controls-vertical">
+                    <button class="video-control-btn play-pause-btn" onclick="window.toggleVideoPlay(this)">
+                        <svg viewBox="0 0 24 24" fill="white" width="20" height="20">
+                            <polygon points="5 3 19 12 5 21 5 3" class="play-icon"/>
+                            <rect x="6" y="4" width="4" height="16" class="pause-icon" style="display:none" rx="1"/>
+                            <rect x="14" y="4" width="4" height="16" class="pause-icon-2" style="display:none" rx="1"/>
+                        </svg>
+                    </button>
+                    <button class="video-control-btn volume-btn" onclick="window.toggleVideoVolume(this)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="18" height="18">
+                            <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.08"/>
+                        </svg>
+                    </button>
+                    <button class="video-control-btn fullscreen-btn" onclick="window.toggleVideoFullscreen(this)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="18" height="18">
+                            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="play-overlay" onclick="window.playVideo(this)"><div class="play-button"><svg width="48" height="48" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
+            </div>
+            <h4 class="video-mag-title">${escapeHtml(vid.titre)}</h4>
+        </div>
+    `).join('');
     
-    const desktopOpinion = document.querySelector('#opinion-list');
-    const mobileOpinion = document.querySelector('#opinion-list-mobile');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const video = entry.target;
+                if (video.dataset.src && !video.src) {
+                    video.src = video.dataset.src;
+                    video.load();
+                    video.addEventListener('canplay', () => video.style.opacity = '1');
+                }
+                observer.unobserve(video);
+            }
+        });
+    }, { threshold: 0.3 });
     
-    if (desktopOpinion && mobileOpinion) {
-        mobileOpinion.innerHTML = desktopOpinion.innerHTML;
-        console.log('✅ Opinion list synchronisée');
-    }
+    document.querySelectorAll('.video-card video').forEach(video => observer.observe(video));
+    setupVideoDots(data.length);
 }
 
-/* ==========================================================================
-   18. HANDLE AUDIO PLAY (défini avant renderAudios)
-   ========================================================================== */
-function handleAudioPlay(e) {
-    e.stopPropagation();
-    var btn = e.currentTarget;
-    var audioUrl = btn.getAttribute('data-audio-url');
-    
-    if (!audioUrl) {
-        showToast('Audio non disponible', 'error');
-        return;
-    }
-    
-    if (currentAudioObj) {
-        currentAudioObj.pause();
-        if (currentPlayBtn) {
-            currentPlayBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
-        }
-    }
-    
-    if (currentAudioObj && currentAudioObj.src === audioUrl && currentAudioObj.paused) {
-        currentAudioObj.play();
-        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
-        currentPlayBtn = btn;
-        return;
-    }
-    
-    if (currentAudioObj && currentAudioObj.src === audioUrl && !currentAudioObj.paused) {
-        currentAudioObj.pause();
-        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
-        currentAudioObj = null;
-        currentPlayBtn = null;
-        return;
-    }
-    
-    currentAudioObj = new Audio(audioUrl);
-    currentAudioObj.play().catch(function(error) {
-        console.error('Erreur lecture:', error);
-        showToast('Impossible de lire cet audio', 'error');
-        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
-        currentAudioObj = null;
-        currentPlayBtn = null;
+function setupVideoDots(count) {
+    const container = document.getElementById('video-dots');
+    if (!container) return;
+    container.innerHTML = Array.from({ length: count }, (_, i) => `<div class="dot ${i === 0 ? 'active' : ''}" data-index="${i}"></div>`).join('');
+    document.querySelectorAll('#video-dots .dot').forEach((dot, i) => {
+        dot.addEventListener('click', () => {
+            const items = document.querySelectorAll('.video-magazine-item');
+            items[i]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+        });
     });
-    
-    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
-    currentPlayBtn = btn;
-    
-    currentAudioObj.onended = function() {
-        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
-        currentAudioObj = null;
-        currentPlayBtn = null;
-    };
 }
 
+window.toggleVideoPlay = function(btn) {
+    const video = btn.closest('.video-card').querySelector('video');
+    if (!video) return;
+    const playIcon = btn.querySelector('.play-icon');
+    const pauseIcons = btn.querySelectorAll('.pause-icon, .pause-icon-2');
+    if (video.paused) {
+        video.play();
+        if (playIcon) playIcon.style.display = 'none';
+        pauseIcons.forEach(icon => icon.style.display = 'block');
+    } else {
+        video.pause();
+        if (playIcon) playIcon.style.display = 'block';
+        pauseIcons.forEach(icon => icon.style.display = 'none');
+    }
+};
+
+window.toggleVideoVolume = function(btn) {
+    const video = btn.closest('.video-card').querySelector('video');
+    if (!video) return;
+    video.muted = !video.muted;
+    const svg = btn.querySelector('svg');
+    if (svg) svg.innerHTML = video.muted ? '<path d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6"/>' : '<path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.08"/>';
+};
+
+window.toggleVideoFullscreen = function(btn) {
+    const video = btn.closest('.video-card').querySelector('video');
+    if (!video) return;
+    if (video.requestFullscreen) video.requestFullscreen();
+    else if (video.webkitRequestFullscreen) video.webkitRequestFullscreen();
+};
+
+window.playVideo = function(overlay) {
+    const video = overlay.closest('.video-card').querySelector('video');
+    if (!video) return;
+    overlay.style.display = 'none';
+    video.play().catch(() => overlay.style.display = 'flex');
+};
+
+window.scrollVideoSlider = function(distance) {
+    const slider = document.getElementById('video-slider');
+    if (slider) slider.scrollBy({ left: distance, behavior: 'smooth' });
+};
+
 /* ==========================================================================
-  RENDER AUDIOS (CORRIGÉ)
+   12. AUDIO SECTION
    ========================================================================== */
+async function loadAudios() {
+    const container = document.getElementById('audio-grid');
+    if (!container) return;
+    container.innerHTML = '<div class="audio-loading">Chargement des audios...</div>';
+    try {
+        const { data, error } = await supabaseClient.from('audios').select('*').eq('is_published', true).order('created_at', { ascending: false }).limit(6);
+        if (error) throw error;
+        if (!data?.length) { container.innerHTML = '<div class="audio-empty">Aucun audio disponible</div>'; return; }
+        container.innerHTML = data.map(audio => {
+            const minutes = Math.floor(audio.duree / 60);
+            const seconds = audio.duree % 60;
+            const tag = audio.type === 'resume' ? 'RÉSUMÉ' : audio.type === 'podcast' ? 'PODCAST' : 'INFO';
+            return `<div class="audio-card" data-audio-url="${audio.audio_url}" data-audio-id="${audio.id}">
+                <div class="audio-image-wrapper"><img src="${audio.image_url || 'https://picsum.photos/80/80'}" onerror="this.src='https://picsum.photos/80/80'"></div>
+                <div class="audio-info"><div class="audio-label-group"><span class="audio-tag">${tag}</span>${audio.source ? `<span class="audio-source">${escapeHtml(audio.source)}</span>` : ''}</div>
+                <h4 class="audio-title">${escapeHtml(audio.titre)}</h4>${audio.description ? `<p class="audio-description">${escapeHtml(audio.description.substring(0, 100))}...</p>` : ''}
+                <div class="audio-player-bar"><button class="play-circle" data-audio-url="${audio.audio_url}" data-audio='${JSON.stringify(audio)}'><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></button>
+                <span class="audio-duration">${minutes}:${seconds < 10 ? '0' + seconds : seconds}</span></div></div></div>`;
+        }).join('');
+        
+        document.querySelectorAll('.play-circle').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const audioData = JSON.parse(btn.getAttribute('data-audio'));
+                showAudioWidget(audioData);
+            });
+        });
+    } catch (error) {
+        console.error('Erreur chargement audios:', error);
+        container.innerHTML = '<div class="audio-empty">Erreur de chargement</div>';
+    }
+}
+// Widget Audio
+let currentAudioObj = null;
+let currentAudioData = null;
 function renderAudios(audios) {
-    var container = document.getElementById('audio-grid');
+    const container = document.getElementById('audio-grid');
     if (!container) {
         console.warn('⚠️ #audio-grid non trouvé dans le DOM');
         return;
@@ -1554,794 +1223,277 @@ function renderAudios(audios) {
         return;
     }
     
-    container.innerHTML = audios.map(function(audio) {
-        var minutes = Math.floor(audio.duree / 60);
-        var seconds = audio.duree % 60;
-        var tag = audio.type === 'resume' ? 'RÉSUMÉ' : audio.type === 'podcast' ? 'PODCAST' : 'INFO';
+    container.innerHTML = audios.map(audio => {
+        const minutes = Math.floor(audio.duree / 60);
+        const seconds = audio.duree % 60;
+        const tag = audio.type === 'resume' ? 'RÉSUMÉ' : audio.type === 'podcast' ? 'PODCAST' : 'INFO';
         
-        // ✅ Utilisation de placehold.co (pas d'erreur de syntaxe)
-        var defaultImage = 'https://placehold.co/80x80/f0f0f0/999?text=Audio';
-        var coverImage = audio.image_url && audio.image_url !== '' ? audio.image_url : defaultImage;
-        
-        return '<div class="audio-card" data-audio-id="' + audio.id + '">' +
-            '<div class="audio-image-wrapper">' +
-                '<img src="' + coverImage + '" onerror="this.onerror=null; this.src=\'https://placehold.co/80x80/f0f0f0/999?text=Audio\'">' +
-            '</div>' +
-            '<div class="audio-info">' +
-                '<div class="audio-label-group">' +
-                    '<span class="audio-tag">' + tag + '</span>' +
-                    (audio.source ? '<span class="audio-source">' + escapeHtml(audio.source) + '</span>' : '') +
-                    (audio.category ? '<span class="audio-category">' + escapeHtml(audio.category) + '</span>' : '') +
-                '</div>' +
-                '<h4 class="audio-title">' + escapeHtml(audio.titre) + '</h4>' +
-                (audio.description ? '<p class="audio-description">' + escapeHtml(audio.description.substring(0, 100)) + '...</p>' : '') +
-                '<div class="audio-player-bar">' +
-                    '<button class="play-circle" data-audio-url="' + audio.audio_url + '">' +
-                        '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">' +
-                            '<polygon points="5 3 19 12 5 21 5 3"/>' +
-                        '</svg>' +
-                    '</button>' +
-                    '<span class="audio-duration">' + minutes + ':' + (seconds < 10 ? '0' + seconds : seconds) + '</span>' +
-                '</div>' +
-            '</div>' +
-        '</div>';
+        return `
+            <div class="audio-card" data-audio-id="${audio.id}">
+                <div class="audio-image-wrapper">
+                    <img src="${audio.image_url || 'https://picsum.photos/80/80'}" onerror="this.src='https://picsum.photos/80/80'">
+                </div>
+                <div class="audio-info">
+                    <div class="audio-label-group">
+                        <span class="audio-tag">${tag}</span>
+                        ${audio.source ? `<span class="audio-source">${escapeHtml(audio.source)}</span>` : ''}
+                        ${audio.category ? `<span class="audio-category">${escapeHtml(audio.category)}</span>` : ''}
+                    </div>
+                    <h4 class="audio-title">${escapeHtml(audio.titre)}</h4>
+                    ${audio.description ? `<p class="audio-description">${escapeHtml(audio.description.substring(0, 100))}...</p>` : ''}
+                    <div class="audio-player-bar">
+                        <button class="play-circle" data-audio-url="${audio.audio_url}">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                <polygon points="5 3 19 12 5 21 5 3"/>
+                            </svg>
+                        </button>
+                        <span class="audio-duration">${minutes}:${seconds < 10 ? '0' + seconds : seconds}</span>
+                    </div>
+                </div>
+            </div>
+        `;
     }).join('');
     
-    document.querySelectorAll('.play-circle').forEach(function(btn) {
+    // Attacher les événements
+    document.querySelectorAll('.play-circle').forEach(btn => {
         btn.removeEventListener('click', handleAudioPlay);
         btn.addEventListener('click', handleAudioPlay);
     });
 }
-/* ==========================================================================
-   19. PUBLICITE
-   ========================================================================== */
 
-/**
- * Initialise les publicités
- * Récupère les annonces depuis Supabase et démarre le rotation
- */
+function handleAudioPlay(e) {
+    e.stopPropagation();
+    const btn = e.currentTarget;
+    const audioUrl = btn.getAttribute('data-audio-url');
+    
+    if (!audioUrl) {
+        showToast('Audio non disponible', 'error');
+        return;
+    }
+    
+    // Arrêter l'audio en cours
+    if (currentAudioObj) {
+        currentAudioObj.pause();
+        if (currentPlayBtn) {
+            currentPlayBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+        }
+    }
+    
+    // Reprendre si c'est le même audio en pause
+    if (currentAudioObj && currentAudioObj.src === audioUrl && currentAudioObj.paused) {
+        currentAudioObj.play();
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+        currentPlayBtn = btn;
+        return;
+    }
+    
+    // Pause si c'est le même audio qui joue
+    if (currentAudioObj && currentAudioObj.src === audioUrl && !currentAudioObj.paused) {
+        currentAudioObj.pause();
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+        currentAudioObj = null;
+        currentPlayBtn = null;
+        return;
+    }
+    
+    // Nouvel audio
+    currentAudioObj = new Audio(audioUrl);
+    currentAudioObj.play().catch(error => {
+        console.error('Erreur lecture:', error);
+        showToast('Impossible de lire cet audio', 'error');
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+        currentAudioObj = null;
+        currentPlayBtn = null;
+    });
+    
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+    currentPlayBtn = btn;
+    
+    currentAudioObj.onended = () => {
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+        currentAudioObj = null;
+        currentPlayBtn = null;
+    };
+}
+function playSimpleAudio(btn, audioUrl) {
+    if (!audioUrl) {
+        showToast('Audio non disponible', 'error');
+        return;
+    }
+    
+    // Arrêter l'audio en cours
+    if (currentAudioObj) {
+        currentAudioObj.pause();
+        if (currentPlayBtn) {
+            currentPlayBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+        }
+    }
+    
+    // Reprendre si c'est le même audio en pause
+    if (currentAudioObj && currentAudioObj.src === audioUrl && currentAudioObj.paused) {
+        currentAudioObj.play();
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+        return;
+    }
+    
+    // Pause si c'est le même audio qui joue
+    if (currentAudioObj && currentAudioObj.src === audioUrl && !currentAudioObj.paused) {
+        currentAudioObj.pause();
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+        currentAudioObj = null;
+        currentPlayBtn = null;
+        return;
+    }
+    
+    // Nouvel audio
+    currentAudioObj = new Audio(audioUrl);
+    currentAudioObj.play().catch(error => {
+        console.error('Erreur lecture:', error);
+        showToast('Impossible de lire cet audio', 'error');
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+        currentAudioObj = null;
+    });
+    
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+    currentPlayBtn = btn;
+    
+    currentAudioObj.onended = () => {
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+        currentAudioObj = null;
+    };
+    
+    currentAudioObj.onerror = () => {
+        showToast('Erreur de lecture', 'error');
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+        currentAudioObj = null;
+        currentPlayBtn = null;
+    };
+}
+function showAudioWidget(audioData) {
+    currentAudioData = audioData;
+    const widget = document.getElementById('audio-widget');
+    const cover = document.getElementById('widget-cover');
+    const title = document.getElementById('widget-title');
+    const source = document.getElementById('widget-source');
+    
+    cover.src = audioData.image_url || 'https://via.placeholder.com/50';
+    title.textContent = audioData.titre;
+    source.textContent = audioData.source || 'MAKMUS Audio';
+    
+    widget.style.display = 'block';
+    
+    if (currentAudioObj) {
+        currentAudioObj.pause();
+    }
+    
+    currentAudioObj = new Audio(audioData.audio_url);
+    setupAudioEvents();
+}
+
+function setupAudioEvents() {
+    const playBtn = document.getElementById('widget-play');
+    const progressFill = document.getElementById('widget-progress-fill');
+    const currentSpan = document.getElementById('widget-current');
+    const durationSpan = document.getElementById('widget-duration');
+    const progressBar = document.querySelector('.progress-bar');
+    
+    currentAudioObj.addEventListener('loadedmetadata', () => {
+        const minutes = Math.floor(currentAudioObj.duration / 60);
+        const seconds = Math.floor(currentAudioObj.duration % 60);
+        durationSpan.textContent = `${minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
+    });
+    
+    currentAudioObj.addEventListener('timeupdate', () => {
+        const percent = (currentAudioObj.currentTime / currentAudioObj.duration) * 100;
+        progressFill.style.width = percent + '%';
+        
+        const minutes = Math.floor(currentAudioObj.currentTime / 60);
+        const seconds = Math.floor(currentAudioObj.currentTime % 60);
+        currentSpan.textContent = `${minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
+    });
+    
+    playBtn.onclick = () => {
+        if (currentAudioObj.paused) {
+            currentAudioObj.play();
+            playBtn.innerHTML = '⏸';
+        } else {
+            currentAudioObj.pause();
+            playBtn.innerHTML = '▶';
+        }
+    };
+    
+    progressBar.onclick = (e) => {
+        const rect = progressBar.getBoundingClientRect();
+        const percent = (e.clientX - rect.left) / rect.width;
+        currentAudioObj.currentTime = percent * currentAudioObj.duration;
+    };
+    
+    currentAudioObj.onended = () => {
+        playBtn.innerHTML = '▶';
+    };
+}
+
+document.getElementById('widget-close').onclick = () => {
+    if (currentAudioObj) {
+        currentAudioObj.pause();
+    }
+    document.getElementById('audio-widget').style.display = 'none';
+};
+/* ==========================================================================
+   13. PUBLICITE
+   ========================================================================== */
 async function initAds() {
     try {
-        // Vérifier si Supabase est disponible
-        if (typeof supabaseClient === 'undefined') {
-            console.warn('⚠️ Supabase non initialisé, affichage fallback');
-            displayFallbackAd();
-            return;
-        }
-        
-        // Récupérer les publicités actives
-        const { data, error } = await supabaseClient
-            .from('publicites')
-            .select('*')
-            .eq('est_active', true)
-            .order('created_at', { ascending: true });
-        
-        if (error) {
-            console.error('❌ Erreur Supabase:', error);
-            displayFallbackAd();
-            return;
-        }
-        
-        // Vérifier si des publicités existent
-        if (!data || data.length === 0) {
-            console.warn('⚠️ Aucune publicité active trouvée');
-            displayFallbackAd();
-            return;
-        }
-        
-        // Stocker les données et démarrer la rotation
-        adsData = data;
-        currentAdIdx = 0;
-        
-        // Afficher la première publicité
-        displayCurrentAd();
-        
-        // Démarrer l'intervalle de rotation (si plus d'une publicité)
-        if (adsData.length > 1) {
-            if (adsInterval) clearInterval(adsInterval);
-            adsInterval = setInterval(rotateAd, 15000);
-        }
-        
-        console.log(`✅ ${adsData.length} publicité(s) chargée(s)`);
-        
+        const { data, error } = await supabaseClient.from('publicites').select('*').eq('est_active', true).order('created_at', { ascending: true });
+        if (error) throw error;
+        if (!data?.length) { showFallbackAd(); return; }
+        activeAds = data;
+        showNextAd();
+        setInterval(showNextAd, 15000);
     } catch (error) {
-        console.error('❌ Erreur lors du chargement des publicités:', error);
-        displayFallbackAd();
+        console.error('Erreur chargement publicites:', error);
+        showFallbackAd();
     }
 }
 
-/**
- * Affiche la publicité courante
- */
-function displayCurrentAd() {
+function showNextAd() {
     const zone = document.getElementById('ad-display-zone');
-    if (!zone) {
-        console.warn('⚠️ Zone publicitaire #ad-display-zone non trouvée');
-        return;
-    }
-    
-    if (!adsData || adsData.length === 0) {
-        displayFallbackAd();
-        return;
-    }
-    
-    const ad = adsData[currentAdIdx];
-    if (!ad) {
-        console.warn('⚠️ Publicité invalide à l\'index', currentAdIdx);
-        displayFallbackAd();
-        return;
-    }
-    
-    // Générer le HTML de la publicité
-    const adHtml = generateAdHtml(ad);
-    
-    // Appliquer avec effet de transition
-    zone.style.opacity = '0';
-    setTimeout(() => {
-        zone.innerHTML = adHtml;
-        zone.style.opacity = '1';
-    }, 150);
-    
-    // Tracker l'impression (optionnel)
-    trackAdImpression(ad);
+    if (!zone || !activeAds?.length) return;
+    const ad = activeAds[currentAdIndex];
+    currentAdIndex = (currentAdIndex + 1) % activeAds.length;
+    zone.innerHTML = ad.type === 'video' ? 
+        `<div class="ad-container ad-video"><div class="ad-label">PUBLICITE</div><video class="ad-raw-media" src="${ad.media_url}" autoplay muted loop playsinline onclick="window.open('${ad.lien_clic}', '_blank')"></video></div>` :
+        `<div class="ad-container ad-image"><div class="ad-label">PUBLICITE</div><img class="ad-raw-media" src="${ad.media_url}" onclick="window.open('${ad.lien_clic}', '_blank')" onerror="this.src='https://via.placeholder.com/728x90'"></div>`;
 }
 
-/**
- * Génère le HTML d'une publicité
- * @param {Object} ad - Données de la publicité
- * @returns {string} HTML de la publicité
- */
-function generateAdHtml(ad) {
-    const clickUrl = (ad.lien_clic && ad.lien_clic.trim() !== '') ? ad.lien_clic : '#';
-    const adLabel = '<div class="ad-label-top">PUBLICITÉ</div>';
-    const adTag = '<div class="ad-tag">Sponsorisé</div>';
-    
-    // Nettoyer l'URL de l'image si nécessaire
-    let mediaUrl = ad.media_url || '';
-    if (mediaUrl && !mediaUrl.startsWith('http') && !mediaUrl.startsWith('/')) {
-        mediaUrl = 'https://' + mediaUrl;
-    }
-    
-    // Publicité vidéo
-    if (ad.type === 'video' && mediaUrl) {
-        return `
-            <div class="ad-content ad-video" data-ad-id="${ad.id}">
-                ${adLabel}
-                ${adTag}
-                <video class="ad-media video-ad" 
-                       src="${mediaUrl}" 
-                       autoplay 
-                       muted 
-                       loop 
-                       playsinline 
-                       onclick="trackAdClick('${ad.id}', '${clickUrl}')">
-                    Votre navigateur ne supporte pas la vidéo
-                </video>
-            </div>
-        `;
-    }
-    
-    // Publicité image (ou fallback)
-    const imageUrl = mediaUrl || getPlaceholderImage(728, 90, 'Publicité');
-    
-    return `
-        <div class="ad-content ad-image" data-ad-id="${ad.id}">
-            ${adLabel}
-            ${adTag}
-            <img class="ad-media image-ad" 
-                 src="${imageUrl}" 
-                 alt="Publicité"
-                 loading="lazy"
-                 onclick="trackAdClick('${ad.id}', '${clickUrl}')"
-                 onerror="this.src='${getPlaceholderImage(728, 90, 'Image non disponible')}'">
-        </div>
-    `;
-}
-
-/**
- * Passe à la publicité suivante (rotation)
- */
-function rotateAd() {
-    if (!adsData || adsData.length === 0) return;
-    
-    // Passer à l'index suivant
-    currentAdIdx = (currentAdIdx + 1) % adsData.length;
-    
-    // Afficher la nouvelle publicité
-    displayCurrentAd();
-}
-
-/**
- * Affiche une publicité de secours (fallback)
- */
-function displayFallbackAd() {
+function showFallbackAd() {
     const zone = document.getElementById('ad-display-zone');
-    if (!zone) return;
-    
-    zone.innerHTML = `
-        <div class="ad-content ad-fallback">
-            <div class="ad-label-top">ESPACE PUBLICITAIRE</div>
-            <div class="ad-fallback-content">
-                <span>Votre publicité ici</span>
-                <small>contact@makmus.com</small>
-            </div>
-            <div class="ad-placeholder-icon">📺</div>
-        </div>
-    `;
-}
-
-/**
- * Track l'impression d'une publicité
- * @param {Object} ad - Publicité affichée
- */
-async function trackAdImpression(ad) {
-    if (!ad || !ad.id) return;
-    
-    try {
-        // Optionnel: Envoyer les stats à Supabase
-        // await supabaseClient.from('publicite_stats').insert([{
-        //     publicite_id: ad.id,
-        //     type: 'impression',
-        //     created_at: new Date()
-        // }]);
-        
-        console.log(`📊 Impression: ${ad.type || 'publicité'} (ID: ${ad.id})`);
-    } catch (error) {
-        console.warn('Erreur tracking impression:', error);
-    }
-}
-
-/**
- * Track le clic sur une publicité
- * @param {string} adId - ID de la publicité
- * @param {string} clickUrl - URL de redirection
- */
-window.trackAdClick = async function(adId, clickUrl) {
-    if (!adId) return;
-    
-    try {
-        // Optionnel: Enregistrer le clic dans la base de données
-        // await supabaseClient.from('publicite_stats').insert([{
-        //     publicite_id: adId,
-        //     type: 'click',
-        //     created_at: new Date()
-        // }]);
-        
-        console.log(`🖱️ Clic sur publicité ${adId}`);
-        
-        // Rediriger vers l'URL de destination
-        if (clickUrl && clickUrl !== '#') {
-            window.open(clickUrl, '_blank');
-        }
-        
-    } catch (error) {
-        console.warn('Erreur tracking clic:', error);
-        // Redirection même en cas d'erreur
-        if (clickUrl && clickUrl !== '#') {
-            window.open(clickUrl, '_blank');
-        }
-    }
-};
-
-/**
- * Génère une image placeholder
- * @param {number} width - Largeur
- * @param {number} height - Hauteur
- * @param {string} text - Texte à afficher
- * @returns {string} URL du placeholder
- */
-function getPlaceholderImage(width, height, text) {
-    // Utiliser placeholder.com ou un service similaire
-    return `https://via.placeholder.com/${width}x${height}?text=${encodeURIComponent(text)}`;
-}
-
-/**
- * Rafraîchit les publicités (rechargement manuel)
- */
-async function refreshAds() {
-    // Nettoyer l'intervalle existant
-    if (adsInterval) {
-        clearInterval(adsInterval);
-        adsInterval = null;
-    }
-    
-    // Recharger les publicités
-    await initAds();
-}
-
-/**
- * Nettoie les ressources publicitaires (à appeler si nécessaire)
- */
-function cleanupAds() {
-    if (adsInterval) {
-        clearInterval(adsInterval);
-        adsInterval = null;
-    }
-    
-    const zone = document.getElementById('ad-display-zone');
-    if (zone) {
-        const videos = zone.querySelectorAll('video');
-        videos.forEach(video => {
-            video.pause();
-            video.src = '';
-            video.load();
-        });
-    }
-    
-    adsData = [];
-    currentAdIdx = 0;
-}
-
-// Exposer les fonctions globalement si nécessaire
-window.initAds = initAds;
-window.refreshAds = refreshAds;
-window.trackAdClick = window.trackAdClick;
-
-/* ==========================================================================
-   20. VIDEOS
-   ========================================================================== */
-async function fetchVideos() {
-    const { data } = await supabaseClient.from('videos_du_jour').select('*').eq('is_published', true);
-    const slider = document.getElementById('video-slider');
-    if (!slider || !data) return;
-    
-    slider.innerHTML = data.map((vid, index) => `
-        <div class="video-magazine-item">
-            <div class="video-card">
-                <video playsinline ${index === 0 ? 'autoplay muted' : ''} loop preload="metadata" poster="${vid.image_url || ''}">
-                    <source src="${vid.video_url}" type="video/mp4">
-                    Votre navigateur ne supporte pas la vidéo.
-                </video>
-                <div class="video-controls-vertical hero-video-controls-vertical">
-                    <button class="video-control-btn play-pause-btn" data-video-index="${index}" onclick="window.toggleVideoPlay(this)">
-                        <svg viewBox="0 0 24 24" fill="white" width="20" height="20">
-                            <polygon points="5 3 19 12 5 21 5 3" class="play-icon-section"/>
-                            <rect x="6" y="4" width="4" height="16" class="pause-icon-section" style="display:none" rx="1"/>
-                            <rect x="14" y="4" width="4" height="16" class="pause-icon-section-2" style="display:none" rx="1"/>
-                        </svg>
-                    </button>
-                    <button class="video-control-btn volume-btn" onclick="window.toggleVideoVolume(this)">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="18" height="18">
-                            <path d="M11 5L6 9H2v6h4l5 4V5z"/>
-                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.08"/>
-                        </svg>
-                    </button>
-                    <button class="video-control-btn share-btn" onclick="window.shareVideoItem('${vid.id}', '${escapeHtml(vid.titre)}')">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="18" height="18">
-                            <circle cx="18" cy="5" r="3"/>
-                            <circle cx="6" cy="12" r="3"/>
-                            <circle cx="18" cy="19" r="3"/>
-                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
-                            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-                        </svg>
-                    </button>
-                    <button class="video-control-btn fullscreen-btn" onclick="window.toggleVideoFullscreen(this)">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="18" height="18">
-                            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
-                        </svg>
-                    </button>
-                </div>
-                <div class="play-overlay" onclick="window.playVideo(this)">
-                    <div class="play-button">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2">
-                            <polygon points="5 3 19 12 5 21 5 3" fill="white"/>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-            <h4 class="video-mag-title">${escapeHtml(vid.titre)}</h4>
-        </div>
-    `).join('');
-    
-    setTimeout(() => {
-        const videos = document.querySelectorAll('.video-card video');
-        data.forEach((vid, index) => {
-            if (videos[index]) {
-                const videoElement = videos[index];
-                videoElement.src = vid.video_url;
-                videoElement.load();
-                
-                if (index === 0) {
-                    videoElement.play().catch(e => console.log('Autoplay bloqué:', e));
-                }
-            }
-        });
-    }, 100);
-}
-
-window.shareVideoItem = function(videoId, videoTitle) {
-    const videoUrl = `${window.location.origin}/video.html?id=${videoId}`;
-    if (navigator.share) {
-        navigator.share({
-            title: videoTitle,
-            text: 'Découvrez cette vidéo sur MAKMUS',
-            url: videoUrl
-        }).catch(() => copyToClipboard(videoUrl));
-    } else {
-        copyToClipboard(videoUrl);
-    }
-};
-
-function copyToClipboard(text) {
-    navigator.clipboard.writeText(text).then(() => {
-        showToast('Lien copié dans le presse-papier');
-    }).catch(() => {
-        showToast('Impossible de copier le lien', 'error');
-    });
-}
-
-window.toggleVideoPlay = function(btn) {
-    const videoCard = btn.closest('.video-card');
-    const video = videoCard.querySelector('video');
-    if (!video) return;
-    
-    const playIcon = btn.querySelector('.play-icon-section');
-    const pauseIcons = btn.querySelectorAll('.pause-icon-section, .pause-icon-section-2');
-    const playOverlay = videoCard.querySelector('.play-overlay');
-    
-    if (video.paused) {
-        video.play();
-        if (playIcon) playIcon.style.display = 'none';
-        pauseIcons.forEach(icon => icon.style.display = 'block');
-        if (playOverlay) playOverlay.style.display = 'none';
-    } else {
-        video.pause();
-        if (playIcon) playIcon.style.display = 'block';
-        pauseIcons.forEach(icon => icon.style.display = 'none');
-        if (playOverlay) playOverlay.style.display = 'flex';
-    }
-};
-
-window.toggleVideoVolume = function(btn) {
-    const video = btn.closest('.video-card').querySelector('video');
-    if (!video) return;
-    video.muted = !video.muted;
-    const svg = btn.querySelector('svg');
-    if (svg) {
-        svg.innerHTML = video.muted ? 
-            '<path d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6"/>' : 
-            '<path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.08"/>';
-    }
-};
-
-window.toggleVideoFullscreen = function(btn) {
-    const videoCard = btn.closest('.video-card');
-    const video = videoCard.querySelector('video');
-    if (!video) return;
-    
-    if (video.requestFullscreen) {
-        video.requestFullscreen();
-    } else if (video.webkitRequestFullscreen) {
-        video.webkitRequestFullscreen();
-    } else if (video.msRequestFullscreen) {
-        video.msRequestFullscreen();
-    } else if (videoCard.requestFullscreen) {
-        videoCard.requestFullscreen();
-    }
-    
-    if (!video.requestFullscreen && !video.webkitRequestFullscreen) {
-        showToast('Plein écran non supporté sur ce navigateur', 'info');
-    }
-};
-
-window.playVideo = function(overlay) {
-    const videoCard = overlay.closest('.video-card');
-    const video = videoCard.querySelector('video');
-    if (!video) return;
-    
-    overlay.style.display = 'none';
-    video.play().catch(error => {
-        console.log('Erreur lecture:', error);
-        overlay.style.display = 'flex';
-        showToast('Lecture impossible, vérifiez votre connexion', 'error');
-    });
-    
-    const playPauseBtn = videoCard.querySelector('.play-pause-btn');
-    if (playPauseBtn) {
-        const playIcon = playPauseBtn.querySelector('.play-icon-section');
-        const pauseIcons = playPauseBtn.querySelectorAll('.pause-icon-section, .pause-icon-section-2');
-        if (playIcon) playIcon.style.display = 'none';
-        pauseIcons.forEach(icon => icon.style.display = 'block');
-    }
-};
-
-window.scrollVideoSlider = function(distance) {
-    const slider = document.getElementById('video-slider');
-    if (slider) slider.scrollBy({ left: distance, behavior: 'smooth' });
-};
-
-function initVideoLazyLoading() {
-    const videos = document.querySelectorAll('.video-card video');
-    
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const video = entry.target;
-                if (!video.src || video.src === '') {
-                    const source = video.querySelector('source');
-                    if (source && source.src) {
-                        video.load();
-                    }
-                }
-                observer.unobserve(video);
-            }
-        });
-    }, { threshold: 0.1 });
-    
-    videos.forEach(video => observer.observe(video));
-}
-
-document.addEventListener('fullscreenchange', exitHandler);
-document.addEventListener('webkitfullscreenchange', exitHandler);
-document.addEventListener('mozfullscreenchange', exitHandler);
-document.addEventListener('MSFullscreenChange', exitHandler);
-
-function exitHandler() {
-    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-        console.log('Sortie du mode plein écran');
-    }
+    if (zone) zone.innerHTML = `<div class="ad-container ad-fallback"><div class="ad-label">ESPACE PUBLICITAIRE</div><div class="ad-fallback-content"><span>Votre publicite ici</span><small>Contactez-nous</small></div></div>`;
 }
 
 /* ==========================================================================
-   21. TAGS TRENDING
+   14. TAGS TRENDING
    ========================================================================== */
 async function loadTrendingTags() {
     const container = document.getElementById('tags-container');
     if (!container) return;
-    
     try {
-        // Récupérer les articles les plus récents d'abord
-        const { data, error } = await supabaseClient
-            .from('articles')
-            .select('tags, created_at')
-            .eq('is_published', true)
-            .not('tags', 'is', null)
-            .order('created_at', { ascending: false })  // ← Les plus récents d'abord
-            .limit(200);
-        
-        if (error) throw error;
-        
-        if (!data || data.length === 0) {
-            container.innerHTML = '<span class="trending-link">AUCUN TAG</span>';
-            return;
-        }
-        
-        // Compter les occurrences avec un poids pour les articles récents
+        const { data } = await supabaseClient.from('articles').select('tags').eq('is_published', true).not('tags', 'is', null).limit(50);
         const counts = {};
-        const maxIndex = data.length; // 200 maximum
-        
-        data.forEach((art, index) => {
-            if (typeof art.tags === 'string' && art.tags.trim()) {
-                // Calcul du poids : plus l'article est récent, plus le poids est élevé
-                // index 0 = article le plus récent → poids 200
-                // index 199 = article le plus ancien → poids 1
-                const weight = maxIndex - index;
-                
-                art.tags.split(',').forEach(t => {
-                    let tag = t.trim();
-                    if (tag && tag.length > 1) {
-                        const normalized = tag.toLowerCase();
-                        if (!counts[normalized]) {
-                            counts[normalized] = { 
-                                count: 0, 
-                                weight: 0,
-                                original: tag 
-                            };
-                        }
-                        counts[normalized].count++;
-                        counts[normalized].weight += weight;
-                    }
-                });
-            }
+        data?.forEach(art => {
+            if (typeof art.tags === 'string') art.tags.split(',').forEach(t => { const tag = t.trim(); if (tag) counts[tag] = (counts[tag] || 0) + 1; });
         });
-        
-        const tagArray = Object.values(counts);
-        
-        if (tagArray.length === 0) {
-            container.innerHTML = '<span class="trending-link">AUCUN TAG</span>';
-            return;
-        }
-        
-        // Trier par poids (priorité aux articles récents) puis par nombre d'occurrences
-        const topTags = tagArray
-            .sort((a, b) => {
-                // D'abord par poids (récence)
-                if (a.weight !== b.weight) return b.weight - a.weight;
-                // En cas d'égalité, par nombre d'occurrences
-                return b.count - a.count;
-            })
-            .slice(0, 10);
-        
-        // Afficher SANS le comptage
-        container.innerHTML = topTags.map((tag, i) => {
-            const escapedTag = tag.original.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-            return `<span class="trending-link ${i === 0 ? 'is-live' : ''}" 
-                           onclick="if(window.fetchMakmusNews) fetchMakmusNews('${escapedTag}')">
-                        ${tag.original.toUpperCase()}
-                    </span>`;
-        }).join('');
-        
-        console.log('✅ Tags trending (priorité récents):', topTags.map(t => `${t.original} (poids:${t.weight}, count:${t.count})`));
-        
-    } catch(e) { 
-        console.warn("Tags error:", e); 
-        container.innerHTML = '<span class="trending-link">TAGS INDISPONIBLES</span>'; 
-    }
+        const topTags = Object.keys(counts).sort((a,b) => counts[b] - counts[a]).slice(0, 6);
+        container.innerHTML = topTags.length ? topTags.map((tag, i) => `<span class="trending-link ${i === 0 ? 'is-live' : ''}" onclick="fetchMakmusNews('${tag.replace(/'/g, "\\'")}')">${tag.toUpperCase()}</span>`).join('') : '<span class="trending-link">AUCUN TAG</span>';
+    } catch(e) { console.warn("Tags error:", e); container.innerHTML = '<span class="trending-link">TAGS INDISPONIBLES</span>'; }
 }
-
- /* ==========================================================================
-   SUB NAV TAG - Sous-catégories groupées par catégorie (affichage sans catégorie)
-   ========================================================================== */
 
 /* ==========================================================================
-   SUB NAV TAG - Sous-catégories groupées par catégorie (affichage sans catégorie)
+   15. SLIDER AUTRE INFO
    ========================================================================== */
+let currentSlideIndex = 0;
+let slidesData = [];
 
-// Récupérer les sous-catégories pour une catégorie spécifique (les 5 plus récentes)
-async function getSubcategoriesByCategory(categoryName) {
-    try {
-        const { data, error } = await supabaseClient
-            .from('articles')
-            .select('subcategory, created_at')
-            .eq('is_published', true)
-            .eq('category', categoryName)
-            .not('subcategory', 'is', null)
-            .not('subcategory', 'eq', '')
-            .order('created_at', { ascending: false });
-        
-        if (error) throw error;
-        
-        if (!data || data.length === 0) return [];
-        
-        // Extraire les sous-catégories uniques en gardant la plus récente pour chaque
-        const subcategoriesMap = new Map();
-        
-        data.forEach(article => {
-            if (!article.subcategory || !article.subcategory.trim()) return;
-            
-            const subcategory = article.subcategory.trim();
-            const createdAt = new Date(article.created_at);
-            
-            if (!subcategoriesMap.has(subcategory)) {
-                subcategoriesMap.set(subcategory, createdAt);
-            } else {
-                // Garder la date la plus récente
-                const existingDate = subcategoriesMap.get(subcategory);
-                if (createdAt > existingDate) {
-                    subcategoriesMap.set(subcategory, createdAt);
-                }
-            }
-        });
-        
-        // Convertir en tableau et trier par date (plus récent d'abord)
-        const sortedSubcategories = Array.from(subcategoriesMap.entries())
-            .sort((a, b) => b[1] - a[1])
-            .map(entry => entry[0]);
-        
-        // Prendre seulement les 5 plus récentes
-        const latestSubcategories = sortedSubcategories.slice(0, 5);
-        
-        console.log(`📊 ${categoryName} - Sous-catégories (5 plus récentes):`, latestSubcategories);
-        return latestSubcategories;
-        
-    } catch (error) {
-        console.error(`Erreur récupération sous-catégories pour ${categoryName}:`, error);
-        return [];
-    }
-}
-
-// Générer le HTML d'un sous-menu spécifique
-async function renderSubNavForCategory(containerId, categoryName) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    
-    const subcategories = await getSubcategoriesByCategory(categoryName);
-    
-    if (subcategories.length === 0) {
-        container.style.display = 'none';
-        return;
-    }
-    
-    let html = '<div class="sub-nav-wrapper"><div class="sub-nav-scroll"><div class="sub-nav-links">';
-    
-    subcategories.forEach(sub => {
-        const escapedSub = sub.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-        html += `
-            <a href="javascript:void(0)" 
-               class="sub-nav-link"
-               data-category="${categoryName}"
-               data-sub="${escapedSub}"
-               onclick="filterBySubcategory('${categoryName}', '${escapedSub}')">
-                ${sub}
-            </a>
-        `;
-    });
-    
-    html += '</div></div></div>';
-    container.innerHTML = html;
-    container.style.display = 'block';
-}
-
-// Initialiser tous les sous-menus
-async function initAllSubNavs() {
-    await renderSubNavForCategory('sub-nav-economie', 'ECONOMIE');
-    await renderSubNavForCategory('sub-nav-international', 'INTERNATIONAL');
-    await renderSubNavForCategory('sub-nav-environnement', 'ENVIRONNEMENT');
-    await renderSubNavForCategory('sub-nav-sport', 'SPORT');
-}
-
-// Fonction de filtrage par catégorie + sous-catégorie
-window.filterBySubcategory = async function(category, subcategory) {
-    console.log(`🔍 Filtrage: ${category} → ${subcategory}`);
-    
-    try {
-        // Récupérer les articles de cette catégorie ET sous-catégorie
-        const { data, error } = await supabaseClient
-            .from('articles')
-            .select('*')
-            .eq('is_published', true)
-            .eq('category', category)
-            .eq('subcategory', subcategory)
-            .order('created_at', { ascending: false });
-        
-        if (error) throw error;
-        
-        console.log(`📄 ${data?.length || 0} article(s) trouvé(s) pour ${category} / ${subcategory}`);
-        
-        // Mettre à jour l'URL
-        const newUrl = `${window.location.origin}${window.location.pathname}?category=${encodeURIComponent(category)}&subcategory=${encodeURIComponent(subcategory)}`;
-        window.history.pushState({}, '', newUrl);
-        
-        // Afficher les articles filtrés
-        if (typeof renderFilteredArticles === 'function') {
-            renderFilteredArticles(data, category, subcategory);
-        } else if (typeof fetchMakmusNews === 'function') {
-            fetchMakmusNews(subcategory);
-        }
-        
-        // Marquer le lien actif
-        document.querySelectorAll('.sub-nav-link').forEach(link => {
-            link.classList.toggle('active', 
-                link.dataset.category === category && link.dataset.sub === subcategory);
-        });
-        
-        if (!data || data.length === 0) {
-            showToast(`Aucun article dans "${subcategory}"`, 'info');
-        }
-        
-    } catch (error) {
-        console.error('Erreur filtrage:', error);
-        showToast('Erreur lors du filtrage', 'error');
-    }
-};
-
-// Fonction pour afficher les articles filtrés (optionnel)
-function renderFilteredArticles(articles, category, subcategory) {
-    const container = document.getElementById('news-grid');
-    if (!container) return;
-    
-    if (!articles || articles.length === 0) {
-        container.innerHTML = `<div class="no-results">
-            <p>Aucun article trouvé pour : ${subcategory}</p>
-        </div>`;
-        return;
-    }
-    
-    // Afficher les articles (adaptez selon votre template)
-    container.innerHTML = articles.map(article => `
-        <div class="article-card" onclick="window.location.href='redaction.html?id=${article.id}'">
-            ${article.image_url ? `<img src="${article.image_url}" alt="${article.titre}">` : ''}
-            <h3>${article.titre}</h3>
-            <p>${(article.description || '').substring(0, 150)}...</p>
-        </div>
-    `).join('');
-    
-    // Scroll en haut
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-/* ==========================================================================
-   22. SLIDER AUTRE INFO
-   ========================================================================== */
 function setSlidesData(slides) { slidesData = slides; currentSlideIndex = 0; }
 
 window.moveSlide = function(direction) {
@@ -2359,54 +1511,57 @@ function updateSlideDisplay() {
     if (!slide) return;
     const mainArt = slide;
     const secondaryArticles = slidesData.slice(1, 3);
-    const mainUrl = getArticleUrl(mainArt);
-    
-    let html = `<article class="main-trending-card" onclick="window.location.href='${mainUrl}'">
-        <img src="${mainArt.image_url || getPlaceholderImage(600, 400, 'Image')}" class="slide-cover" onerror="this.src='${getPlaceholderImage(600, 400, 'Image')}'">
+    let html = `<article class="main-trending-card" onclick="window.location.href='redaction.html?id=${encodeURIComponent(mainArt.id)}'">
+        <img src="${mainArt.image_url || 'https://via.placeholder.com/600x400'}" class="slide-cover" onerror="this.src='https://via.placeholder.com/600x400'">
         <div class="card-content"><span class="photo-credit">${escapeHtml(mainArt.author_name || 'MakMus')}</span>
         <h2 class="main-headline">${escapeHtml(mainArt.titre)}</h2>
         <p class="summary-text">${escapeHtml((mainArt.description || "").replace(/<[^>]*>/g, '').substring(0, 100))}...</p>
         <span class="main-read-time">${calculerTempsLecture(mainArt.description)}</span></div></article>`;
-        
     if (secondaryArticles.length) {
-        html += `<div class="secondary-grid">${secondaryArticles.map(art => {
-            const subUrl = getArticleUrl(art);
-            return `<article class="grid-card" onclick="window.location.href='${subUrl}'">
-                <img src="${art.image_url || getPlaceholderImage(300, 300, 'Image')}" class="grid-cover" onerror="this.src='${getPlaceholderImage(300, 300, 'Image')}'">
-                <h4 class="grid-headline">${escapeHtml(art.titre)}</h4>
-                <span class="grid-read-time">${calculerTempsLecture(art.description)}</span>
-            </article>`;
-        }).join('')}</div>`;
+        html += `<div class="secondary-grid">${secondaryArticles.map(art => `<article class="grid-card" onclick="window.location.href='redaction.html?id=${encodeURIComponent(art.id)}'">
+            <img src="${art.image_url || 'https://via.placeholder.com/300x300'}" class="grid-cover" onerror="this.src='https://via.placeholder.com/300x300'">
+            <h4 class="grid-headline">${escapeHtml(art.titre)}</h4><span class="grid-read-time">${calculerTempsLecture(art.description)}</span></article>`).join('')}</div>`;
     }
     container.innerHTML = html;
 }
-
 /* ==========================================================================
-   23. FONCTIONS DE PARTAGE
+   FONCTIONS DE PARTAGE AMÉLIORÉES
    ========================================================================== */
+
+// Partager l'article avec les bonnes métadonnées
 window.shareArticle = function(articleId, articleTitle, articleImage, articleDescription) {
     const articleUrl = `${window.location.origin}/redaction.html?id=${articleId}`;
+    
+    // Données complètes pour le partage
     const shareData = {
         title: articleTitle,
         text: articleDescription || 'Découvrez cet article sur MAKMUS',
         url: articleUrl
     };
     
+    // Pour les navigateurs qui supportent l'API Web Share
     if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
         navigator.share(shareData).catch(e => console.log('Partage annulé:', e));
     } else {
+        // Fallback : ouvrir la modal de partage
         openShareModal(articleId, articleTitle, articleUrl);
     }
 };
 
+// Ouvrir la modal de partage
 function openShareModal(articleId, articleTitle, articleUrl) {
+    // Mettre à jour l'URL dans la modal
     const urlPreview = document.getElementById('share-url-preview');
     if (urlPreview) urlPreview.textContent = articleUrl;
+    
+    // Stocker l'URL pour les boutons
     window.currentShareUrl = articleUrl;
     window.currentShareTitle = articleTitle;
+    
     window.toggleModal('shareModal', true);
 }
 
+// Copier le lien
 window.copyLink = function() {
     const url = window.currentShareUrl || window.location.href;
     navigator.clipboard.writeText(url);
@@ -2414,6 +1569,7 @@ window.copyLink = function() {
     window.toggleModal('shareModal', false);
 };
 
+// Partager sur X (Twitter)
 window.shareToX = function() {
     const url = encodeURIComponent(window.currentShareUrl || window.location.href);
     const title = encodeURIComponent(window.currentShareTitle || document.title);
@@ -2421,12 +1577,14 @@ window.shareToX = function() {
     window.toggleModal('shareModal', false);
 };
 
+// Partager sur Facebook
 window.shareToFacebook = function() {
     const url = encodeURIComponent(window.currentShareUrl || window.location.href);
     window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank', 'width=600,height=450');
     window.toggleModal('shareModal', false);
 };
 
+// Partager sur WhatsApp
 window.shareToWhatsApp = function() {
     const url = encodeURIComponent(window.currentShareUrl || window.location.href);
     const title = encodeURIComponent(window.currentShareTitle || document.title);
@@ -2434,279 +1592,138 @@ window.shareToWhatsApp = function() {
     window.toggleModal('shareModal', false);
 };
 
+// Partager sur LinkedIn
 window.shareToLinkedIn = function() {
     const url = encodeURIComponent(window.currentShareUrl || window.location.href);
     window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, '_blank', 'width=600,height=450');
     window.toggleModal('shareModal', false);
 };
 
+// Partager sur Telegram
 window.shareToTelegram = function() {
     const url = encodeURIComponent(window.currentShareUrl || window.location.href);
     const title = encodeURIComponent(window.currentShareTitle || document.title);
     window.open(`https://t.me/share/url?url=${url}&text=${title}`, '_blank', 'width=600,height=450');
     window.toggleModal('shareModal', false);
 };
-
-window.shareToInstagram = function() {
-    const url = encodeURIComponent(window.currentShareUrl || window.location.href);
-    const title = encodeURIComponent(window.currentShareTitle || document.title);
-    const shareUrl = `https://www.instagram.com/?url=${url}&caption=${title}`;
-    window.open(shareUrl, '_blank', 'width=600,height=450');
-    window.closeShare();
-    showToast("Partagez le lien sur Instagram", 'info');
-};
-
-window.shareToBluesky = function() {
-    const url = encodeURIComponent(window.currentShareUrl || window.location.href);
-    const title = encodeURIComponent(window.currentShareTitle || document.title);
-    const shareUrl = `https://bsky.app/intent/compose?text=${title}%20${url}`;
-    window.open(shareUrl, '_blank', 'width=600,height=450');
-    window.closeShare();
-};
-
-window.shareToThreads = function() {
-    const url = encodeURIComponent(window.currentShareUrl || window.location.href);
-    const title = encodeURIComponent(window.currentShareTitle || document.title);
-    const shareUrl = `https://www.threads.net/intent/post?text=${title}%20${url}`;
-    window.open(shareUrl, '_blank', 'width=600,height=450');
-    window.closeShare();
-    showToast("Partagez le lien sur Threads", 'info');
-};
-
-function generateSlug(title) {
-    if (!title) return '';
-    return title
-        .toLowerCase()
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .replace(/['’]/g, '')
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '');
+// Fonction pour forcer la mise à jour des meta tags avant partage
+function prepareForSharing(article) {
+    // Mettre à jour les meta tags Open Graph
+    const updateMeta = (property, content) => {
+        let meta = document.querySelector(`meta[property="${property}"]`);
+        if (!meta) {
+            meta = document.createElement('meta');
+            meta.setAttribute('property', property);
+            document.head.appendChild(meta);
+        }
+        meta.setAttribute('content', content);
+    };
+    
+    updateMeta('og:title', article.titre + ' | MAKMUS');
+    updateMeta('og:description', (article.description || '').substring(0, 300));
+    updateMeta('og:image', article.image_url);
+    updateMeta('og:url', `${window.location.origin}/redaction.html?id=${article.id}`);
+    
+    // Twitter Card
+    let twitterTitle = document.querySelector('meta[name="twitter:title"]');
+    if (!twitterTitle) {
+        twitterTitle = document.createElement('meta');
+        twitterTitle.setAttribute('name', 'twitter:title');
+        document.head.appendChild(twitterTitle);
+    }
+    twitterTitle.setAttribute('content', article.titre + ' | MAKMUS');
+    
+    let twitterImage = document.querySelector('meta[name="twitter:image"]');
+    if (!twitterImage) {
+        twitterImage = document.createElement('meta');
+        twitterImage.setAttribute('name', 'twitter:image');
+        document.head.appendChild(twitterImage);
+    }
+    twitterImage.setAttribute('content', article.image_url);
 }
-
+function updateOpenGraphTags(article) {
+    // Helper pour créer/mettre à jour les meta tags
+    const setMeta = (selector, attribute, content, isProperty = true) => {
+        let meta = document.querySelector(selector);
+        if (!meta) {
+            meta = document.createElement('meta');
+            if (isProperty) meta.setAttribute('property', attribute);
+            else meta.setAttribute('name', attribute);
+            document.head.appendChild(meta);
+        }
+        meta.setAttribute('content', content);
+    };
+    
+    // Nettoyer la description
+    const cleanDesc = (article.description || '').replace(/<[^>]*>/g, '').substring(0, 300);
+    
+    // ✅ RÉCUPÉRER L'URL DE L'IMAGE (déjà dans la table)
+    let imageUrl = article.image_url;
+    
+    // Fallback si pas d'image
+    if (!imageUrl) {
+        imageUrl = 'https://logphtrdkpbfgtejtime.supabase.co/storage/v1/object/public/Photo,%20Image/Untitled%20folder/MAK_MUS__1_-removebg-preview.png';
+    }
+    
+    // ✅ Vérifier si l'URL est valide
+    if (!imageUrl.startsWith('http')) {
+        // Si c'est une URL relative, ajouter le domaine
+        imageUrl = window.location.origin + imageUrl;
+    }
+    
+    console.log('📷 Image partagée:', imageUrl);
+    
+    // Open Graph
+    setMeta('meta[property="og:title"]', 'og:title', article.titre + ' | MAKMUS', true);
+    setMeta('meta[property="og:description"]', 'og:description', cleanDesc, true);
+    setMeta('meta[property="og:image"]', 'og:image', imageUrl, true);
+    setMeta('meta[property="og:url"]', 'og:url', window.location.href, true);
+    
+    // Twitter Card
+    setMeta('meta[name="twitter:card"]', 'twitter:card', 'summary_large_image', false);
+    setMeta('meta[name="twitter:title"]', 'twitter:title', article.titre + ' | MAKMUS', false);
+    setMeta('meta[name="twitter:description"]', 'twitter:description', cleanDesc, false);
+    setMeta('meta[name="twitter:image"]', 'twitter:image', imageUrl, false);
+}
 /* ==========================================================================
-   24. JEUX
+   16. INITIALISATION
    ========================================================================== */
-function renderGamesPromo() {
-    const sidebar = document.querySelector('.sidebar-column .sidebar-section');
-    if (!sidebar) return;
+function renderEmptyStates() {
+    const hero = document.getElementById('hero-zone');
+    if (hero) hero.innerHTML = '<div class="hero-empty">Aucun article disponible</div>';
     
-    const gamesHtml = `
-        <div class="games-promo">
-            <div class="games-promo-header">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="2" y="6" width="20" height="12" rx="2"></rect>
-                    <path d="M8 12h8"></path>
-                    <path d="M12 8v8"></path>
-                </svg>
-                <span>JEUX</span>
-            </div>
-            <a href="mots-croises.html" class="game-link">
-                <img src="https://logphtrdkpbfgtejtime.supabase.co/storage/v1/object/public/logo%20makmus/Cachamot%20(1).png" alt="Mots croisés" class="game-icon">
-                <span class="game-name">Mots croisés</span>
-                <span class="game-badge">Nouveau</span>
-            </a>
-            <a href="mots-meles.html" class="game-link">
-                <img src="https://logphtrdkpbfgtejtime.supabase.co/storage/v1/object/public/logo%20makmus/Cachamot.png" alt="Mots mêlés" class="game-icon">
-                <span class="game-name">Mots mêlés</span>
-                <span class="game-badge">Chaque jour</span>
-            </a>
-        </div>
-    `;
+    const eco = document.getElementById('economy-grid');
+    if (eco) eco.innerHTML = '<div class="economy-empty">Aucun article économique</div>';
     
-    sidebar.insertAdjacentHTML('beforeend', gamesHtml);
-}
-function videoToImage(videoUrl, callback) {
-    const video = document.createElement('video');
-    video.crossOrigin = 'Anonymous';
-    video.src = videoUrl;
-    video.currentTime = 1; // Capture à 1 seconde
+    const international = document.getElementById('international-grid');
+    if (international) international.innerHTML = '<div class="international-empty">Aucun article international</div>';
     
-    video.addEventListener('loadeddata', () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const thumbnail = canvas.toDataURL('image/jpeg', 0.7);
-        callback(thumbnail);
-    });
+    const environnement = document.getElementById('environnement-grid');
+    if (environnement) environnement.innerHTML = '<div class="environnement-empty">Aucun article environnement</div>';
+    
+    const sport = document.getElementById('sport-grid');
+    if (sport) sport.innerHTML = '<div class="sport-empty">Aucun article sport</div>';
+    
+    const audio = document.getElementById('audio-grid');
+    if (audio) audio.innerHTML = '<div class="audio-empty">Aucun audio disponible</div>';
+    
+    const news = document.getElementById('news-grid');
+    if (news) news.innerHTML = '<div class="news-empty">Aucun article</div>';
 }
 
-// Utilisation
-videoToImage('https://...mp4', (thumbnail) => {
-    document.querySelector('.sub-article-image').src = thumbnail;
-});
-/* --------------------------------------
-   18. SOUS-NAVIGATION (SUBNAV)
-   -------------------------------------- */
-async function getSubcategoriesByCategory(categoryName) {
-    try {
-        const { data, error } = await supabaseClient
-            .from('articles')
-            .select('subcategory, created_at')
-            .eq('is_published', true)
-            .eq('category', categoryName)
-            .not('subcategory', 'is', null)
-            .not('subcategory', 'eq', '')
-            .order('created_at', { ascending: false });
-        
-        if (error) throw error;
-        
-        if (!data || data.length === 0) return [];
-        
-        const subcategoriesMap = new Map();
-        
-        data.forEach(article => {
-            if (!article.subcategory || !article.subcategory.trim()) return;
-            
-            const subcategory = article.subcategory.trim();
-            const createdAt = new Date(article.created_at);
-            
-            if (!subcategoriesMap.has(subcategory)) {
-                subcategoriesMap.set(subcategory, createdAt);
-            } else {
-                const existingDate = subcategoriesMap.get(subcategory);
-                if (createdAt > existingDate) {
-                    subcategoriesMap.set(subcategory, createdAt);
-                }
-            }
-        });
-        
-        const sortedSubcategories = Array.from(subcategoriesMap.entries())
-            .sort((a, b) => b[1] - a[1])
-            .map(entry => entry[0]);
-        
-        return sortedSubcategories.slice(0, 5);
-        
-    } catch (error) {
-        console.error(`Erreur récupération sous-catégories pour ${categoryName}:`, error);
-        return [];
-    }
-}
-
-async function renderSubNavForCategory(containerId, categoryName) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    
-    const subcategories = await getSubcategoriesByCategory(categoryName);
-    
-    if (subcategories.length === 0) {
-        container.style.display = 'none';
-        return;
-    }
-    
-    let html = '<div class="sub-nav-wrapper"><div class="sub-nav-scroll"><div class="sub-nav-links">';
-    
-    subcategories.forEach(sub => {
-        const escapedSub = sub.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-        html += `
-            <a href="javascript:void(0)" 
-               class="sub-nav-link"
-               data-category="${categoryName}"
-               data-sub="${escapedSub}"
-               onclick="filterBySubcategory('${categoryName}', '${escapedSub}')">
-                ${sub}
-            </a>
-        `;
-    });
-    
-    html += '</div></div></div>';
-    container.innerHTML = html;
-    container.style.display = 'block';
-}
-
-async function initAllSubNavs() {
-    await renderSubNavForCategory('sub-nav-economie', 'ECONOMIE');
-    await renderSubNavForCategory('sub-nav-international', 'INTERNATIONAL');
-    await renderSubNavForCategory('sub-nav-environnement', 'ENVIRONNEMENT');
-    await renderSubNavForCategory('sub-nav-sport', 'SPORT');
-}
-
-window.filterBySubcategory = async function(category, subcategory) {
-    console.log(`🔍 Filtrage: ${category} → ${subcategory}`);
-    
-    try {
-        const { data, error } = await supabaseClient
-            .from('articles')
-            .select('*')
-            .eq('is_published', true)
-            .eq('category', category)
-            .eq('subcategory', subcategory)
-            .order('created_at', { ascending: false });
-        
-        if (error) throw error;
-        
-        console.log(`📄 ${data?.length || 0} article(s) trouvé(s) pour ${category} / ${subcategory}`);
-        
-        const newUrl = `${window.location.origin}${window.location.pathname}?category=${encodeURIComponent(category)}&subcategory=${encodeURIComponent(subcategory)}`;
-        window.history.pushState({}, '', newUrl);
-        
-        if (typeof renderFilteredArticles === 'function') {
-            renderFilteredArticles(data, category, subcategory);
-        } else if (typeof fetchMakmusNews === 'function') {
-            fetchMakmusNews(subcategory);
-        }
-        
-        document.querySelectorAll('.sub-nav-link').forEach(link => {
-            link.classList.toggle('active', 
-                link.dataset.category === category && link.dataset.sub === subcategory);
-        });
-        
-        if (!data || data.length === 0) {
-            showToast(`Aucun article dans "${subcategory}"`, 'info');
-        }
-        
-    } catch (error) {
-        console.error('Erreur filtrage:', error);
-        showToast('Erreur lors du filtrage', 'error');
-    }
-};
-
-function renderFilteredArticles(articles, category, subcategory) {
-    const container = document.getElementById('news-grid');
-    if (!container) return;
-    
-    if (!articles || articles.length === 0) {
-        container.innerHTML = `<div class="no-results">
-            <p>Aucun article trouvé pour : ${subcategory}</p>
-        </div>`;
-        return;
-    }
-    
-    container.innerHTML = articles.map(article => `
-        <div class="article-card" onclick="window.location.href='redaction.html?id=${article.id}'">
-            ${article.image_url ? `<img src="${article.image_url}" alt="${article.titre}">` : ''}
-            <h3>${article.titre}</h3>
-            <p>${(article.description || '').substring(0, 150)}...</p>
-        </div>
-    `).join('');
-    
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-/* --------------------------------------
-   23. INITIALISATION
-   -------------------------------------- */
 document.addEventListener('DOMContentLoaded', () => {
     const dateEl = document.getElementById('live-date');
     if (dateEl) dateEl.textContent = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase();
     
     window.checkUserStatus();
-    fetchMakmusNews();
+    fetchMakmusNews(); // Charge tout (articles + audios)
     
     fetchMarketData().then(success => { if (success) { updateTickerUI(); setInterval(updateTickerUI, 10000); } });
     setInterval(fetchMarketData, 3600000);
     fetchVideos();
     initAds();
-    initAuthEvents();
     loadTrendingTags();
-    initAllSubNavs();
-    
-    setInterval(() => {
-        loadTrendingTags();
-    }, 5 * 60 * 1000);
+    initSport();
     
     console.log("MAKMUS — Initialisé avec succès");
 });
