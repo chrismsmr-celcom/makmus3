@@ -3,94 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="description" content="L'excellence du journalisme en République Démocratique du Congo. Actualités, politique, économie, sport, culture et environnement.">
-    <meta name="keywords" content="MAKMUS, actualités RDC, Congo, journalisme, politique, économie, sport, culture, environnement">
-    <meta name="author" content="MAKMUS Media Group">
+    <title>MAKMUS — L'excellence du journalisme</title>
+    <meta name="description" content="L actualité en Republique Democratique du Congo. Information, économie, sport, culture et analyses.">
     <meta name="theme-color" content="#a30000">
-    <meta name="robots" content="index, follow">
-    <meta name="language" content="French">
-    <meta name="revisit-after" content="1 day">
     
-    <!-- Open Graph / Facebook -->
+    <!-- Open Graph -->
     <meta property="og:type" content="website">
-    <meta property="og:site_name" content="MAKMUS — Mémoire & Vérité">
-    <meta property="og:locale" content="fr_FR">
+    <meta property="og:site_name" content="MAKMUS">
+    <meta property="og:title" content="MAKMUS — L'excellence du journalisme">
+    <meta property="og:description" content="L actualité en Republique Democratique du Congo. Information, économie, sport, culture et analyses.">
+    <meta property="og:url" content="https://makmus.com">
+    <meta property="og:image" content="https://i.postimg.cc/x88LbhZp/2-20251224-213424-0001.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:site" content="@MakMus">
-    <meta name="twitter:creator" content="@MakMus">
+    <meta name="twitter:title" content="MAKMUS — L'excellence du journalisme">
+    <meta name="twitter:description" content="L actualité en Republique Democratique du Congo.">
+    <meta name="twitter:image" content="https://i.postimg.cc/x88LbhZp/2-20251224-213424-0001.png">
     
-    <!-- Autres -->
-    <link rel="canonical" href="https://makmus.com/">
-    <link rel="alternate" type="application/rss+xml" title="MAKMUS - Flux RSS" href="/feed.xml">
-    <link rel="icon" type="image/png" href="https://i.postimg.cc/x88LbhZp/2_20251224_213424_0001.png">
+    <!-- Icons -->
+    <link rel="icon" type="image/png" href="https://i.postimg.cc/x88LbhZp/2-20251224-213424-0001.png">
     <link rel="apple-touch-icon" href="https://i.postimg.cc/FzQ6Jf8K/2-20251224-213424-0001-removebg-preview.png">
-    <link rel="manifest" href="/manifest.json">
     
-    <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&amp;family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;display=swap" rel="stylesheet">
+    
+    <!-- Styles -->
     <link rel="stylesheet" href="style.css">
     
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-</head>
-
-<body>
-
-<!-- MENU PLEIN ÉCRAN -->
-<div class="full-menu" id="fullMenu">
-    <div class="menu-header">
-        <div class="menu-logo">
-            <img src="https://logphtrdkpbfgtejtime.supabase.co/storage/v1/object/public/Photo,%20Image/Untitled%20folder/MAK_MUS__1_-removebg-preview.png" alt="MAKMUS">
-        </div>
-        <button class="close-menu" onclick="window.toggleMenu(false)">✕ FERMER</button>
-    </div>
+    <script src="script.js"></script>
     
-    <div class="menu-content">
-        <div class="menu-search">
-            <input type="text" id="menuSearchInput" placeholder="RECHERCHER DANS LES ARCHIVES...">
-            <button onclick="if(window.fetchMakmusNews) window.fetchMakmusNews(document.getElementById('menuSearchInput').value); window.toggleMenu(false);">OK</button>
+    <style>
+        .ad-main-wrapper {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- MENU PLEIN ÉCRAN -->
+    <div class="full-menu" id="fullMenu">
+        <div class="menu-header">
+            <div class="menu-logo">
+                <img src="https://logphtrdkpbfgtejtime.supabase.co/storage/v1/object/public/Photo,%20Image/Untitled%20folder/MAK_MUS__1_-removebg-preview.png" alt="MAKMUS">
+            </div>
+            <button class="close-menu" onclick="window.toggleMenu(false)">✕ FERMER</button>
         </div>
-
-        <div class="menu-grid">
-            <div class="menu-section">
-                <h3>ACTUALITÉS</h3>
-                <ul>
-                    <li><a href="index.html">À la une</a></li>
-                    <li><a href="index.html?cat=RDC">RDC</a></li>
-                    <li><a href="index.html?cat=politique">Politique</a></li>
-                    <li><a href="index.html?cat=international">International</a></li>
-                    <li><a href="index.html?cat=environnement">Environnement</a></li>
-                </ul>
+        
+        <div class="menu-content">
+            <div class="menu-search">
+                <input type="text" id="menuSearchInput" placeholder="RECHERCHER DANS LES ARCHIVES...">
+                <button onclick="if(window.fetchMakmusNews) window.fetchMakmusNews(document.getElementById('menuSearchInput').value); window.toggleMenu(false);">OK</button>
             </div>
 
-            <div class="menu-section">
-                <h3>ÉCONOMIE & TECH</h3>
-                <ul>
-                    <li><a href="index.html?cat=business">Business</a></li>
-                    <li><a href="index.html?cat=technologie">Technologies</a></li>
-                    <li><a href="index.html?cat=science">Sciences</a></li>
-                    <li><a href="index.html?cat=crypto">Crypto-monnaie</a></li>
-                </ul>
-            </div>
+            <div class="menu-grid">
+                <div class="menu-section">
+                    <h3>ACTUALITÉS</h3>
+                    <ul>
+                        <li><a href="index.html">À la une</a></li>
+                        <li><a href="index.html?cat=RDC">RDC</a></li>
+                        <li><a href="index.html?cat=politique">Politique</a></li>
+                        <li><a href="index.html?cat=international">International</a></li>
+                        <li><a href="index.html?cat=environnement">Environnement</a></li>
+                    </ul>
+                </div>
 
-            <div class="menu-section">
-                <h3>LOISIRS & SOCIÉTÉ</h3>
-                <ul>
-                    <li><a href="index.html?cat=sport">Sports</a></li>
-                    <li><a href="index.html?cat=culture">Culture & Musique</a></li>
-                    <li><a href="index.html?cat=sante">Sante</a></li>
-                    <li><a href="index.html?cat=lifestyle">Style de vie / Food</a></li>
-                    <li><a href="index.html?cat=voyages">Voyages</a></li>
-                    <li><a href="jeux.html" class="nav-red">Jeux & Puzzles</a></li>
-                </ul>
+                <div class="menu-section">
+                    <h3>ÉCONOMIE & TECH</h3>
+                    <ul>
+                        <li><a href="index.html?cat=business">Business</a></li>
+                        <li><a href="index.html?cat=technologie">Technologies</a></li>
+                        <li><a href="index.html?cat=science">Sciences</a></li>
+                        <li><a href="index.html?cat=crypto">Crypto-monnaie</a></li>
+                    </ul>
+                </div>
+
+                <div class="menu-section">
+                    <h3>LOISIRS & SOCIÉTÉ</h3>
+                    <ul>
+                        <li><a href="index.html?cat=sport">Sports</a></li>
+                        <li><a href="index.html?cat=culture">Culture & Musique</a></li>
+                        <li><a href="index.html?cat=sante">Sante</a></li>
+                        <li><a href="index.html?cat=lifestyle">Style de vie / Food</a></li>
+                        <li><a href="index.html?cat=voyages">Voyages</a></li>
+                        <li><a href="jeux.html" class="nav-red">Jeux & Puzzles</a></li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- ================= PUBLICITÉ ================= -->
+    <!-- ================= PUBLICITÉ ================= -->
 <div class="ad-main-wrapper">
     <div class="ad-container-wrapper">
         <div id="ad-display-zone" class="ad-display-zone">
@@ -101,60 +108,177 @@
     </div>
 </div>
 
-<!-- TOP BAR -->
-<div class="top-bar">
-    <div class="top-bar-content">
-        <div id="live-date">---</div>
-        <div class="market-ticker-container">
-            <div id="ticker-content"></div>
-        </div>
-        <div class="header-right">
-            <button class="btn-subscribe" onclick="window.location.href='abonnement.html'">S'ABONNER</button>
-            <button id="openModal" onclick="window.toggleSidePanel(true)" aria-label="Mon compte">
-                <img src="https://img.icons8.com/material-outlined/24/user-male-circle.png" alt="Compte">
-            </button>
-        </div>
-    </div>
-</div>
+<!-- Optionnel : Bouton pour fermer/ignorer la pub -->
+<!-- <button class="ad-skip-btn" onclick="skipAd()">⨉ Ignorer</button> -->
 
-<!-- HEADER -->
-<header class="main-header">
-    <button class="menu-toggle" onclick="window.toggleMenu(true)" aria-label="Menu">
-        <img src="https://img.icons8.com/material-rounded/24/menu--v1.png" alt="Menu" class="menu-icon">
-        <span class="menu-label">SECTIONS</span>
-    </button>
-    <div class="logo-container">
-        <a href="index.html">
-            <img src="https://i.postimg.cc/7ZWdGrQc/Screenshot_2025_12_24_21_32_24_removebg_preview.png" alt="MAKMUS">
-        </a>
-    </div>
-</header>
-
-<!-- TRENDING TAGS -->
-<div id="trending-tags">
-    <div class="trending-container">
-        <span class="trending-label">En ce moment</span>
-        <div id="tags-container" class="tags-list"></div>
-    </div>
-</div>
-
-<!-- ================= CONTENU PRINCIPAL ================= -->
-<main class="newspaper-body">
-    <div class="status-line" id="status-line">EDITION DU JOUR</div>
-    
-    <!-- Hero + Sidebar en ligne (2 colonnes) -->
-    <div class="hero-sidebar-wrapper">
-        <!-- Zone Hero (injectée dynamiquement) -->
-        <div id="hero-zone">
-            <div class="hero-flexible">
-                <!-- Le contenu sera injecté dynamiquement -->
+    <!-- TOP BAR -->
+    <div class="top-bar">
+        <div class="top-bar-content">
+            <div id="live-date">---</div>
+            <div class="market-ticker-container">
+                <div id="ticker-content"></div>
+            </div>
+            <div class="header-right">
+                <button class="btn-subscribe" onclick="window.location.href='abonnement.html'">faire un don</button>
+                <button id="openModal" onclick="window.toggleSidePanel(true)" aria-label="Mon compte">
+                    <img src="https://img.icons8.com/material-outlined/24/user-male-circle.png" alt="Compte">
+                </button>
             </div>
         </div>
+    </div>
+
+    <!-- HEADER -->
+    <header class="main-header">
+        <button class="menu-toggle" onclick="window.toggleMenu(true)" aria-label="Menu">
+            <img src="https://img.icons8.com/material-rounded/24/menu--v1.png" alt="Menu" class="menu-icon">
+            <span class="menu-label">SECTIONS</span>
+        </button>
+        <div class="logo-container">
+            <a href="index.html">
+                <img src="https://i.postimg.cc/7ZWdGrQc/Screenshot-2025-12-24-21-32-24-removebg-preview.png" alt="MAKMUS">
+            </a>
+        </div>
+    </header>
+
+    <!-- TRENDING TAGS -->
+    <div id="trending-tags">
+        <div class="trending-container">
+            <span class="trending-label">En ce moment</span>
+            <div id="tags-container" class="tags-list"></div>
+        </div>
+    </div>
+
+    <!-- ================= CONTENU PRINCIPAL ================= -->
+    <main class="newspaper-body">
+        <div class="status-line" id="status-line">EDITION DU JOUR</div>
         
-        <!-- Sidebar (colonne de droite) -->
-        <aside class="sidebar-column">
-            <div class="sidebar-heading">AUTRE INFO</div>
-            <div id="sidebar-list" class="ordered-news-list"></div>
+        <!-- Layout en 2 colonnes pour TOUT le contenu -->
+        <div class="two-columns-layout">
+            
+            <!-- COLONNE DE GAUCHE : Hero + Toutes les sections -->
+            <div class="left-column">
+                <!-- Hero zone -->
+                <div id="hero-zone">
+                    <div class="hero-flexible"></div>
+                </div>
+
+                
+            <!-- Sections magazine -->
+            <section id="economy-section" class="magazine-section">
+                <div class="section-header">
+                    <h2 class="section-title">ÉCONOMIE & FINANCE</h2>
+                    <div id="sub-nav-economie"></div>           
+                </div>
+                <div id="economy-grid"></div>
+            </section>
+
+            <section id="international-section" class="magazine-section">
+                <div class="section-header">
+                    <h2 class="section-title">INTERNATIONAL</h2>
+                    <div id="sub-nav-international"></div>
+                </div>
+                <div id="international-grid"></div>
+            </section>
+
+            <section id="environnement-section" class="magazine-section">
+                <div class="section-header">
+                    <h2 class="section-title">ENVIRONNEMENT</h2>
+                    <div id="sub-nav-environnement"></div>
+                </div>
+                <div id="environnement-grid"></div>
+            </section>
+
+            <section id="sport-section" class="magazine-section">
+                <div class="section-header">
+                    <h2 class="section-title">SPORT</h2>
+                    <div id="sub-nav-sport"></div>
+                </div>
+                <div id="sport-grid"></div>
+            </section>
+
+                <div class="newspaper-layout-single">
+                    <div class="main-news-column">
+                        <div id="news-grid" class="news-grid"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COLONNE DE DROITE : Sidebar Desktop (caché sur mobile) -->
+            <aside class="right-column sidebar-desktop">
+                <div class="sticky-content">
+                    <div class="sidebar-heading">TENDANCES</div>
+                    <div id="sidebar-list" class="ordered-news-list"></div>
+                    
+                    <div class="slider-nav">
+                        <button class="nav-btn prev" onclick="window.moveSlide(-1)" aria-label="Précédent">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="15 18 9 12 15 6"></polyline>
+                            </svg>
+                        </button>
+                        <button class="nav-btn next" onclick="window.moveSlide(1)" aria-label="Suivant">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="sidebar-section">
+                        <h3 class="section-title">OPINION</h3>
+                        <div id="opinion-list" class="opinion-list"></div>
+                        <div class="opinion-footer">
+                            <a href="mailto:contact@makmus.com?subject=Proposition%20de%20Chronique" class="discreet-link">
+                                Devenir chroniqueur <span class="arrow">→</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <!-- VIDEOS DU JOUR -->
+        <section id="video-section" class="video-section">
+            <div class="standard-section-header">
+                <h2 class="section-label">Videos du jour</h2>
+            </div>
+            <div class="video-slider-wrapper">
+                <div id="video-slider" class="video-slider"></div>
+                <div class="slider-controls-container">
+                    <div class="slider-dots" id="video-dots"></div>
+                    <div class="slider-nav-arrows">
+                        <button class="nav-arrow-btn" onclick="window.scrollVideoSlider(-300)">❮</button>
+                        <button class="nav-arrow-btn" onclick="window.scrollVideoSlider(300)">❯</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- LIFESTYLE -->
+        <section id="lifestyle-section" class="magazine-section">
+            <div class="section-header">
+                <h2 class="section-title">Lifestyle & bien-être</h2>
+            </div>
+            <div id="lifestyle-grid"></div>
+        </section>
+
+        <!-- AUDIO SECTION -->
+        <section class="audio-section">
+            <div class="section-header">
+                <h2 class="section-title">Audio <span class="subtitle">Podcasts et articles lus</span></h2>
+            </div>
+            <div id="audio-grid" class="audio-grid"></div>
+        </section>
+
+        <!-- PLUS D'INFO -->
+        <section class="more-info-section">
+            <div class="section-divider-double"></div>
+            <h2 class="section-main-title">PLUS D'INFO</h2>
+            <div id="more-info-grid" class="more-info-grid"></div>
+        </section>
+
+        <!-- SIDEBAR MOBILE (affiché UNIQUEMENT sur mobile) -->
+        <aside class="sidebar-mobile">
+            <div class="sidebar-heading">TENDANCES</div>
+            <div id="sidebar-list-mobile" class="ordered-news-list"></div>
             
             <div class="slider-nav">
                 <button class="nav-btn prev" onclick="window.moveSlide(-1)" aria-label="Précédent">
@@ -171,7 +295,7 @@
 
             <div class="sidebar-section">
                 <h3 class="section-title">OPINION</h3>
-                <div id="opinion-list" class="opinion-list"></div>
+                <div id="opinion-list-mobile" class="opinion-list"></div>
                 <div class="opinion-footer">
                     <a href="mailto:contact@makmus.com?subject=Proposition%20de%20Chronique" class="discreet-link">
                         Devenir chroniqueur <span class="arrow">→</span>
@@ -179,341 +303,174 @@
                 </div>
             </div>
         </aside>
-    </div>
+    </main>
 
-    <!-- Section Économie & Finance -->
-    <section id="economy-section" class="magazine-section">
-        <div class="section-header">
-            <h2 class="section-title">ÉCONOMIE & FINANCE</h2>
-            <nav class="subsection-nav">
-                <span data-category="marches">Marchés</span>
-                <span data-category="bourse">Bourse</span>
-                <span data-category="tech">Tech</span>
-                <span data-category="cryptos">Cryptos</span>
-                <span data-category="immobilier">Immobilier</span>
-            </nav>
-        </div>
-        <div id="economy-grid"></div>
-    </section>
-
-    <!-- Section International -->
-    <section id="international-section" class="magazine-section">
-        <div class="section-header">
-            <h2 class="section-title">INTERNATIONAL</h2>
-            <nav class="subsection-nav international-nav">
-                <span data-category="afrique">Afrique</span>
-                <span data-category="europe">Europe</span>
-                <span data-category="ameriques">Amériques</span>
-                <span data-category="asie">Asie</span>
-                <span data-category="moyen-orient">Moyen-Orient</span>
-            </nav>
-        </div>
-        <div id="international-grid"></div>
-    </section>
-
-    <!-- Section Environnement -->
-    <section id="environnement-section" class="magazine-section">
-        <div class="section-header">
-            <h2 class="section-title">ENVIRONNEMENT</h2>
-            <nav class="subsection-nav environnement-nav">
-                <span data-category="climat">Climat</span>
-                <span data-category="biodiversite">Biodiversité</span>
-                <span data-category="energie">Énergie</span>
-                <span data-category="pollution">Pollution</span>
-                <span data-category="innovation">Innovation verte</span>
-            </nav>
-        </div>
-        <div id="environnement-grid"></div>
-    </section>
-
-    <!-- Section Sport -->
-    <section id="sport-section" class="magazine-section">
-        <div class="section-header">
-            <h2 class="section-title">SPORT</h2>
-            <nav class="subsection-nav sport-nav-categories">
-                <span data-sport="football">Football</span>
-                <span data-sport="basketball">Basketball</span>
-                <span data-sport="tennis">Tennis</span>
-                <span data-sport="combat">Combat</span>
-                <span data-sport="e-sport">E-Sport</span>
-            </nav>
-        </div>
-        <div id="sport-grid"></div>
-    </section>
-
-    <!-- Layout principal : Articles -->
-    <div class="newspaper-layout-single">
-        <div class="main-news-column">
-            <div id="news-grid" class="news-grid"></div>
-        </div>
-    </div>
-</main>
-
-<!-- VIDEOS DU JOUR -->
-<section id="video-section" class="video-section">
-    <div class="standard-section-header">
-        <h2 class="section-label">Videos du jour</h2>
-    </div>
-    <div class="video-slider-wrapper">
-        <div id="video-slider" class="video-slider"></div>
-        <div class="slider-controls-container">
-            <div class="slider-dots" id="video-dots"></div>
-            <div class="slider-nav-arrows">
-                <button class="nav-arrow-btn" onclick="window.scrollVideoSlider(-300)">❮</button>
-                <button class="nav-arrow-btn" onclick="window.scrollVideoSlider(300)">❯</button>
+    <!-- FOOTER -->
+    <footer class="nyt-footer">
+        <div class="footer-container">
+            <div class="footer-brand">
+                <img src="https://logphtrdkpbfgtejtime.supabase.co/storage/v1/object/public/Photo,%20Image/Untitled%20folder/MAK_MUS__1_-removebg-preview.png" alt="MAKMUS">
+                <p>La verite pour memoire. L'excellence du journalisme en Republique Democratique du Congo.</p>
             </div>
-        </div>
-    </div>
-</section>
-
-<!-- LIFESTYLE -->
-<section id="lifestyle-section" class="magazine-section">
-    <div class="section-header">
-        <h2 class="section-title">Lifestyle & bien-être</h2>
-    </div>
-    <div id="lifestyle-grid"></div>
-</section>
-
-<!-- AUDIO SECTION -->
-<section class="audio-section">
-    <div class="section-header">
-        <h2 class="section-title">Audio <span class="subtitle">Podcasts et articles lus</span></h2>
-    </div>
-    <div id="audio-grid" class="audio-grid"></div>
-</section>
-
-<!-- Widget Audio Flottant -->
-<div id="audio-widget" class="audio-widget" style="display: none;">
-    <div class="audio-widget-content">
-        <div class="audio-widget-info">
-            <img id="widget-cover" src="" alt="Cover">
-            <div class="audio-widget-details">
-                <span id="widget-title">Titre</span>
-                <span id="widget-source">Source</span>
-            </div>
-        </div>
-        <div class="audio-widget-controls">
-            <button id="widget-prev" class="widget-btn">⏮</button>
-            <button id="widget-play" class="widget-btn play-btn">▶</button>
-            <button id="widget-next" class="widget-btn">⏭</button>
-            <button id="widget-close" class="widget-btn close-btn">✕</button>
-        </div>
-        <div class="audio-widget-progress">
-            <span id="widget-current">0:00</span>
-            <div class="progress-bar">
-                <div id="widget-progress-fill" class="progress-fill"></div>
-            </div>
-            <span id="widget-duration">0:00</span>
-        </div>
-    </div>
-</div>
-
-<!-- PLUS D'INFO -->
-<section class="more-info-section">
-    <div class="section-divider-double"></div>
-    <h2 class="section-main-title">PLUS D'INFO</h2>
-    <div id="more-info-grid" class="more-info-grid"></div>
-</section>
-
-<!-- FOOTER -->
-<footer class="nyt-footer">
-    <div class="footer-container">
-        <div class="footer-brand">
-            <img src="https://logphtrdkpbfgtejtime.supabase.co/storage/v1/object/public/Photo,%20Image/Untitled%20folder/MAK_MUS__1_-removebg-preview.png" alt="MAKMUS">
-            <p>La verite pour memoire. L'excellence du journalisme en Republique Democratique du Congo.</p>
-        </div>
-        <div class="footer-links-grid">
-            <div class="footer-col">
-                <h4>SECTIONS</h4>
-                <ul>
-                    <li><a href="index.html">A LA UNE</a></li>
-                    <li><a href="index.html?cat=RDC">RDC</a></li>
-                    <li><a href="index.html?cat=politique">POLITIQUE</a></li>
-                    <li><a href="index.html?cat=business">ECONOMIE</a></li>
-                    <li><a href="index.html?cat=sport">SPORT</a></li>
-                    <li><a href="index.html?cat=sante">SANTE</a></li>
-                    <li><a href="index.html?cat=environnement">CLIMAT</a></li>
-                    <li><a href="index.html?cat=voyages">VOYAGES</a></li>
-                    <li><a href="jeux.html" class="nav-red">JEUX</a></li>
-                </ul>
-            </div>
-            <div class="footer-col">
-                <h4>AIDE</h4>
-                <ul>
-                    <li><a href="#">Abonnements</a></li>
-                    <li><a href="#">Contact</a></li>
-                    <li><a href="#">Publicite</a></li>
-                    <li><a href="#">Emploi</a></li>
-                    <li><a href="#">Makmus magazine</a></li>
-                    <li><a href="#">Makila Emmanuel Heritage</a></li>
-                    <li><a href="#">Meteo</a></li>
-                    <li><a href="#">Makem screen Studio</a></li>
-                </ul>
-            </div>
-            <div class="footer-col">
-                <h4>SUIVEZ-NOUS</h4>
-                <div class="social-links">
-                    <a href="#" title="Facebook">FB</a>
-                    <a href="#" title="X (Twitter)">X</a>
-                    <a href="#" title="Instagram">IG</a>
-                    <a href="#" title="YouTube">YT</a>
+            <div class="footer-links-grid">
+                <div class="footer-col">
+                    <h4>SECTIONS</h4>
+                    <ul>
+                        <li><a href="index.html">A LA UNE</a></li>
+                        <li><a href="index.html?cat=RDC">RDC</a></li>
+                        <li><a href="index.html?cat=politique">POLITIQUE</a></li>
+                        <li><a href="index.html?cat=business">ECONOMIE</a></li>
+                        <li><a href="index.html?cat=sport">SPORT</a></li>
+                        <li><a href="index.html?cat=sante">SANTE</a></li>
+                        <li><a href="index.html?cat=environnement">CLIMAT</a></li>
+                        <li><a href="index.html?cat=voyages">VOYAGES</a></li>
+                        <li><a href="jeux.html" class="nav-red">JEUX</a></li>
+                    </ul>
                 </div>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <p>&copy; 2026 MAKMUS MEDIA GROUP. Tous droits reserves.</p>
-            <div class="bottom-legal">
-                <a href="#">Mentions Legales</a>
-                <a href="#">Confidentialite</a>
-                <a href="#">CGU</a>
-            </div>
-        </div>
-    </div>
-</footer>
-
-<!-- SIDE PANEL (COMPTE) -->
-<div id="sideAccount" class="side-panel">
-    <div class="side-panel-overlay" onclick="window.toggleSidePanel(false)"></div>
-    <div class="side-panel-content">
-        <div class="side-panel-header">
-            <div class="logo-small">MAKMUS</div>
-            <button class="close-panel" onclick="window.toggleSidePanel(false)">&times;</button>
-        </div>
-        <div class="side-panel-body">
-            <div id="logged-out-view">
-                <h2 class="premium-title">Bonjour.</h2>
-                <p class="premium-subtitle">Connectez-vous pour sauvegarder des articles.</p>
-                <div class="auth-form">
-                    <input type="email" id="auth-email" placeholder="Email" class="premium-input">
-                    <input type="password" id="auth-password" placeholder="Mot de passe" class="premium-input">
-                    <button class="btn-black-full" onclick="window.handleAuth('login')">CONTINUER</button>
-                    <p class="auth-divider"><span>OU</span></p>
-                    <button class="btn-outline-full" onclick="window.handleAuth('signup')">CREER UN COMPTE</button>
+                <div class="footer-col">
+                    <h4>AIDE</h4>
+                    <ul>
+                        <li><a href="#">Abonnements</a></li>
+                        <li><a href="#">Contact</a></li>
+                        <li><a href="#">Publicite</a></li>
+                        <li><a href="#">Emploi</a></li>
+                        <li><a href="#">Makmus magazine</a></li>
+                        <li><a href="#">Makila Emmanuel Heritage</a></li>
+                        <li><a href="#">Meteo</a></li>
+                        <li><a href="#">Makem screen Studio</a></li>
+                    </ul>
                 </div>
-            </div>
-            <div id="logged-in-view" style="display: none;">
-                <div class="user-profile-header">
-                    <div class="user-avatar">M</div>
-                    <div class="user-meta">
-                        <span id="user-email-display" class="user-email">...</span>
-                        <span class="user-status">Membre Premium</span>
+                <div class="footer-col">
+                    <h4>SUIVEZ-NOUS</h4>
+                    <div class="social-links">
+                        <a href="#" title="Facebook">FB</a>
+                        <a href="#" title="X (Twitter)">X</a>
+                        <a href="#" title="Instagram">IG</a>
+                        <a href="#" title="YouTube">YT</a>
                     </div>
                 </div>
-                <nav class="side-nav">
-                    <div class="nav-group-label">VOTRE ACTIVITE</div>
-                    <a href="javascript:void(0)" class="nav-item" onclick="window.navigateToAccountOption('favoris')">Articles favoris</a>
-                    <a href="javascript:void(0)" class="nav-item" onclick="window.navigateToAccountOption('commentaires')">Vos commentaires</a>
-                    <div class="nav-group-label">VOS FAVORIS RECENTS</div>
-                    <div id="user-favorites-list"></div>
-                    <button class="btn-logout-link" onclick="window.handleLogout()">Se deconnecter</button>
-                </nav>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 MAKMUS MEDIA GROUP. Tous droits reserves.</p>
+                <div class="bottom-legal">
+                    <a href="#">Mentions Legales</a>
+                    <a href="#">Confidentialite</a>
+                    <a href="#">CGU</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- SIDE PANEL (COMPTE) -->
+    <div id="sideAccount" class="side-panel">
+        <div class="side-panel-overlay" onclick="window.toggleSidePanel(false)"></div>
+        <div class="side-panel-content">
+            <div class="side-panel-header">
+                <div class="logo-small">MAKMUS</div>
+                <button class="close-panel" onclick="window.toggleSidePanel(false)">&times;</button>
+            </div>
+            <div class="side-panel-body">
+                <div id="logged-out-view">
+                    <h2 class="premium-title">Bonjour.</h2>
+                    <p class="premium-subtitle">Connectez-vous pour sauvegarder des articles.</p>
+                    <div class="auth-form">
+                        <input type="email" id="auth-email" placeholder="Email" class="premium-input" autocomplete="email">
+                        <input type="password" id="auth-password" placeholder="Mot de passe" class="premium-input" autocomplete="current-password">
+                        <button class="btn-black-full" id="auth-submit-btn">CONTINUER</button>
+                        <p class="auth-divider"><span>OU</span></p>
+                        <button class="btn-outline-full" id="auth-toggle-btn">CREER UN COMPTE</button>
+                    </div>
+                    <p id="auth-mode-text" style="text-align: center; margin-top: 15px; font-size: 0.7rem; color: #888;"></p>
+                </div>
+                <div id="logged-in-view" style="display: none;">
+                    <div class="user-profile-header">
+                        <div class="user-avatar">M</div>
+                        <div class="user-meta">
+                            <span id="user-email-display" class="user-email">...</span>
+                            <span class="user-status">Membre Premium</span>
+                        </div>
+                    </div>
+                    <nav class="side-nav">
+                        <div class="nav-group-label">VOTRE ACTIVITE</div>
+                        <a href="javascript:void(0)" class="nav-item" onclick="window.navigateToAccountOption('favoris')">Articles favoris</a>
+                        <a href="javascript:void(0)" class="nav-item" onclick="window.navigateToAccountOption('commentaires')">Vos commentaires</a>
+                        <div class="favorites-recent-wrapper">
+                            <div class="nav-group-label">VOS FAVORIS RÉCENTS</div>
+                            <div id="user-favorites-list"></div>
+                        </div>                    
+                        <button class="btn-logout-link" onclick="window.handleLogout()">Se deconnecter</button>
+                    </nav>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<script src="script.js"></script>
-<script>
-    // Service Worker
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-            navigator.serviceWorker.register('/sw.js').catch(function(err) {
-                console.log('Erreur PWA', err);
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js').catch(function(err) {
+                    console.log('Erreur PWA', err);
+                });
             });
-        });
-    }
-</script>
+        }
+    </script>
 
-<script>
-    // ============================================
-    // MISE À JOUR DYNAMIQUE DES META TAGS (UNIQUE)
-    // ============================================
-    
-    (async function updateDynamicMetaTags() {
-        // Fonction pour créer/mettre à jour un meta tag
-        function setMetaTag(attribute, content, isProperty = true) {
-            let selector = isProperty ? `meta[property="${attribute}"]` : `meta[name="${attribute}"]`;
-            let meta = document.querySelector(selector);
-            
-            if (!meta) {
-                meta = document.createElement('meta');
-                if (isProperty) {
-                    meta.setAttribute('property', attribute);
-                } else {
-                    meta.setAttribute('name', attribute);
+    <script>
+        (async function updateDynamicMetaTags() {
+            function setMetaTag(attribute, content, isProperty) {
+                isProperty = isProperty !== false;
+                var selector = isProperty ? 'meta[property="' + attribute + '"]' : 'meta[name="' + attribute + '"]';
+                var meta = document.querySelector(selector);
+                if (!meta) {
+                    meta = document.createElement('meta');
+                    if (isProperty) {
+                        meta.setAttribute('property', attribute);
+                    } else {
+                        meta.setAttribute('name', attribute);
+                    }
+                    document.head.appendChild(meta);
                 }
-                document.head.appendChild(meta);
+                meta.setAttribute('content', content);
             }
-            meta.setAttribute('content', content);
-        }
-        
-        // Image par défaut (logo MAKMUS)
-        const DEFAULT_IMAGE = 'https://logphtrdkpbfgtejtime.supabase.co/storage/v1/object/public/Photo,%20Image/Untitled%20folder/MAK_MUS__1_-removebg-preview.png';
-        
-        try {
-            // Récupérer le dernier article publié
-            const { data: articles } = await supabaseClient
-                .from('articles')
-                .select('*')
-                .eq('is_published', true)
-                .order('created_at', { ascending: false })
-                .limit(1);
             
-            if (articles && articles.length > 0) {
-                const article = articles[0];
-                const articleTitle = article.titre + ' | MAKMUS';
-                const articleDesc = (article.description || '').replace(/<[^>]*>/g, '').substring(0, 300);
-                const articleImage = article.image_url || DEFAULT_IMAGE;
-                const articleUrl = window.location.href;
-                
-                // Mettre à jour le titre de la page
-                document.title = articleTitle;
-                
-                // Mettre à jour la description de base
-                let metaDesc = document.querySelector('meta[name="description"]');
-                if (metaDesc) metaDesc.setAttribute('content', articleDesc);
-                
-                // OPEN GRAPH (Facebook, LinkedIn, WhatsApp)
-                setMetaTag('og:title', articleTitle, true);
-                setMetaTag('og:description', articleDesc, true);
-                setMetaTag('og:image', articleImage, true);
-                setMetaTag('og:url', articleUrl, true);
-                
-                // TWITTER CARD
-                setMetaTag('twitter:title', articleTitle, false);
-                setMetaTag('twitter:description', articleDesc, false);
-                setMetaTag('twitter:image', articleImage, false);
-                
-                console.log('✅ Meta tags mis à jour avec:', article.titre);
-                console.log('📷 Image:', articleImage);
-            } else {
-                // Fallback : utiliser les valeurs par défaut
-                const defaultTitle = 'MAKMUS — Mémoire & Vérité';
-                const defaultDesc = 'L\'excellence du journalisme en République Démocratique du Congo.';
-                
-                document.title = defaultTitle;
-                setMetaTag('og:title', defaultTitle, true);
-                setMetaTag('og:description', defaultDesc, true);
-                setMetaTag('og:image', DEFAULT_IMAGE, true);
-                setMetaTag('twitter:title', defaultTitle, false);
-                setMetaTag('twitter:description', defaultDesc, false);
-                setMetaTag('twitter:image', DEFAULT_IMAGE, false);
+            var DEFAULT_IMAGE = 'https://logphtrdkpbfgtejtime.supabase.co/storage/v1/object/public/Photo,%20Image/Untitled%20folder/MAK_MUS__1_-removebg-preview.png';
+            
+            try {
+                if (typeof supabaseClient !== 'undefined') {
+                    var { data: articles } = await supabaseClient
+                        .from('articles')
+                        .select('*')
+                        .eq('is_published', true)
+                        .order('created_at', { ascending: false })
+                        .limit(1);
+                    
+                    if (articles && articles.length > 0) {
+                        var article = articles[0];
+                        var articleTitle = article.titre + ' | MAKMUS';
+                        var articleDesc = (article.description || '').replace(/<[^>]*>/g, '').substring(0, 300);
+                        var articleImage = article.image_url || DEFAULT_IMAGE;
+                        var articleUrl = window.location.href;
+                        
+                        document.title = articleTitle;
+                        
+                        var metaDesc = document.querySelector('meta[name="description"]');
+                        if (metaDesc) metaDesc.setAttribute('content', articleDesc);
+                        
+                        setMetaTag('og:title', articleTitle, true);
+                        setMetaTag('og:description', articleDesc, true);
+                        setMetaTag('og:image', articleImage, true);
+                        setMetaTag('og:url', articleUrl, true);
+                        setMetaTag('twitter:title', articleTitle, false);
+                        setMetaTag('twitter:description', articleDesc, false);
+                        setMetaTag('twitter:image', articleImage, false);
+                        
+                        console.log('✅ Meta tags mis à jour avec:', article.titre);
+                    }
+                }
+            } catch (error) {
+                console.warn('Erreur meta tags:', error);
             }
-        } catch (error) {
-            console.warn('Erreur lors de la mise à jour des meta tags:', error);
-            
-            // Fallback en cas d'erreur
-            const defaultTitle = 'MAKMUS — Mémoire & Vérité';
-            const defaultDesc = 'L\'excellence du journalisme en République Démocratique du Congo.';
-            
-            setMetaTag('og:title', defaultTitle, true);
-            setMetaTag('og:description', defaultDesc, true);
-            setMetaTag('og:image', DEFAULT_IMAGE, true);
-            setMetaTag('twitter:title', defaultTitle, false);
-            setMetaTag('twitter:description', defaultDesc, false);
-            setMetaTag('twitter:image', DEFAULT_IMAGE, false);
-        }
-    })();
-</script>
+        })();
+    </script>
 </body>
-</html>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+</html>
