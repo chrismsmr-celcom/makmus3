@@ -543,7 +543,39 @@ function updateTickerUI() {
 /* --------------------------------------
    7. MOTEUR DE NEWS PRINCIPAL (AVEC AUDIOS)
    -------------------------------------- */
+// 1. Créez un canal et abonnez-vous aux changements de la table 'articles'
+const articlesChannel = supabaseClient
+  .channel('articles-changes') // Nom unique pour le canal
+  .on(
+    'postgres_changes',
+    {
+      event: '*',       // Écoute tous les événements : INSERT, UPDATE, DELETE
+      schema: 'public', // Le schéma de votre base de données
+      table: 'articles' // Le nom exact de votre table
+    },
+    (payload) => {
+      // 2. Callback exécuté à chaque changement
+      console.log('Changement détecté !', payload);
+      console.log('Nouvelle donnée :', payload.new);
+      console.log('Ancienne donnée :', payload.old); // Utile pour UPDATE/DELETE
 
+      // 3. Rafraîchir l'interface utilisateur
+      // Ici, vous pouvez rappeler votre fonction principale pour mettre à jour l'affichage
+      // ou traiter le 'payload' pour une mise à jour plus fine.
+      console.log("🔄 Mise à jour de l'interface suite au changement...");
+      fetchMakmusNews(); // Recharge toutes les actualités
+      // OU pour une optimisation : traitez uniquement le payload.new
+    }
+  )
+  .subscribe((status) => {
+    // 4. Vérifiez le statut de la connexion
+    if (status === 'SUBSCRIBED') {
+      console.log('✅ Écoute des changements en temps réel activée pour articles');
+    }
+  });
+
+// 5. (Optionnel) Nettoyage si vous devez arrêter l'écoute plus tard
+// articlesChannel.unsubscribe();
 async function fetchMakmusNews(querySearch) {
     const status = document.getElementById('status-line');
     if (status) status.textContent = "CHARGEMENT...";
